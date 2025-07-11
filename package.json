@@ -1,78 +1,71 @@
 {
-  "name": "student-directory-app",
+  "name": "ivs-font-processor",
   "version": "1.0.0",
-  "description": "学校生徒名簿管理アプリケーション with ActiveReports PDF出力機能",
-  "private": true,
-  "dependencies": {
-    "@grapecity/activereports-localization": "^4.2.2",
-    "@grapecity/activereports-vue": "^4.2.2",
-    "vue": "^2.6.14",
-    "vue-router": "^3.6.5",
-    "vue-template-compiler": "^2.6.14",
-    "vuex": "^3.6.2"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.28.0",
-    "@babel/eslint-parser": "^7.16.3",
-    "@babel/preset-env": "^7.28.0",
-    "@nuxtjs/eslint-config": "^8.0.0",
-    "@nuxtjs/eslint-module": "^3.0.2",
-    "@nuxtjs/vuetify": "^1.12.3",
-    "@vue/cli-service": "^4.5.19",
-    "@vue/test-utils": "^1.3.0",
-    "babel-core": "7.0.0-bridge.0",
-    "babel-jest": "^27.4.4",
-    "babel-loader": "^8.3.0",
-    "cache-loader": "^4.1.0",
-    "eslint": "^8.4.1",
-    "eslint-config-prettier": "^8.3.0",
-    "eslint-plugin-nuxt": "^3.1.0",
-    "eslint-plugin-vue": "^8.2.0",
-    "husky": "^7.0.4",
-    "jest": "^27.4.4",
-    "lint-staged": "^12.1.2",
-    "prettier": "^2.8.8",
-    "sass": "^1.49.8",
-    "sass-loader": "^10.2.1",
-    "vue-jest": "^3.0.4",
-    "vue-loader": "^15.10.0",
-    "webpack": "^4.46.0"
-  },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not dead",
-    "not ie 11"
+  "description": "IVS (Ideographic Variation Sequence) character font processing and PUA mapping utilities",
+  "main": "src/utils/ivsUtils.js",
+  "type": "module",
+  "files": [
+    "src/utils/",
+    "public/fonts/",
+    "scripts/",
+    "README.md"
   ],
-  "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "dev": "vue-cli-service serve",
-    "lint": "eslint --ext .js,.vue src",
-    "test": "jest"
+  "exports": {
+    ".": {
+      "import": "./src/utils/ivsUtils.js",
+      "require": "./src/utils/ivsUtils.js"
+    },
+    "./mapping": {
+      "import": "./src/utils/ivsCharacterMap.js",
+      "require": "./src/utils/ivsCharacterMap.js"
+    },
+    "./fonts": "./public/fonts/",
+    "./scripts": "./scripts/"
   },
-  "engines": {
-    "node": "16.14.0",
-    "npm": ">=8.0.0"
+  "bin": {
+    "install-ivs-fonts": "./scripts/install-fonts.js"
+  },
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "node scripts/test.js",
+    "install-fonts": "node scripts/install-fonts.js",
+    "generate:mapping": "python3 scripts/generate_js_mapping_only.py",
+    "generate:fonts": "python3 scripts/extract_ivs_glyphs_mj_based.py",
+    "generate:test": "python3 scripts/generate_static_font_test.py",
+    "setup": "npm run parse && npm run generate:mapping && npm run generate:fonts",
+    "parse": "python3 scripts/parse_excel_with_f_column.py && python3 scripts/reverse_c_f_mapping.py && python3 scripts/fix_mj_based_extraction.py"
   },
   "keywords": [
-    "vue",
-    "javascript",
-    "student-directory",
-    "school-management",
-    "activereports",
-    "pdf-export",
-    "名簿管理",
-    "学校システム"
+    "ivs",
+    "ideographic-variation-sequence",
+    "pua",
+    "private-use-area",
+    "font",
+    "unicode",
+    "japanese",
+    "cjk",
+    "moji",
+    "typography",
+    "web-fonts"
   ],
-  "author": "Your Name <your.email@example.com>",
+  "author": "Your Name",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/student-directory-app.git"
+    "url": "https://github.com/your-username/ivs-font-processor.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/student-directory-app/issues"
+    "url": "https://github.com/your-username/ivs-font-processor/issues"
   },
-  "homepage": "https://github.com/yourusername/student-directory-app#readme"
+  "homepage": "https://github.com/your-username/ivs-font-processor#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "peerDependencies": {
+    "fontforge-python": "^1.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0"
+  },
+  "dependencies": {}
 }

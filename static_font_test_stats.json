@@ -1,0 +1,27 @@
+{
+  "generation_timestamp": "2025-07-12",
+  "source_file": "src/utils/ivsCharacterMap.js",
+  "output_file": "public/font-test-static.html",
+  "total_characters": 11362,
+  "unique_base_characters": 4491,
+  "vs_distribution": {
+    "VS19": 3717,
+    "VS?": 1324,
+    "VS18": 3353,
+    "VS20": 1489,
+    "VS17": 610,
+    "VS21": 480,
+    "VS22": 203,
+    "VS23": 88,
+    "VS24": 35,
+    "VS25": 21,
+    "VS26": 14,
+    "VS27": 10,
+    "VS28": 5,
+    "VS29": 4,
+    "VS30": 3,
+    "VS31": 3,
+    "VS32": 3
+  },
+  "file_size_mb": 1.65
+}
