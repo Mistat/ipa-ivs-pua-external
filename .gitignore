@@ -266,6 +266,9 @@ $RECYCLE.BIN/
 backup_*/
 backup_cleanup_*/
 
+# Keep docs directory for GitHub Pages
+!docs/
+
 # Generated files (keep originals but ignore generated versions)
 src/utils/ivsCharacterMap.js.bak
 *.bak
