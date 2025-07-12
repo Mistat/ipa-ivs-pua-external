@@ -5,7 +5,8 @@ module.exports = {
     '@grapecity/ar-js-pdf'
   ],
   parallel: true,
-  publicPath: process.env.NODE_ENV === 'production' ? './' : '/',
+  publicPath: process.env.NODE_ENV === 'production' ? '/ivs/pdf/' : '/',
+  outputDir: '../../docs/pdf',
   devServer: {
     port: 8080,
     hot: true,
