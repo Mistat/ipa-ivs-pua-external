@@ -34,6 +34,155 @@ jobs:
           cache: 'npm'
           cache-dependency-path: examples/pdf/package-lock.json
         
+      - name: Create docs directory structure
+        run: |
+          mkdir -p docs/fonts
+          mkdir -p docs/font-test
+        
+      - name: Create landing page
+        run: |
+          cat > docs/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="ja">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>IVS Font Processor - Demo</title>
+              <style>
+                  body {
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                      margin: 0;
+                      padding: 20px;
+                      background-color: #f5f5f5;
+                  }
+                  
+                  .container {
+                      max-width: 800px;
+                      margin: 0 auto;
+                      background: white;
+                      border-radius: 8px;
+                      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                      overflow: hidden;
+                  }
+                  
+                  .header {
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      color: white;
+                      padding: 30px;
+                      text-align: center;
+                  }
+                  
+                  .header h1 {
+                      margin: 0;
+                      font-size: 2.5rem;
+                      font-weight: 300;
+                  }
+                  
+                  .header p {
+                      margin: 10px 0 0;
+                      font-size: 1.1rem;
+                      opacity: 0.9;
+                  }
+                  
+                  .demo-links {
+                      padding: 40px;
+                  }
+                  
+                  .demo-card {
+                      background: #f8f9fa;
+                      border: 1px solid #e9ecef;
+                      border-radius: 8px;
+                      padding: 20px;
+                      margin-bottom: 20px;
+                      transition: transform 0.2s;
+                  }
+                  
+                  .demo-card:hover {
+                      transform: translateY(-2px);
+                      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+                  }
+                  
+                  .demo-card h3 {
+                      margin: 0 0 10px;
+                      color: #495057;
+                  }
+                  
+                  .demo-card p {
+                      margin: 0 0 15px;
+                      color: #6c757d;
+                  }
+                  
+                  .demo-link {
+                      display: inline-block;
+                      background: #007bff;
+                      color: white;
+                      text-decoration: none;
+                      padding: 10px 20px;
+                      border-radius: 5px;
+                      transition: background 0.2s;
+                  }
+                  
+                  .demo-link:hover {
+                      background: #0056b3;
+                  }
+                  
+                  .github-link {
+                      text-align: center;
+                      padding: 20px;
+                      border-top: 1px solid #e9ecef;
+                  }
+                  
+                  .github-link a {
+                      color: #666;
+                      text-decoration: none;
+                  }
+                  
+                  .github-link a:hover {
+                      color: #333;
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <div class="header">
+                      <h1>IVS Font Processor</h1>
+                      <p>Ideographic Variation Sequence処理デモ</p>
+                  </div>
+                  
+                  <div class="demo-links">
+                      <div class="demo-card">
+                          <h3>🔤 フォントテストビュー</h3>
+                          <p>IVS文字とPUA文字のマッピング表示とフォント表示テスト</p>
+                          <a href="./font-test/" class="demo-link">フォントテストを開く</a>
+                      </div>
+                      
+                      <div class="demo-card">
+                          <h3>📄 PDF生成アプリ</h3>
+                          <p>IVS文字を含むPDFドキュメントの生成とActiveReports連携デモ</p>
+                          <a href="./pdf/" class="demo-link">PDFアプリを開く</a>
+                      </div>
+                  </div>
+                  
+                  <div class="github-link">
+                      <a href="https://github.com/your-username/ivs-font-processor" target="_blank">
+                          📱 GitHub Repository
+                      </a>
+                  </div>
+              </div>
+          </body>
+          </html>
+          EOF
+        
+      - name: Copy fonts
+        run: |
+          cp public/fonts/* docs/fonts/
+        
+      - name: Copy font test
+        run: |
+          cp examples/font-test/font-test-static.html docs/font-test/index.html
+          # Fix font paths
+          sed -i 's|../../public/fonts/|../fonts/|g' docs/font-test/index.html
+        
       - name: Install PDF app dependencies
         run: |
           cd examples/pdf
