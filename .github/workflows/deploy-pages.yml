@@ -20,19 +20,48 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Build job
-  build:
+  # PDF Apps Build job
+  build-pdf-apps:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app:
+          - { name: "vue", path: "examples/pdf", node: "16.14.0", output: "docs/pdf" }
+          - { name: "react", path: "examples/pdf-react", node: "24.2.0", output: "docs/pdf-react" }
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         
-      - name: Setup Node.js 16
+      - name: Setup Node.js ${{ matrix.app.node }}
         uses: actions/setup-node@v4
         with:
-          node-version: '16.14.0'
+          node-version: ${{ matrix.app.node }}
           cache: 'npm'
-          cache-dependency-path: examples/pdf/package-lock.json
+          cache-dependency-path: ${{ matrix.app.path }}/package-lock.json
+        
+      - name: Install dependencies for ${{ matrix.app.name }} app
+        run: |
+          cd ${{ matrix.app.path }}
+          npm ci
+        
+      - name: Build ${{ matrix.app.name }} app
+        run: |
+          cd ${{ matrix.app.path }}
+          npm run build
+          
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.app.name }}-build
+          path: ${{ matrix.app.path }}/dist
+
+  # Main build job
+  build:
+    runs-on: ubuntu-latest
+    needs: build-pdf-apps
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
         
       - name: Create docs directory structure
         run: |
@@ -161,6 +190,12 @@ jobs:
                           <p>IVS文字を含むPDFドキュメントの生成とActiveReports連携デモ</p>
                           <a href="./pdf/" class="demo-link">PDFアプリを開く</a>
                       </div>
+
+                        <div class="demo-card">
+                          <h3>📄 PDF生成アプリ(React + pdfme)</h3>
+                          <p>IVS文字を含むPDFドキュメントの生成とPdfme連携デモ</p>
+                          <a href="./pdf-react/" class="demo-link">PDFアプリを開く</a>
+                      </div>
                   </div>
                   
                   <div class="github-link">
@@ -183,20 +218,30 @@ jobs:
           # Fix font paths
           sed -i 's|../../fonts/|../fonts/|g' docs/font-test/index.html
         
-      - name: Install PDF app dependencies
-        run: |
-          cd examples/pdf
-          npm ci
-        
-      - name: Build PDF app
-        run: |
-          cd examples/pdf
-          npm run build
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
           
-      - name: Fix font paths in CSS
+      - name: Move artifacts to correct locations
         run: |
-          # Find all CSS files and replace font paths
-          find docs/pdf/css -name "*.css" -type f -exec sed -i 's|url(fonts\/|url(../../fonts/|g' {} \;
+          mkdir -p docs/pdf docs/pdf-react
+          if [ -d "artifacts/vue-build" ]; then
+            cp -r artifacts/vue-build/* docs/pdf/
+          fi
+          if [ -d "artifacts/react-build" ]; then
+            cp -r artifacts/react-build/* docs/pdf-react/
+          fi
+          rm -rf artifacts/
+          
+      - name: Fix font paths in CSS and JS
+        run: |
+          # Fix CSS font paths to point to the shared fonts directory
+          find docs/pdf -name "*.css" -type f -exec sed -i 's|url(fonts/|url(../fonts/|g' {} \;
+          find docs/pdf-react -name "*.css" -type f -exec sed -i 's|url(../fonts/|url(../fonts/|g' {} \;
+          # Fix JS font fetch paths
+          find docs/pdf-react -name "*.js" -type f -exec sed -i "s|'./fonts/|'../fonts/|g" {} \;
+          find docs/pdf-react -name "*.js" -type f -exec sed -i 's|"./fonts/|"../fonts/|g' {} \;
         
       - name: Setup Pages
         uses: actions/configure-pages@v4

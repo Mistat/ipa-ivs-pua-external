@@ -1,0 +1,56 @@
+{
+  "name": "ivs-font-processor-pdf-react-example",
+  "version": "1.0.0",
+  "description": "IVS Font Processor PDF Example with React.js and pdfme",
+  "private": true,
+  "dependencies": {
+    "@pdfme/common": "^5.4.1",
+    "@pdfme/generator": "^5.4.1",
+    "@pdfme/ui": "^5.4.1",
+    "ivs-font-processor": "file:../../",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.0",
+    "@babel/preset-env": "^7.23.0",
+    "@babel/preset-react": "^7.22.0",
+    "@vitejs/plugin-react": "^4.1.0",
+    "eslint": "^8.0.0",
+    "eslint-plugin-react": "^7.33.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "vite": "^4.5.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext js,jsx"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ],
+  "keywords": [
+    "react",
+    "javascript",
+    "pdf-generation",
+    "pdfme",
+    "ivs",
+    "ideographic-variation-sequence",
+    "pua",
+    "font",
+    "unicode"
+  ],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Mistat/ipa-ivs-pua-external/"
+  },
+  "bugs": {
+    "url": "https://github.com/Mistat/ipa-ivs-pua-external/issues"
+  },
+  "homepage": "https://github.com/Mistat/ipa-ivs-pua-external/#readme"
+}

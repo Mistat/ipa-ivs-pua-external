@@ -1,0 +1,223 @@
+@font-face {
+  font-family: 'IPA明朝';
+  src: url('../fonts/ipam.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'IPA-IVS-External';
+  src: url('../fonts/ipa-ivs-external.woff2') format('woff2'),
+        url('../fonts/ipa-ivs-external.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.app {
+  font-family: 'IPA明朝', serif;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  line-height: 1.6;
+}
+
+h1 {
+  color: #2c3e50;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.input-section {
+  margin-bottom: 20px;
+}
+
+.text-input {
+  width: 100%;
+  font-family: 'IPA明朝', serif;
+  font-size: 16px;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  box-sizing: border-box;
+  transition: border-color 0.3s;
+}
+
+.text-input:focus {
+  border-color: #3498db;
+  outline: none;
+}
+
+.preview {
+  margin: 20px 0;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.preview-label {
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #2c3e50;
+}
+
+.preview-text {
+  font-family: 'IPA-IVS-External', 'IPA明朝', serif;
+  font-size: 20px;
+  padding: 15px;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  min-height: 60px;
+}
+
+.ivs-info {
+  color: #27ae60;
+  background-color: #f0f9ff;
+  border: 1px solid #27ae60;
+  border-radius: 6px;
+  padding: 15px;
+  margin-top: 15px;
+}
+
+.ivs-summary {
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.ivs-details {
+  margin: 10px 0;
+}
+
+.ivs-detail-item {
+  display: flex;
+  align-items: center;
+  margin: 8px 0;
+  font-family: 'IPA-IVS-External', 'IPA明朝', monospace;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.char-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 8px;
+}
+
+.ivs-char {
+  background-color: #fff3cd;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+
+.external-char {
+  background-color: #d1ecf1;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-family: 'IPA-IVS-External', monospace;
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+
+.char-code {
+  font-size: 10px;
+  color: #666;
+  font-family: monospace;
+  text-align: center;
+}
+
+.arrow {
+  font-size: 16px;
+  color: #666;
+  margin: 0 4px;
+}
+
+.count {
+  font-size: 0.9em;
+  color: #666;
+}
+
+.ivs-note {
+  display: block;
+  margin-top: 10px;
+  font-style: italic;
+  color: #666;
+}
+
+.generate-btn {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  font-size: 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: block;
+  margin: 20px auto;
+  transition: transform 0.2s, box-shadow 0.2s;
+  font-family: 'IPA明朝', serif;
+}
+
+.generate-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+}
+
+.generate-btn:active {
+  transform: translateY(0);
+}
+
+.info {
+  margin-top: 40px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #3498db;
+}
+
+.info h3 {
+  color: #2c3e50;
+  margin-top: 0;
+}
+
+.info ul {
+  padding-left: 20px;
+}
+
+.info li {
+  margin-bottom: 8px;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .app {
+    padding: 15px;
+  }
+  
+  h1 {
+    font-size: 1.8rem;
+  }
+  
+  .text-input {
+    font-size: 16px;
+  }
+  
+  .preview-text {
+    font-size: 18px;
+  }
+  
+  .ivs-detail-item {
+    justify-content: center;
+  }
+  
+  .generate-btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+  }
+}
