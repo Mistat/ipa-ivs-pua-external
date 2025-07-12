@@ -23,12 +23,12 @@
     "./scripts": "./scripts/"
   },
   "bin": {
-    "install-ivs-fonts": "./scripts/install-fonts.js"
+    "install-ivs-fonts": "./scripts/install-fonts.cjs"
   },
   "scripts": {
     "build": "node scripts/build.js",
     "test": "node scripts/test.js",
-    "install-fonts": "node scripts/install-fonts.js",
+    "install-fonts": "node scripts/install-fonts.cjs",
     "generate:mapping": "python3 scripts/generate_js_mapping_only.py",
     "generate:fonts": "python3 scripts/extract_ivs_glyphs_mj_based.py",
     "generate:test": "python3 scripts/generate_static_font_test.py",
@@ -52,12 +52,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/ivs-font-processor.git"
+    "url": "https://github.com/Mistat/ipa-ivs-pua-external.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/ivs-font-processor/issues"
+    "url": "https://github.com/Mistat/ipa-ivs-pua-external/issues"
   },
-  "homepage": "https://github.com/your-username/ivs-font-processor#readme",
+  "homepage": "https://github.com/Mistat/ipa-ivs-pua-external#readme",
   "engines": {
     "node": ">=14.0.0"
   },

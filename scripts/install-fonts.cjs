@@ -3,8 +3,8 @@
 const fs = require('fs');
 const path = require('path');
 
-function installFonts(targetDir = './public/fonts') {
-  const sourcePath = path.join(__dirname, '..', 'public', 'fonts');
+function installFonts(targetDir = './fonts') {
+  const sourcePath = path.join(__dirname, '..', 'fonts');
   const destPath = path.resolve(process.cwd(), targetDir);
   
   console.log(`フォントを ${destPath} にインストール中...`);

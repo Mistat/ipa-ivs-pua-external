@@ -175,13 +175,13 @@ jobs:
         
       - name: Copy fonts
         run: |
-          cp public/fonts/* docs/fonts/
+          cp fonts/* docs/fonts/
         
       - name: Copy font test
         run: |
           cp examples/font-test/font-test-static.html docs/font-test/index.html
           # Fix font paths
-          sed -i 's|../../public/fonts/|../fonts/|g' docs/font-test/index.html
+          sed -i 's|../../fonts/|../fonts/|g' docs/font-test/index.html
         
       - name: Install PDF app dependencies
         run: |
@@ -192,6 +192,11 @@ jobs:
         run: |
           cd examples/pdf
           npm run build
+          
+      - name: Fix font paths in CSS
+        run: |
+          # Find all CSS files and replace font paths
+          find docs/pdf/css -name "*.css" -type f -exec sed -i 's|url(fonts\/|url(../../fonts/|g' {} \;
         
       - name: Setup Pages
         uses: actions/configure-pages@v4

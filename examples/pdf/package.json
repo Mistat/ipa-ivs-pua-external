@@ -62,18 +62,16 @@
     "student-directory",
     "school-management",
     "activereports",
-    "pdf-export",
-    "名簿管理",
-    "学校システム"
+    "pdf-export"
   ],
   "author": "Your Name <your.email@example.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/student-directory-app.git"
+    "url": "https://github.com/Mistat/ipa-ivs-pua-external/"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/student-directory-app/issues"
+    "url": "https://github.com/Mistat/ipa-ivs-pua-external/issues"
   },
-  "homepage": "https://github.com/yourusername/student-directory-app#readme"
+  "homepage": "https://github.com/Mistat/ipa-ivs-pua-external/#readme"
 }

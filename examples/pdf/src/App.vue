@@ -58,18 +58,18 @@ export default {
   methods: {
     async generatePDF() {
       try {
-        // フォントの登録（シンボリックリンク経由）
+        // フォントの登録（相対パス）
         const ipaFont = {
           name: "IPA明朝",
-          source: "/fonts/ipam.ttf"
+          source: "./fonts/ipam.ttf"
         }
         await Core.FontStore.registerFonts(ipaFont)
         console.log('IPA明朝フォント登録完了')
         
-        // IVS外字フォントの登録（シンボリックリンク経由）
+        // IVS外字フォントの登録（相対パス）
         const ivsExternalFont = {
           name: "IPA-IVS-External",
-          source: "/fonts/ipa-ivs-external.ttf"
+          source: "./fonts/ipa-ivs-external.ttf"
         }
         await Core.FontStore.registerFonts(ivsExternalFont)
         console.log('IVS外字フォント登録完了')
@@ -172,14 +172,14 @@ export default {
 <style>
 @font-face {
   font-family: 'IPA明朝';
-  src: url('/fonts/ipam.ttf') format('truetype');
+  src: url('./fonts/ipam.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
 }
 
 @font-face {
   font-family: 'IPA-IVS-External';
-  src: url('/fonts/ipa-ivs-external.woff2') format('woff2');
+  src: url('./fonts/ipa-ivs-external.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
 }
