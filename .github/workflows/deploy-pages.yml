@@ -26,6 +26,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         
+      - name: Setup Node.js 16
+        uses: actions/setup-node@v4
+        with:
+          node-version: '16.14.0'
+          cache: 'npm'
+          cache-dependency-path: examples/pdf/package-lock.json
+        
+      - name: Install PDF app dependencies
+        run: |
+          cd examples/pdf
+          npm ci
+        
+      - name: Build PDF app
+        run: |
+          cd examples/pdf
+          npm run build
+        
       - name: Setup Pages
         uses: actions/configure-pages@v4
         
