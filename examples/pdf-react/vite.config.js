@@ -35,7 +35,7 @@ export default defineConfig({
     host: true
   },
   build: {
-    outDir: '../../docs/pdf-react',
+    outDir: '../dist',
     emptyOutDir: true
   },
   define: {

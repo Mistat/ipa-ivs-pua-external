@@ -237,10 +237,9 @@ jobs:
       - name: Fix font paths in CSS and JS
         run: |
           # Fix CSS font paths to point to the shared fonts directory
-          find docs/pdf -name "*.css" -type f -exec sed -i 's|url(fonts/|url(../fonts/|g' {} \;
-          find docs/pdf-react -name "*.css" -type f -exec sed -i 's|url(../fonts/|url(../fonts/|g' {} \;
+          find docs/pdf -name "*.css" -type f -exec sed -i 's|url(fonts/|url(../../fonts/|g' {} \;
+          find docs/pdf-react -name "*.css" -type f -exec sed -i 's|url(../fonts/|url(../../fonts/|g' {} \;
           # Fix JS font fetch paths
-          find docs/pdf-react -name "*.js" -type f -exec sed -i "s|'./fonts/|'../fonts/|g" {} \;
           find docs/pdf-react -name "*.js" -type f -exec sed -i 's|"./fonts/|"../fonts/|g' {} \;
         
       - name: Setup Pages

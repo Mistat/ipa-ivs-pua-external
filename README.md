@@ -7,7 +7,7 @@ A JavaScript/TypeScript library for processing IVS (Ideographic Variation Sequen
 
 ## 概要
 
-IVS文字をWebブラウザで確実に表示するためのライブラリです。IVS文字をPUA領域にマッピングし、専用フォントとユーティリティ関数を提供します。
+PDF生成ライブラリやその他の文書生成ライブラリでは、異体字（IVS文字）の表示がサポートされていないケースが多くあります。本ライブラリは、そうしたライブラリに対して異体字を確実に表示するため、異体字をPUA（Private Use Area）領域にマッピングした専用フォントと、IVS文字をPUA文字コードに変換するJavaScript/TypeScriptライブラリを提供します。
 
 ## Features
 

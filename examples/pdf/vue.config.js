@@ -6,7 +6,7 @@ module.exports = {
   ],
   parallel: true,
   publicPath: process.env.NODE_ENV === 'production' ? './' : '/',
-  outputDir: '../../docs/pdf',
+  outputDir: 'dist',
   devServer: {
     port: 8080,
     hot: true,
