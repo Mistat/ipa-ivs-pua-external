@@ -11,7 +11,7 @@ def extract_ivs_glyphs():
     """MJ文字図形名を使用してIVS文字のグリフを抽出して外字フォントを作成"""
     
     # IPAm.ttfのパスを指定
-    input_font_path = "../public/fonts/ipam.ttf"
+    input_font_path = "../fonts/ipam.ttf"
     
     if not os.path.exists(input_font_path):
         print(f"エラー: {input_font_path} が見つかりません")
@@ -22822,6 +22822,11 @@ def extract_ivs_glyphs():
         
         for ivs_sequence, mj_name in ivs_to_mj_mapping.items():
             pua_code = ivs_mappings[ivs_sequence]
+            # 元のUnicode（基本文字）のコードポイントを取得
+            try:
+                base_code = ord(ivs_sequence[0])
+            except Exception:
+                base_code = None
             
             # MJ文字図形名がフォントに存在するかチェック
             if mj_name in original_font:
@@ -22840,6 +22845,18 @@ def extract_ivs_glyphs():
                     external_font.selection.select(pua_code)
                     external_font.paste()
                     external_font[pua_code].width = original_glyph.width
+
+                    # 追加: 元のUnicode位置（基本文字）にも同一グリフを複製
+                    # - 変換せず基本文字だけが与えられた場合の文字化けを防ぐため
+                    if base_code is not None:
+                        try:
+                            external_font.createChar(base_code)
+                            external_font[base_code].clear()
+                            external_font.selection.select(base_code)
+                            external_font.paste()
+                            external_font[base_code].width = original_glyph.width
+                        except Exception as e2:
+                            print(f"  警告: 基本文字U+{base_code:04X}への複製に失敗 - {e2}")
                     
                     extracted_count += 1
                 except Exception as e:
