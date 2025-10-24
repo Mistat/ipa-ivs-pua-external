@@ -22819,6 +22819,53 @@ def extract_ivs_glyphs():
         # MJ文字図形名を使用してIVS文字を抽出
         extracted_count = 0
         failed_count = 0
+
+        # 基本文字への複製ポリシー: 同一基本文字に対しては「最小のVS(E0101<E0102<...)に対応するMJ」を1回だけ複製
+        # これにより、例えば 年 はE0101(MJ010944)、平はE0102(MJ010943)が選択される（E0103よりE0102が小さいため）
+        base_code_to_preferred_mj = {}
+        try:
+            import json
+            # MJ名 -> "XXXX_E0102" の形式へ解決するマップを読み込む
+            with open("../c_to_f_mapping.json", 'r', encoding='utf-8') as _cf:
+                c_to_f_map = json.load(_cf)
+        except Exception:
+            c_to_f_map = {}
+
+        # VSの数値化ヘルパー（小さい方を優先）
+        def _vs_rank(vs_tag: str):
+            try:
+                if isinstance(vs_tag, str) and vs_tag.upper().startswith('E'):
+                    return int(vs_tag[1:], 16)
+            except Exception:
+                pass
+            return 0x7FFFFFFF
+
+        # VS優先順位（必要に応じて拡張可）
+        vs_priority_order = {
+            'E0102': 0,
+            # 次点以降は同列扱い。存在時は初見を採用（順序は辞書の定義順に依存しないよう後続ロジックで維持）
+        }
+
+        # 事前に基本文字ごとの「優先MJ」を決定（最小VSを選択）
+        candidates = {}
+        for ivs_sequence, mj_name in ivs_to_mj_mapping.items():
+            try:
+                base_code = ord(ivs_sequence[0])
+            except Exception:
+                continue
+            cf = c_to_f_map.get(mj_name.upper()) or c_to_f_map.get(mj_name)
+            vs_tag = None
+            if isinstance(cf, str) and '_' in cf:
+                vs_tag = cf.split('_', 1)[1]
+            rank = _vs_rank(vs_tag)
+            prev = candidates.get(base_code)
+            if prev is None or rank < prev[0]:
+                candidates[base_code] = (rank, mj_name)
+        for bcode, (_rank, mj) in candidates.items():
+            base_code_to_preferred_mj[bcode] = mj
+
+        # 実際の複製時に重複上書きを防ぐためのトラッキング
+        base_code_copied = set()
         
         for ivs_sequence, mj_name in ivs_to_mj_mapping.items():
             pua_code = ivs_mappings[ivs_sequence]
@@ -22846,15 +22893,18 @@ def extract_ivs_glyphs():
                     external_font.paste()
                     external_font[pua_code].width = original_glyph.width
 
-                    # 追加: 元のUnicode位置（基本文字）にも同一グリフを複製
-                    # - 変換せず基本文字だけが与えられた場合の文字化けを防ぐため
+                    # 追加: 基本文字（U+XXXX）への複製
+                    # - 同一基本文字については「優先VSに対応するMJ名」のときだけ1回だけ複製する
                     if base_code is not None:
                         try:
-                            external_font.createChar(base_code)
-                            external_font[base_code].clear()
-                            external_font.selection.select(base_code)
-                            external_font.paste()
-                            external_font[base_code].width = original_glyph.width
+                            preferred_mj = base_code_to_preferred_mj.get(base_code)
+                            if preferred_mj and preferred_mj == mj_name and base_code not in base_code_copied:
+                                external_font.createChar(base_code)
+                                external_font[base_code].clear()
+                                external_font.selection.select(base_code)
+                                external_font.paste()
+                                external_font[base_code].width = original_glyph.width
+                                base_code_copied.add(base_code)
                         except Exception as e2:
                             print(f"  警告: 基本文字U+{base_code:04X}への複製に失敗 - {e2}")
                     
@@ -22869,11 +22919,11 @@ def extract_ivs_glyphs():
         print(f"抽出完了: {extracted_count}個成功, {failed_count}個失敗")
         
         # フォントディレクトリを作成
-        os.makedirs("../public/fonts", exist_ok=True)
+        os.makedirs("../fonts", exist_ok=True)
         
         # WebFont形式で保存
-        output_woff2_path = "../public/fonts/ipa-ivs-external.woff2"
-        output_ttf_path = "../public/fonts/ipa-ivs-external.ttf"
+        output_woff2_path = "../fonts/ipa-ivs-external.woff2"
+        output_ttf_path = "../fonts/ipa-ivs-external.ttf"
         
         print("WebFont形式で保存中...")
         external_font.generate(output_woff2_path)
