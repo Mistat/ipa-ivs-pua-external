@@ -7,11 +7,15 @@ import sys
 import os
 import json
 
+# Resolve repo root regardless of current working directory
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+_ROOT_DIR = os.path.normpath(os.path.join(_SCRIPT_DIR, '..'))
+
 def extract_ivs_glyphs():
     """MJ文字図形名を使用してIVS文字のグリフを抽出して外字フォントを作成"""
     
-    # IPAm.ttfのパスを指定
-    input_font_path = "../fonts/ipam.ttf"
+    # IPAm.ttfのパスを指定（スクリプト位置基準で解決）
+    input_font_path = os.path.join(_ROOT_DIR, "fonts", "ipam.ttf")
     
     if not os.path.exists(input_font_path):
         print(f"エラー: {input_font_path} が見つかりません")
@@ -56,8 +60,11 @@ def extract_ivs_glyphs():
             (0x3000, 0x303F),  # CJK記号・句読点（全角スペース含む）
             (0x3040, 0x309F),  # ひらがな
             (0x30A0, 0x30FF),  # カタカナ
+            (0x3400, 0x4DBF),  # CJK統合漢字拡張A（U+3404等を含む）
             (0x4E00, 0x9FAF),  # CJK統合漢字
             (0xFF01, 0xFF60),  # 全角記号・英数字
+            (0xFF61, 0xFF9F),  # 半角カタカナ
+            (0x2160, 0x217F),  # ローマ数字（大文字・小文字両方）
         ]
         
         copied_basic_count = 0
@@ -22820,13 +22827,18 @@ def extract_ivs_glyphs():
         extracted_count = 0
         failed_count = 0
 
-        # 基本文字への複製ポリシー: 同一基本文字に対しては「最小のVS(E0101<E0102<...)に対応するMJ」を1回だけ複製
-        # これにより、例えば 年 はE0101(MJ010944)、平はE0102(MJ010943)が選択される（E0103よりE0102が小さいため）
+        # 基本文字への複製ポリシー
+        # 環境変数 BASE_DUP_POLICY で制御:
+        #   - 'none'   : 基本文字へは複製しない（PUAのみ）
+        #   - 'bvalue' : base_mj を優先（mji_analysis_f_to_c_mapping.json）[既定]
+        #   - 'e0102'  : E0102があれば優先、なければE0101→最小VS
+        #   - 'min_vs' : 最小VS
+        dup_policy = os.getenv('BASE_DUP_POLICY', 'bvalue').lower()
         base_code_to_preferred_mj = {}
         try:
             import json
             # MJ名 -> "XXXX_E0102" の形式へ解決するマップを読み込む
-            with open("../c_to_f_mapping.json", 'r', encoding='utf-8') as _cf:
+            with open(os.path.join(_ROOT_DIR, "c_to_f_mapping.json"), 'r', encoding='utf-8') as _cf:
                 c_to_f_map = json.load(_cf)
         except Exception:
             c_to_f_map = {}
@@ -22846,7 +22858,29 @@ def extract_ivs_glyphs():
             # 次点以降は同列扱い。存在時は初見を採用（順序は辞書の定義順に依存しないよう後続ロジックで維持）
         }
 
-        # 事前に基本文字ごとの「優先MJ」を決定（最小VSを選択）
+        # まず、分析JSONを読み込む（bvalueや候補探索に利用）
+        fc2 = {}
+        try:
+            with open(os.path.join(_ROOT_DIR, "mji_analysis_f_to_c_mapping.json"), 'r', encoding='utf-8') as _fb2:
+                fc2 = json.load(_fb2)
+        except Exception:
+            fc2 = {}
+
+        if dup_policy == 'bvalue':
+            try:
+                for k, v in fc2.items():
+                    if isinstance(k, str) and k.startswith('U+') and isinstance(v, dict):
+                        try:
+                            bcode = int(k[2:], 16)
+                        except Exception:
+                            continue
+                        mj = v.get('base_mj')
+                        if isinstance(mj, str):
+                            base_code_to_preferred_mj[bcode] = mj.lower()
+            except Exception:
+                pass
+
+        # ポリシーに応じて候補決定（e0102/min_vs/フォールバック）
         candidates = {}
         for ivs_sequence, mj_name in ivs_to_mj_mapping.items():
             try:
@@ -22861,11 +22895,35 @@ def extract_ivs_glyphs():
             prev = candidates.get(base_code)
             if prev is None or rank < prev[0]:
                 candidates[base_code] = (rank, mj_name)
-        for bcode, (_rank, mj) in candidates.items():
-            base_code_to_preferred_mj[bcode] = mj
+        # e0102優先の選択
+        if dup_policy == 'e0102':
+            for base_code in set(candidates.keys()):
+                # E0102があるか探す
+                chosen = None
+                if isinstance(fc2.get(f'U+{base_code:04X}'), dict):
+                    mapping = fc2[f'U+{base_code:04X}'].get('C_values_with_F', {})
+                    for ftag, mj in mapping.items():
+                        if isinstance(ftag, str) and ftag.endswith('_E0102'):
+                            chosen = mj.lower()
+                            break
+                if not chosen:
+                    # E0101→最小VS
+                    if isinstance(fc2.get(f'U+{base_code:04X}'), dict):
+                        mapping = fc2[f'U+{base_code:04X}'].get('C_values_with_F', {})
+                        for ftag, mj in mapping.items():
+                            if isinstance(ftag, str) and ftag.endswith('_E0101'):
+                                chosen = mj.lower()
+                                break
+                if not chosen:
+                    chosen = candidates[base_code][1].lower()
+                base_code_to_preferred_mj[base_code] = chosen
+        elif dup_policy == 'min_vs' or dup_policy == 'bvalue':
+            for bcode, (_rank, mj) in candidates.items():
+                if bcode not in base_code_to_preferred_mj:
+                    base_code_to_preferred_mj[bcode] = mj
 
-        # 実際の複製時に重複上書きを防ぐためのトラッキング
-        base_code_copied = set()
+        # 基本文字への実コピーは、PUAコピー完了後に一括で行う（順序依存を排除）
+        base_copy_plan = {}
         
         for ivs_sequence, mj_name in ivs_to_mj_mapping.items():
             pua_code = ivs_mappings[ivs_sequence]
@@ -22893,20 +22951,7 @@ def extract_ivs_glyphs():
                     external_font.paste()
                     external_font[pua_code].width = original_glyph.width
 
-                    # 追加: 基本文字（U+XXXX）への複製
-                    # - 同一基本文字については「優先VSに対応するMJ名」のときだけ1回だけ複製する
-                    if base_code is not None:
-                        try:
-                            preferred_mj = base_code_to_preferred_mj.get(base_code)
-                            if preferred_mj and preferred_mj == mj_name and base_code not in base_code_copied:
-                                external_font.createChar(base_code)
-                                external_font[base_code].clear()
-                                external_font.selection.select(base_code)
-                                external_font.paste()
-                                external_font[base_code].width = original_glyph.width
-                                base_code_copied.add(base_code)
-                        except Exception as e2:
-                            print(f"  警告: 基本文字U+{base_code:04X}への複製に失敗 - {e2}")
+                    # 基本文字へのコピー計画はPUAコピー後に base_code_to_preferred_mj から一括構築する
                     
                     extracted_count += 1
                 except Exception as e:
@@ -22916,19 +22961,50 @@ def extract_ivs_glyphs():
                 print(f"  警告: MJ文字図形名 '{mj_name}' がフォントに見つかりません")
                 failed_count += 1
         
-        print(f"抽出完了: {extracted_count}個成功, {failed_count}個失敗")
+        # 基本文字へのコピー計画を構築
+        if dup_policy != 'none':
+            for base_code, mj_name in base_code_to_preferred_mj.items():
+                base_copy_plan[base_code] = {'mj_name': mj_name}
+
+        # 基本文字へ一括複製（順序に依存せず、base_mjに従う）
+        if dup_policy != 'none':
+            print("基本文字へ既定字形を複製中...")
+        debug_base = os.getenv('DEBUG_BASE_COPY')
+        copied_base = 0
+        if dup_policy != 'none':
+            for base_code, info in base_copy_plan.items():
+                try:
+                    mj_name = info['mj_name']
+                    if mj_name not in original_font:
+                        continue
+                    # コピー元を再選択して明示コピー（クリップボードの汚染を避ける）
+                    original_glyph = original_font[mj_name]
+                    original_font.selection.select(mj_name)
+                    original_font.copy()
+                    external_font.createChar(base_code)
+                    external_font[base_code].clear()
+                    external_font.selection.select(base_code)
+                    external_font.paste()
+                    external_font[base_code].width = original_glyph.width
+                    if debug_base:
+                        print(f"  基本文字 U+{base_code:04X} ← {mj_name}")
+                    copied_base += 1
+                except Exception as e2:
+                    print(f"  警告: 基本文字U+{base_code:04X}への複製に失敗 - {e2}")
+
+        print(f"抽出完了: {extracted_count}個成功, {failed_count}個失敗, 基本文字複製 {copied_base}件 (policy={dup_policy})")
         
-        # フォントディレクトリを作成
-        os.makedirs("../fonts", exist_ok=True)
+        # フォントディレクトリを作成（./fonts に統一）
+        os.makedirs(os.path.join(_ROOT_DIR, "fonts"), exist_ok=True)
         
         # WebFont形式で保存
-        output_woff2_path = "../fonts/ipa-ivs-external.woff2"
-        output_ttf_path = "../fonts/ipa-ivs-external.ttf"
+        output_woff2_path = os.path.join(_ROOT_DIR, "fonts", "ipa-ivs-external.woff2")
+        output_ttf_path = os.path.join(_ROOT_DIR, "fonts", "ipa-ivs-external.ttf")
         
         print("WebFont形式で保存中...")
         external_font.generate(output_woff2_path)
         external_font.generate(output_ttf_path)
-        
+
         print(f"外字フォントを作成しました:")
         print(f"  - {output_woff2_path}")
         print(f"  - {output_ttf_path}")
@@ -22949,7 +23025,7 @@ def generate_mapping_file():
     """IVS文字マッピング定義ファイルを生成（段階的PUA配置対応）"""
     
     try:
-        with open("../mji_analysis_f_to_c_mapping.json", 'r', encoding='utf-8') as f:
+        with open(os.path.join(_ROOT_DIR, "mji_analysis_f_to_c_mapping.json"), 'r', encoding='utf-8') as f:
             data = json.load(f)
         
         print("IVS文字マッピングを段階的PUA戦略で生成中...")

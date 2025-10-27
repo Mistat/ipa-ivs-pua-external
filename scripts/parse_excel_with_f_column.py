@@ -133,6 +133,63 @@ def parse_excel_with_f_column(filename):
                 value["C_values_with_F"] = c_with_f
                 # Keep original array for backward compatibility
                 # value["C_values"] = list(c_with_f.keys())
+
+            # Derive base (default) MJ per code point using B_value's VS when present, else prefer E0101
+            def _vs_from_bvalue(s: str):
+                if not isinstance(s, str):
+                    return None
+                for ch in s:
+                    cp = ord(ch)
+                    if 0xE0100 <= cp <= 0xE01EF:
+                        return f"E0{cp - 0xE0000:03X}"
+                return None
+
+            def _vs_rank(vs_tag: str):
+                try:
+                    if isinstance(vs_tag, str) and vs_tag.upper().startswith('E'):
+                        return int(vs_tag[1:], 16)
+                except Exception:
+                    pass
+                return 0x7FFFFFFF
+
+            for key, value in final_result.items():
+                # key example: "U+5E73"
+                try:
+                    hexcode = key[2:]
+                except Exception:
+                    hexcode = None
+
+                b_vs = _vs_from_bvalue(value.get("B_value"))
+                if b_vs is None:
+                    b_vs = 'E0101'
+
+                # Prefer the MJ whose F tag matches "<hexcode>_<b_vs>"
+                base_f_tag = None
+                base_mj = None
+                if hexcode:
+                    expected_f = f"{hexcode}_{b_vs}"
+                    for mj, ftag in value.get("C_values_with_F", {}).items():
+                        if ftag == expected_f:
+                            base_f_tag = ftag
+                            base_mj = mj
+                            break
+
+                # If not found, fall back to the smallest VS among candidates
+                if base_mj is None:
+                    best = (0x7FFFFFFF, None, None)
+                    for mj, ftag in value.get("C_values_with_F", {}).items():
+                        if isinstance(ftag, str) and '_' in ftag:
+                            vs = ftag.split('_', 1)[1]
+                            r = _vs_rank(vs)
+                            if r < best[0]:
+                                best = (r, ftag, mj)
+                    if best[2] is not None:
+                        base_f_tag, base_mj = best[1], best[2]
+
+                # Store for downstream consumers
+                if base_mj is not None:
+                    value["base_f_tag"] = base_f_tag
+                    value["base_mj"] = base_mj
             
             # Show sample
             print("\\nSample results:")

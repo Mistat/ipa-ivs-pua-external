@@ -36,7 +36,7 @@ npm install ivs-font-processor
 パッケージインストール後、フォントファイルをプロジェクトにコピーします：
 
 ```bash
-# デフォルト（./public/fonts/にインストール）
+# デフォルト（./fonts/にインストール）
 npx install-ivs-fonts
 
 # カスタムディレクトリにインストール
@@ -70,8 +70,8 @@ const count = countIVSCharacters(text);
 ```css
 @font-face {
   font-family: 'IVS-External';
-  src: url('./public/fonts/ipa-ivs-external.woff2') format('woff2'),
-       url('./public/fonts/ipa-ivs-external.ttf') format('truetype');
+  src: url('./fonts/ipa-ivs-external.woff2') format('woff2'),
+       url('./fonts/ipa-ivs-external.ttf') format('truetype');
   font-display: swap;
 }
 

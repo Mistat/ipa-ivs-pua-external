@@ -180,7 +180,7 @@ def extract_ivs_glyphs():
     """MJ文字図形名を使用してIVS文字のグリフを抽出して外字フォントを作成"""
     
     # IPAm.ttfのパスを指定
-    input_font_path = "../public/fonts/ipam.ttf"
+    input_font_path = "../fonts/ipam.ttf"
     
     if not os.path.exists(input_font_path):
         print(f"エラー: {input_font_path} が見つかりません")
@@ -319,11 +319,11 @@ def extract_ivs_glyphs():
         print(f"抽出完了: {extracted_count}個成功, {failed_count}個失敗")
         
         # フォントディレクトリを作成
-        os.makedirs("../public/fonts", exist_ok=True)
+        os.makedirs("../fonts", exist_ok=True)
         
         # WebFont形式で保存
-        output_woff2_path = "../public/fonts/ipa-ivs-external.woff2"
-        output_ttf_path = "../public/fonts/ipa-ivs-external.ttf"
+        output_woff2_path = "../fonts/ipa-ivs-external.woff2"
+        output_ttf_path = "../fonts/ipa-ivs-external.ttf"
         
         print("WebFont形式で保存中...")
         external_font.generate(output_woff2_path)

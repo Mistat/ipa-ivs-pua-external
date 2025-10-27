@@ -52,7 +52,7 @@ function installFonts(targetDir = './fonts') {
 
 // コマンドラインから直接実行された場合
 if (require.main === module) {
-  const targetDir = process.argv[2] || './public/fonts';
+  const targetDir = process.argv[2] || './fonts';
   installFonts(targetDir);
 }
 

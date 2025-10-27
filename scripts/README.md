@@ -21,7 +21,7 @@ npm run install-fonts
 ```
 
 **機能:**
-- `public/fonts/`のフォントファイルを指定ディレクトリにコピー
+- `fonts/`のフォントファイルを指定ディレクトリにコピー
 - 対応フォーマット: TTF, WOFF, WOFF2, OTF
 - エラーハンドリングと進行状況表示
 
@@ -114,8 +114,8 @@ IPA明朝フォントからIVS文字のグリフを抽出し、PUA領域にマ�
 
 **入力:** IPA明朝フォント  
 **出力:** 
-- `public/fonts/ipa-ivs-external.ttf`
-- `public/fonts/ipa-ivs-external.woff2`
+- `fonts/ipa-ivs-external.ttf`
+- `fonts/ipa-ivs-external.woff2`
 
 ### `generate_static_font_test.py`
 生成されたフォントをテストするためのHTMLページを生成します。
@@ -158,7 +158,7 @@ chmod +x scripts/install-fonts.js
 ```bash
 # ソースフォントの確認
 ls -la ipa/
-ls -la public/fonts/
+ls -la fonts/
 ```
 
 ## ライセンス

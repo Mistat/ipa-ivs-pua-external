@@ -6,7 +6,7 @@
   "type": "module",
   "files": [
     "src/utils/",
-    "public/fonts/",
+    "fonts/",
     "scripts/",
     "README.md"
   ],
@@ -19,7 +19,7 @@
       "import": "./src/utils/ivsCharacterMap.js",
       "require": "./src/utils/ivsCharacterMap.js"
     },
-    "./fonts": "./public/fonts/",
+    "./fonts": "./fonts/",
     "./scripts": "./scripts/"
   },
   "bin": {
