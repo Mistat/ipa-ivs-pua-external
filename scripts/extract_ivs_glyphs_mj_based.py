@@ -66,6 +66,7 @@ def extract_ivs_glyphs():
             (0x4E00, 0x9FAF),  # CJK統合漢字
             (0xFF01, 0xFF60),  # 全角記号・英数字
             (0xFF61, 0xFF9F),  # 半角カタカナ
+            (0xFFE0, 0xFFEE),  # 全角記号追加（￥ U+FFE5 など）
             (0x2160, 0x217F),  # ローマ数字（大文字・小文字両方）
         ]
         
