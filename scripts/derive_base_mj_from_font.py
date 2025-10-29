@@ -114,6 +114,7 @@ def main():
                 vs_to_pair[vs] = (ftag, mj)
 
         selected = None
+        source = None
         # Step 1: Try matching VS glyph to default glyph in the font
         try:
             def_name = dmap.get(cp)
@@ -129,6 +130,7 @@ def main():
                     gname = uvs_mappings.get(cp)
                     if gname and gname == def_name:
                         selected = pair  # (ftag, mj)
+                        source = 'uvs'
                         break
         except Exception:
             pass
@@ -136,17 +138,20 @@ def main():
         # Step 2: Prefer E0100 if present
         if selected is None and 'E0100' in vs_to_pair:
             selected = vs_to_pair['E0100']
+            source = 'e0100'
 
         # Step 3: Use B_value VS if present
         if selected is None:
             bvs = bvalue_vs(entry.get('B_value'))
             if bvs in vs_to_pair:
                 selected = vs_to_pair[bvs]
+                source = 'b_value'
 
         # Step 4: Min VS
         if selected is None:
             best = min(vs_to_pair.items(), key=lambda kv: vs_rank(kv[0]))
             selected = best[1]
+            source = 'min'
 
         new_base_f, new_base_mj = selected
 
@@ -154,11 +159,13 @@ def main():
         if entry.get('base_f_tag') != new_base_f or entry.get('base_mj') != new_base_mj:
             entry['base_f_tag'] = new_base_f
             entry['base_mj'] = new_base_mj
+            entry['base_source'] = source
             # Update twin entry in f_to_c JSON
             f_entry = f_to_c.get(ukey)
             if isinstance(f_entry, dict):
                 f_entry['base_f_tag'] = new_base_f
                 f_entry['base_mj'] = new_base_mj
+                f_entry['base_source'] = source
             changed += 1
 
     # Save back
@@ -173,4 +180,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

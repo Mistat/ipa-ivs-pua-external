@@ -27,15 +27,13 @@
   },
   "scripts": {
     "build": "node scripts/build.js",
-    "test": "node scripts/test.js",
-    "test:unit": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --color",
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --color --testPathPattern=__tests__",
+    "test:unit": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --color --testPathPattern=__tests__",
     "install-fonts": "node scripts/install-fonts.cjs",
-    "generate:mapping": "python3 scripts/generate_js_mapping_only.py",
-    "generate:fonts": "python3 scripts/extract_ivs_glyphs_mj_based.py",
+    "generate:fonts": "fontforge -script scripts/extract_ivs_glyphs_mj_based.py",
     "generate:test": "python3 scripts/generate_static_font_test.py",
-    "setup": "npm run parse && npm run generate:mapping && npm run generate:fonts",
-    "parse": "python3 scripts/parse_excel_with_f_column.py && python3 scripts/reverse_c_f_mapping.py && python3 scripts/fix_mj_based_extraction.py",
-    "parse:new": "python3 scripts/parse_excel_with_f_column.py && python3 scripts/reverse_c_f_mapping.py && python3 scripts/derive_base_mj_from_font.py && python3 scripts/fix_mj_based_extraction.py"
+    "setup": "npm run parse && npm run generate:fonts",
+    "parse": "python3 scripts/parse_excel_with_f_column.py && python3 scripts/reverse_c_f_mapping.py && python3 scripts/derive_base_mj_from_font.py"
   },
   "keywords": [
     "ivs",

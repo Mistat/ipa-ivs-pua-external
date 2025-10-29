@@ -16,7 +16,7 @@
   - Ubuntu/Debian: `sudo apt-get install fontforge`
   - Windows: 公式サイト https://fontforge.org/en-US/downloads/
 - Python パッケージ
-  - `pip install openpyxl pandas numpy` (FontForgeのPythonバインディングは通常FontForge本体に付随)
+  - `pip install openpyxl pandas numpy fonttools` (FontForgeのPythonバインディングは通常FontForge本体に付随)
 - Node.js 14+
 
 データ/フォントの配置:
@@ -38,7 +38,7 @@
 
 ## 実行フロー(パイプライン)
 
-1) データ解析・準備
+1) データ解析・準備（マッピングはこの後に一括生成）
 - `parse_excel_with_f_column.py`
   - MJ文字情報Excelから、基本文字とIVS(例: U+xxxx U+E01xx)の対応行を抽出・正規化
   - 出力: 解析済みJSON(例: `mji_analysis_with_f_column.json`)
@@ -48,25 +48,17 @@
   - 出力: `c_to_f_mapping.json`, `mji_analysis_f_to_c_mapping.json`
 
 - (任意) `derive_base_mj_from_font.py`
-  - ソースフォント内の既存グリフから、既定異体(B_value)のベース候補を推定
-  - 後続の抽出調整に利用
+  - ソースフォント（fonts/ipam.ttf）の cmap / UVS を解析し、各文字の既定異体（base_f_tag/base_mj）をフォント実態に合わせて決定
+  - 優先順位:
+    1) UVSで既定グリフと一致するVS
+    2) E0100 が候補にあれば採用
+    3) B_value に含まれる VS
+    4) 上記が無ければ最小のVS
+  - fonttools が無い/フォントがUVSを持たない場合は 2–4 のヒューリスティック
 
-- `fix_mj_based_extraction.py`
-  - 欠落/重複/競合する対応関係の補正、抽出しやすい整合性のとれた集合に確定
-
-2) マッピング生成
-- `generate_js_mapping_only.py`
-  - 確定した対応からJSで利用可能な巨大マップを生成
-  - 出力: `src/utils/ivsCharacterMap.js`
-  - 構成:
-    - `ivsToExternalCharMap`: IVS→PUA
-    - `baseCharFallbackToExternalMap`: 既定異体(B_value)のベース文字→PUA
-    - `puaAllocationStats`: 段階的PUA配置の統計
-
-3) フォント生成
+2) マッピング・フォント生成（統合）
 - `extract_ivs_glyphs_mj_based.py`
-  - FontForgeを用い、`fonts/ipam.ttf` からIVS対応のグリフを抽出し、PUAへ再配置した外字フォントを生成
-  - 出力: `fonts/ipa-ivs-external.ttf`, `fonts/ipa-ivs-external.woff2`
+  - mji_analysis_f_to_c_mapping.json と derive の結果を元に、`src/utils/ivsCharacterMap.js`（ivsToExternalCharMap / baseCharFallbackToExternalMap / puaAllocationStats）を生成し、同時にフォント（ipa-ivs-external.ttf/woff2）を出力
 
 4) テストアセット生成
 - `generate_static_font_test.py`
@@ -79,16 +71,12 @@
 
 個別実行:
 ```bash
-# 解析・マッピング確定
+# 解析（Excel→JSON, 逆引き, 既定異体の導出）
 python3 scripts/parse_excel_with_f_column.py
 python3 scripts/reverse_c_f_mapping.py
-python3 scripts/derive_base_mj_from_font.py  # 新規生成時に推奨
-python3 scripts/fix_mj_based_extraction.py
+python3 scripts/derive_base_mj_from_font.py
 
-# JSマッピング生成
-python3 scripts/generate_js_mapping_only.py
-
-# フォント生成
+# マッピング + フォント生成
 python3 scripts/extract_ivs_glyphs_mj_based.py
 
 # テストページ生成
@@ -97,13 +85,11 @@ python3 scripts/generate_static_font_test.py
 
 NPMスクリプト:
 ```bash
-# 一括(解析→マッピング→フォント)
+# 一括(解析→フォント＆マッピング)
 npm run setup
 
 # 段階実行
-npm run parse           # 旧手順(deriveを含まない)
-npm run parse:new      # 推奨: deriveを含む新手順
-npm run generate:mapping
+npm run parse
 npm run generate:fonts
 npm run generate:test
 ```
@@ -124,15 +110,11 @@ npm run parse:new && npm run generate:fonts
 - `reverse_c_f_mapping.py`
   - 役割: 基本文字(C列)→IVS(F列)、IVS→基本文字の両方向参照を生成。
 
-- `derive_base_mj_from_font.py`(任意)
-  - 役割: フォント内の形状を元に、既定異体(B_value)のベース字形候補を抽出。
+- `derive_base_mj_from_font.py`
+  - 役割: フォントの cmap/UVS を解析して既定異体（base_f_tag/base_mj）を導出
 
-- `fix_mj_based_extraction.py`
-  - 役割: マッピングの不整合を補正し、抽出対象の確定集合を作成。
-
-- `generate_js_mapping_only.py`
-  - 出力: `src/utils/ivsCharacterMap.js`
-  - 役割: ランタイムが直接読み込めるJSモジュールを生成。
+- `fix_mj_based_extraction.py`（非推奨）
+  - 役割: 旧来の抽出スクリプト生成/一部マッピング生成（現在は実行しても何もしません）
 
 - `extract_ivs_glyphs_mj_based.py`
   - 入力: `fonts/ipam.ttf`

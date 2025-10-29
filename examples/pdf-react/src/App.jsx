@@ -145,7 +145,8 @@ const App = () => {
         <div className="preview">
           <div className="preview-label">プレビュー（変換後）:</div>
           <div className="preview-text">{displayText}</div>
-          
+          <div className="preview-text">{textValue}</div>
+
           {hasIVS && (
             <div className="ivs-info">
               <div className="ivs-summary">
