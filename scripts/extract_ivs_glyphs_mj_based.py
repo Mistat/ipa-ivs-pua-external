@@ -53,6 +53,51 @@ def extract_ivs_glyphs():
         external_font.em = original_font.em
         external_font.ascent = original_font.ascent
         external_font.descent = original_font.descent
+        # OS/2 テーブル相当（存在するプロパティのみ安全にコピー）
+        for attr in (
+            'os2_winascent','os2_windescent',
+            'os2_typoascent','os2_typodescent','os2_typolinegap',
+            'os2_use_typo_metrics','os2_capheight','os2_xheight',
+            'os2_panose','os2_family_class','os2_vendor','os2_weight','os2_width','os2_fstype',
+            'os2_unicoderanges','os2_codepages','os2_unicoderange','os2_codepageranges','os2_codepagerange'
+        ):
+            if hasattr(original_font, attr) and hasattr(external_font, attr):
+                try:
+                    setattr(external_font, attr, getattr(original_font, attr))
+                except Exception:
+                    pass
+        # hhea / vhea
+        for attr in ('hhea_ascent','hhea_descent','hhea_linegap'):
+            if hasattr(original_font, attr) and hasattr(external_font, attr):
+                try:
+                    setattr(external_font, attr, getattr(original_font, attr))
+                except Exception:
+                    pass
+        for attr in ('vhea_ascent','vhea_descent','vhea_linegap'):
+            if hasattr(original_font, attr) and hasattr(external_font, attr):
+                try:
+                    setattr(external_font, attr, getattr(original_font, attr))
+                except Exception:
+                    pass
+        # 下線位置/太さ
+        for attr in ('upos','uwidth'):
+            if hasattr(original_font, attr) and hasattr(external_font, attr):
+                try:
+                    setattr(external_font, attr, getattr(original_font, attr))
+                except Exception:
+                    pass
+        # 縦組メトリクス有効化
+        if hasattr(external_font, 'hasvmetrics'):
+            try:
+                external_font.hasvmetrics = True
+            except Exception:
+                pass
+        # gasp（ヒンティング閾値）
+        if hasattr(original_font, 'gasp') and hasattr(external_font, 'gasp'):
+            try:
+                external_font.gasp = original_font.gasp
+            except Exception:
+                pass
         
         # 基本的な文字セットをコピー（ひらがな、カタカナ、基本漢字、記号など）
         print("基本文字セットをコピー中...")
@@ -22923,6 +22968,8 @@ def extract_ivs_glyphs():
                     external_font.selection.select(pua_code)
                     external_font.paste()
                     external_font[pua_code].width = original_glyph.width
+                    if hasattr(original_glyph, 'vwidth') and hasattr(external_font[pua_code], 'vwidth'):
+                        external_font[pua_code].vwidth = getattr(original_glyph, 'vwidth', external_font.em)
                     
                     extracted_count += 1
                 except Exception as e:
