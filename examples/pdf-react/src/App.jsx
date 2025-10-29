@@ -5,7 +5,7 @@ import { convertIVSToExternal, hasIVSCharacters, countIVSCharacters, getIVSChara
 import './App.css';
 
 const App = () => {
-  const [textValue, setTextValue] = useState('\u4F6D\u25A1\u3404佭佭󠄁全平成22年1月1日生\u6AC2\uDB40\uDD01 \u7027\uDB40\uDD07 \u6406\uDB40\uDD03 \u3404\uDB40\uDD00 - \u3404\uDB40\uDD01 - \u3404\uDB40\uDD02 - \u3732\udb40\udd01 - \u4672\udb40\udd00');
+  const [textValue, setTextValue] = useState('※\u4F6D\u25A1\u3404佭佭󠄁全平成22年1月1日生\u6AC2\uDB40\uDD01 \u7027\uDB40\uDD07 \u6406\uDB40\uDD03 \u3404\uDB40\uDD00 - \u3404\uDB40\uDD01 - \u3404\uDB40\uDD02 - \u3732\udb40\udd01 - \u4672\udb40\udd00');
   const [fonts, setFonts] = useState({});
 
   // フォントを読み込み
