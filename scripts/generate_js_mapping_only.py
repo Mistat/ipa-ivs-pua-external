@@ -5,11 +5,24 @@
 import json
 import os
 
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+_ROOT_DIR = os.path.normpath(os.path.join(_SCRIPT_DIR, '..'))
+
+
+def _escape_js_codepoint(cp: int) -> str:
+    """Return JS escaped string for a single Unicode code point (handles BMP/SMP)."""
+    if cp <= 0xFFFF:
+        return "\\u{:04X}".format(cp)
+    high = ((cp - 0x10000) >> 10) + 0xD800
+    low = ((cp - 0x10000) & 0x3FF) + 0xDC00
+    return "\\u{:04X}\\u{:04X}".format(high, low)
+
+
 def generate_mapping_file():
     """IVS文字マッピング定義ファイルを生成（段階的PUA配置対応）"""
     
     try:
-        with open("../mji_analysis_f_to_c_mapping.json", 'r', encoding='utf-8') as f:
+        with open(os.path.join(_ROOT_DIR, "mji_analysis_f_to_c_mapping.json"), 'r', encoding='utf-8') as f:
             data = json.load(f)
         
         print("IVS文字マッピングを段階的PUA戦略で生成中...")
@@ -28,6 +41,8 @@ def generate_mapping_file():
         
         # JavaScript用のマッピングを生成
         js_mappings = []
+        # 生成後に参照するための辞書: (base_cp, vs_cp) -> escaped PUA string
+        ivs_to_pua = {}
         
         # 第1段階: 全てのIVS文字を収集してVS別にグループ化
         temp_chars = []
@@ -93,7 +108,10 @@ def generate_mapping_file():
         print(f"\n第2段階: 段階的PUA配置...")
         
         # VS優先度リスト（使用頻度降順）
-        vs_priority = ["VS19", "VS18", "VS20", "VS17", "VS21", "VS22", "VS23", "VS24", "VS25", "VS26", "VS27", "VS28", "VS29", "VS30", "VS31", "VS32"]
+        # 既定で VS19, VS18 を最優先、次に VS20、残りは VS番号昇順で網羅（VS33+を含む）
+        known_priority = ["VS19", "VS18", "VS20"]
+        others = sorted([vn for vn in vs_groups.keys() if vn not in known_priority], key=lambda x: int(x[2:]))
+        vs_priority = known_priority + others
         
         bmp_pua_current = bmp_pua_start  # 0xE000
         smp_pua_current = smp_pua_start  # 0xF0000
@@ -112,6 +130,7 @@ def generate_mapping_file():
                         if bmp_pua_current <= bmp_pua_end:
                             pua_char = "\\u{:04X}".format(bmp_pua_current)
                             js_mappings.append(f"  '{char_data['ivs_sequence']}': '{pua_char}',  // {char_data['c_value']}")
+                            ivs_to_pua[(char_data['unicode_code'], char_data['vs_code'])] = pua_char
                             bmp_pua_current += 1
                             bmp_pua_allocated += 1
                         else:
@@ -120,6 +139,7 @@ def generate_mapping_file():
                             low = ((smp_pua_current - 0x10000) & 0x3FF) + 0xDC00
                             pua_char = "\\u{:04X}\\u{:04X}".format(high, low)
                             js_mappings.append(f"  '{char_data['ivs_sequence']}': '{pua_char}',  // {char_data['c_value']}")
+                            ivs_to_pua[(char_data['unicode_code'], char_data['vs_code'])] = pua_char
                             smp_pua_current += 1
                             smp_pua_allocated += 1
                     
@@ -134,6 +154,7 @@ def generate_mapping_file():
                             # BMP PUAに配置
                             pua_char = "\\u{:04X}".format(bmp_pua_current)
                             js_mappings.append(f"  '{char_data['ivs_sequence']}': '{pua_char}',  // {char_data['c_value']}")
+                            ivs_to_pua[(char_data['unicode_code'], char_data['vs_code'])] = pua_char
                             bmp_pua_current += 1
                             bmp_pua_allocated += 1
                         else:
@@ -142,6 +163,7 @@ def generate_mapping_file():
                             low = ((smp_pua_current - 0x10000) & 0x3FF) + 0xDC00
                             pua_char = "\\u{:04X}\\u{:04X}".format(high, low)
                             js_mappings.append(f"  '{char_data['ivs_sequence']}': '{pua_char}',  // {char_data['c_value']}")
+                            ivs_to_pua[(char_data['unicode_code'], char_data['vs_code'])] = pua_char
                             smp_pua_current += 1
                             smp_pua_allocated += 1
                     
@@ -154,6 +176,7 @@ def generate_mapping_file():
                         low = ((smp_pua_current - 0x10000) & 0x3FF) + 0xDC00
                         pua_char = "\\u{:04X}\\u{:04X}".format(high, low)
                         js_mappings.append(f"  '{char_data['ivs_sequence']}': '{pua_char}',  // {char_data['c_value']}")
+                        ivs_to_pua[(char_data['unicode_code'], char_data['vs_code'])] = pua_char
                         smp_pua_current += 1
                         smp_pua_allocated += 1
                     
@@ -164,7 +187,7 @@ def generate_mapping_file():
         print(f"SMP PUA: {smp_pua_allocated:,}文字 (0x{smp_pua_start:05X}-0x{smp_pua_current-1:05X})")
         print(f"総マッピング数: {len(js_mappings):,}")
         
-        # JavaScript内容を生成（マッピングデータのみ）
+        # JavaScript内容を生成（マッピングデータ + フォールバック + 統計）
         js_content = """// IVS文字マッピング定義（段階的PUA配置対応）
 // BMP PUA: 0xE000-0xF8FF (6,400文字) - 高頻度VS優先
 // SMP PUA: 0xF0000- (65,534文字) - 残りのVS
@@ -172,6 +195,34 @@ def generate_mapping_file():
 export const ivsToExternalCharMap = {
 """
         js_content += "\n".join(js_mappings)
+        js_content += "\n};\n"
+
+        # 既定異体（B_value）フォールバック: base_char -> 対応する既定異体PUA
+        # data[*]['base_f_tag'] 例) '9089_E010F' を (base, vs) に分解し、ivs_to_pua からPUAを引く
+        fallback_entries = []
+        for unicode_key, entry in data.items():
+            try:
+                if not unicode_key.startswith('U+'):
+                    continue
+                base_cp = int(unicode_key[2:], 16)
+                ftag = entry.get('base_f_tag')
+                if not ftag or ';' in ftag:
+                    continue  # 複合タグは対象外
+                base_hex, vs_hex = ftag.split('_', 1)
+                # 安全確認
+                if int(base_hex, 16) != base_cp:
+                    continue
+                vs_cp = int(vs_hex, 16)
+                pua = ivs_to_pua.get((base_cp, vs_cp))
+                if not pua:
+                    continue
+                base_escaped = _escape_js_codepoint(base_cp)
+                fallback_entries.append(f"  '{base_escaped}': '{pua}'")
+            except Exception:
+                continue
+
+        js_content += "\nexport const baseCharFallbackToExternalMap = {\n"
+        js_content += ",\n".join(fallback_entries)
         js_content += "\n};\n"
         
         # 配置統計をJSに追加
@@ -194,8 +245,8 @@ export const puaAllocationStats = {{
 """
         
         # ファイルに出力
-        os.makedirs("../src/utils", exist_ok=True)
-        with open("../src/utils/ivsCharacterMap.js", "w", encoding="utf-8") as f:
+        os.makedirs(os.path.join(_ROOT_DIR, "src", "utils"), exist_ok=True)
+        with open(os.path.join(_ROOT_DIR, "src", "utils", "ivsCharacterMap.js"), "w", encoding="utf-8") as f:
             f.write(js_content)
         
         print(f"IVS文字マッピング定義ファイルを作成しました: src/utils/ivsCharacterMap.js")

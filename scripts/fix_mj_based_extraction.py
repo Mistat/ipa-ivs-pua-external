@@ -94,7 +94,10 @@ def create_mj_based_extraction():
         print(f"\n第2段階: 段階的PUA配置...")
         
         # VS優先度リスト（使用頻度降順）
-        vs_priority = ["VS19", "VS18", "VS20", "VS17", "VS21", "VS22", "VS23", "VS24", "VS25", "VS26", "VS27", "VS28", "VS29", "VS30", "VS31", "VS32"]
+        # 既定で VS19/VS18 を最優先、次に VS20、残りは VS番号昇順で網羅（VS33+含む）
+        known_priority = ["VS19", "VS18", "VS20"]
+        others = sorted([vn for vn in vs_groups.keys() if vn not in known_priority], key=lambda x: int(x[2:]))
+        vs_priority = known_priority + others
         
         bmp_pua_current = bmp_pua_start  # 0xE000
         smp_pua_current = smp_pua_start  # 0xF0000
@@ -433,7 +436,9 @@ def generate_mapping_file():
         print(f"\\n第2段階: 段階的PUA配置...")
         
         # VS優先度リスト（使用頻度降順）
-        vs_priority = ["VS19", "VS18", "VS20", "VS17", "VS21", "VS22", "VS23", "VS24", "VS25", "VS26", "VS27", "VS28", "VS29", "VS30", "VS31", "VS32"]
+        known_priority = ["VS19", "VS18", "VS20"]
+        others = sorted([vn for vn in vs_groups.keys() if vn not in known_priority], key=lambda x: int(x[2:]))
+        vs_priority = known_priority + others
         
         bmp_pua_current = bmp_pua_start  # 0xE000
         smp_pua_current = smp_pua_start  # 0xF0000
@@ -597,11 +602,13 @@ if __name__ == "__main__":
     print("3. PDF生成のテスト")
 '''
         
-        # ファイルに書き込み
-        with open("extract_ivs_glyphs_mj_based.py", 'w', encoding='utf-8') as f:
+        # ファイルに書き込み（scripts/ 配下に上書き生成する）
+        import os
+        out_script_path = os.path.join(os.path.dirname(__file__), 'extract_ivs_glyphs_mj_based.py')
+        with open(out_script_path, 'w', encoding='utf-8') as f:
             f.write(python_code)
         
-        print(f"\\nMJベースの抽出スクリプトを作成しました: extract_ivs_glyphs_mj_based.py")
+        print(f"\\nMJベースの抽出スクリプトを作成しました: {out_script_path}")
         
         # 統計情報を保存
         stats = {

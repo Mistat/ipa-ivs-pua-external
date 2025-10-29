@@ -7,21 +7,11 @@ import sys
 import os
 import json
 
-# 生成済みの共通マッピングスクリプトを利用
-try:
-    from generate_js_mapping_only import generate_mapping_file as gen_mapping
-except Exception:
-    gen_mapping = None
-
-# Resolve repo root regardless of current working directory
-_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-_ROOT_DIR = os.path.normpath(os.path.join(_SCRIPT_DIR, '..'))
-
 def extract_ivs_glyphs():
     """MJ文字図形名を使用してIVS文字のグリフを抽出して外字フォントを作成"""
     
-    # IPAm.ttfのパスを指定（スクリプト位置基準で解決）
-    input_font_path = os.path.join(_ROOT_DIR, "fonts", "ipam.ttf")
+    # IPAm.ttfのパスを指定
+    input_font_path = "../fonts/ipam.ttf"
     
     if not os.path.exists(input_font_path):
         print(f"エラー: {input_font_path} が見つかりません")
@@ -54,42 +44,20 @@ def extract_ivs_glyphs():
         external_font.copyright = "Based on IPA Font License Agreement v1.0"
         external_font.encoding = "unicode4"
         
-        # 元フォントと同じメトリクスを設定（縦組/行間に影響するOS/2・hheaも極力コピー）
+        # 元フォントと同じメトリクスを設定
         external_font.em = original_font.em
         external_font.ascent = original_font.ascent
         external_font.descent = original_font.descent
-        # OS/2 テーブル相当
-        for attr in (
-            'os2_winascent','os2_windescent',
-            'os2_typoascent','os2_typodescent','os2_typolinegap',
-        ):
-            if hasattr(original_font, attr) and hasattr(external_font, attr):
-                setattr(external_font, attr, getattr(original_font, attr))
-        # hhea テーブル相当
-        for attr in ('hhea_ascent','hhea_descent','hhea_linegap'):
-            if hasattr(original_font, attr) and hasattr(external_font, attr):
-                setattr(external_font, attr, getattr(original_font, attr))
-        # 下線位置/太さ
-        for attr in ('upos','uwidth'):
-            if hasattr(original_font, attr) and hasattr(external_font, attr):
-                setattr(external_font, attr, getattr(original_font, attr))
         
         # 基本的な文字セットをコピー（ひらがな、カタカナ、基本漢字、記号など）
         print("基本文字セットをコピー中...")
         basic_ranges = [
-            (0x00A0, 0x00FF),  # Latin-1補助（× U+00D7 など）
             (0x0020, 0x007F),  # ASCII
-            (0x2000, 0x206F),  # 一般句読点（※ U+203B を含む）
-            (0x25A0, 0x25FF),  # 幾何学模様（□ U+25A1 を含む）
             (0x3000, 0x303F),  # CJK記号・句読点（全角スペース含む）
             (0x3040, 0x309F),  # ひらがな
             (0x30A0, 0x30FF),  # カタカナ
-            (0x3400, 0x4DBF),  # CJK統合漢字拡張A（U+3404等を含む）
             (0x4E00, 0x9FAF),  # CJK統合漢字
             (0xFF01, 0xFF60),  # 全角記号・英数字
-            (0xFF61, 0xFF9F),  # 半角カタカナ
-            (0xFFE0, 0xFFEE),  # 全角記号追加（￥ U+FFE5 など）
-            (0x2160, 0x217F),  # ローマ数字（大文字・小文字両方）
         ]
         
         copied_basic_count = 0
@@ -102,7 +70,7 @@ def extract_ivs_glyphs():
                     # スペース文字は特別処理
                     if code in [0x0020, 0x3000]:  # 半角スペース、全角スペース
                         external_font[code].width = original_font[code].width
-                        if hasattr(original_font[code], 'vwidth') and hasattr(external_font[code], 'vwidth'):
+                        if hasattr(original_font[code], 'vwidth'):
                             external_font[code].vwidth = original_font[code].vwidth
                     else:
                         # 通常の文字はグリフをコピー
@@ -11480,6 +11448,24 @@ def extract_ivs_glyphs():
             '慨\udb40\udd0f': 'mj011855',
             '邉\udb40\udd0f': 'mj026190',
             '邊\udb40\udd0f': 'mj026199',
+            '邉\udb40\udd10': 'mj060248',
+            '邊\udb40\udd10': 'mj026206',
+            '邉\udb40\udd11': 'mj060239',
+            '邊\udb40\udd11': 'mj058870',
+            '邉\udb40\udd12': 'mj060238',
+            '邊\udb40\udd12': 'mj026207',
+            '邉\udb40\udd13': 'mj060237',
+            '邉\udb40\udd14': 'mj060235',
+            '邉\udb40\udd15': 'mj060234',
+            '邉\udb40\udd16': 'mj058866',
+            '邉\udb40\udd17': 'mj026197',
+            '邉\udb40\udd18': 'mj060236',
+            '邉\udb40\udd19': 'mj026191',
+            '邉\udb40\udd1a': 'mj026194',
+            '邉\udb40\udd1b': 'mj026192',
+            '邉\udb40\udd1c': 'mj026195',
+            '邉\udb40\udd1d': 'mj026196',
+            '邉\udb40\udd1f': 'mj026193',
         }
         
         # IVS文字列からPUAコードへのマッピング
@@ -22846,62 +22832,32 @@ def extract_ivs_glyphs():
             '慨\udb40\udd0f': 0xf135f,
             '邉\udb40\udd0f': 0xf1360,
             '邊\udb40\udd0f': 0xf1361,
+            '邉\udb40\udd10': 0xf1362,
+            '邊\udb40\udd10': 0xf1363,
+            '邉\udb40\udd11': 0xf1364,
+            '邊\udb40\udd11': 0xf1365,
+            '邉\udb40\udd12': 0xf1366,
+            '邊\udb40\udd12': 0xf1367,
+            '邉\udb40\udd13': 0xf1368,
+            '邉\udb40\udd14': 0xf1369,
+            '邉\udb40\udd15': 0xf136a,
+            '邉\udb40\udd16': 0xf136b,
+            '邉\udb40\udd17': 0xf136c,
+            '邉\udb40\udd18': 0xf136d,
+            '邉\udb40\udd19': 0xf136e,
+            '邉\udb40\udd1a': 0xf136f,
+            '邉\udb40\udd1b': 0xf1370,
+            '邉\udb40\udd1c': 0xf1371,
+            '邉\udb40\udd1d': 0xf1372,
+            '邉\udb40\udd1f': 0xf1373,
         }
         
-        # MJ文字図形名を使用してIVS文字を抽出（可能ならJSの最新マップを使用）
+        # MJ文字図形名を使用してIVS文字を抽出
         extracted_count = 0
         failed_count = 0
-
-        def _decode_js_esc(s: str) -> str:
-            t = s.encode('utf-8').decode('unicode_escape')
-            out = []
-            i = 0
-            while i < len(t):
-                cp = ord(t[i])
-                if 0xD800 <= cp <= 0xDBFF and i + 1 < len(t):
-                    cp2 = ord(t[i + 1])
-                    if 0xDC00 <= cp2 <= 0xDFFF:
-                        out.append(chr(0x10000 + ((cp - 0xD800) << 10) + (cp2 - 0xDC00)))
-                        i += 2
-                        continue
-                out.append(t[i])
-                i += 1
-            return ''.join(out)
-
-        def _pua_code_from_js_esc(s: str) -> int:
-            t = s.encode('utf-8').decode('unicode_escape')
-            if len(t) == 1:
-                return ord(t)
-            # サロゲートペア
-            return 0x10000 + ((ord(t[0]) - 0xD800) << 10) + (ord(t[1]) - 0xDC00)
-
-        # 1) まず JS マップから (ivs -> (mj, pua)) を構築
-        entries = []  # list of (ivs_sequence:str, mj_name:str, pua_code:int)
-        try:
-            js_path = os.path.join(_ROOT_DIR, 'src', 'utils', 'ivsCharacterMap.js')
-            with open(js_path, 'r', encoding='utf-8') as jf:
-                jst = jf.read()
-            import re
-            m = re.search(r"export const ivsToExternalCharMap = \{(.*?)\}\;", jst, flags=re.S)
-            if m:
-                block = m.group(1)
-                for m2 in re.finditer(r"\n\s*'(.*?)':\s*'(.*?)',\s*//\s*(MJ\d+)", block):
-                    ivs_esc, pua_esc, mj = m2.groups()
-                    entries.append((_decode_js_esc(ivs_esc), mj.lower(), _pua_code_from_js_esc(pua_esc)))
-        except Exception:
-            entries = []
-
-        # 2) JSパースに失敗/未検出なら従来の静的表でフォールバック
-        if not entries:
-            for ivs_sequence, mj_name in ivs_to_mj_mapping.items():
-                pua_code = ivs_mappings.get(ivs_sequence)
-                if pua_code is not None:
-                    entries.append((ivs_sequence, mj_name, pua_code))
-
-        # 3) 実際の抽出（PUAにコピー）
-        for ivs_sequence, mj_name, pua_code in entries:
-            # 基本文字コード（今回は未使用）
-            # base_code = ord(ivs_sequence[0])
+        
+        for ivs_sequence, mj_name in ivs_to_mj_mapping.items():
+            pua_code = ivs_mappings[ivs_sequence]
             
             # MJ文字図形名がフォントに存在するかチェック
             if mj_name in original_font:
@@ -22920,10 +22876,6 @@ def extract_ivs_glyphs():
                     external_font.selection.select(pua_code)
                     external_font.paste()
                     external_font[pua_code].width = original_glyph.width
-                    if hasattr(original_glyph, 'vwidth') and hasattr(external_font[pua_code], 'vwidth'):
-                        external_font[pua_code].vwidth = original_glyph.vwidth
-
-                    # 基本文字への複製は行わない
                     
                     extracted_count += 1
                 except Exception as e:
@@ -22935,17 +22887,17 @@ def extract_ivs_glyphs():
         
         print(f"抽出完了: {extracted_count}個成功, {failed_count}個失敗")
         
-        # フォントディレクトリを作成（./fonts に統一）
-        os.makedirs(os.path.join(_ROOT_DIR, "fonts"), exist_ok=True)
+        # フォントディレクトリを作成
+        os.makedirs("../fonts", exist_ok=True)
         
         # WebFont形式で保存
-        output_woff2_path = os.path.join(_ROOT_DIR, "fonts", "ipa-ivs-external.woff2")
-        output_ttf_path = os.path.join(_ROOT_DIR, "fonts", "ipa-ivs-external.ttf")
+        output_woff2_path = "../fonts/ipa-ivs-external.woff2"
+        output_ttf_path = "../fonts/ipa-ivs-external.ttf"
         
         print("WebFont形式で保存中...")
         external_font.generate(output_woff2_path)
         external_font.generate(output_ttf_path)
-
+        
         print(f"外字フォントを作成しました:")
         print(f"  - {output_woff2_path}")
         print(f"  - {output_ttf_path}")
@@ -22966,7 +22918,7 @@ def generate_mapping_file():
     """IVS文字マッピング定義ファイルを生成（段階的PUA配置対応）"""
     
     try:
-        with open(os.path.join(_ROOT_DIR, "mji_analysis_f_to_c_mapping.json"), 'r', encoding='utf-8') as f:
+        with open("../mji_analysis_f_to_c_mapping.json", 'r', encoding='utf-8') as f:
             data = json.load(f)
         
         print("IVS文字マッピングを段階的PUA戦略で生成中...")
@@ -22985,7 +22937,6 @@ def generate_mapping_file():
         
         # JavaScript用のマッピングを生成
         js_mappings = []
-        ivs_to_pua_map = {}
         
         # 第1段階: 全てのIVS文字を収集してVS別にグループ化
         temp_chars = []
@@ -23012,15 +22963,14 @@ def generate_mapping_file():
                                         vs_code = 0xE0100 + selector_num
                                         vs_name = f"VS{17 + selector_num}"
                                         
-                                        # JavaScript用文字列を生成（エスケープ形式）
-                                        def _escape_js(cp):
-                                            if cp <= 0xFFFF:
-                                                return "\\u{:04X}".format(cp)
-                                            high = ((cp - 0x10000) >> 10) + 0xD800
-                                            low = ((cp - 0x10000) & 0x3FF) + 0xDC00
-                                            return "\\u{:04X}\\u{:04X}".format(high, low)
-
-                                        base_char_escaped = _escape_js(unicode_code)
+                                        # JavaScript用文字列を生成（エスケープ形式、SMP対応）
+                                        if unicode_code <= 0xFFFF:
+                                            base_char_escaped = "\\u{:04X}".format(unicode_code)
+                                        else:
+                                            # SMP文字はサロゲートペアとして表現
+                                            high = ((unicode_code - 0x10000) >> 10) + 0xD800
+                                            low = ((unicode_code - 0x10000) & 0x3FF) + 0xDC00
+                                            base_char_escaped = "\\u{:04X}\\u{:04X}".format(high, low)
                                         
                                         # サロゲートペアを計算
                                         high_surrogate = ((vs_code - 0x10000) >> 10) + 0xD800
@@ -23052,7 +23002,6 @@ def generate_mapping_file():
         print(f"\n第2段階: 段階的PUA配置...")
         
         # VS優先度リスト（使用頻度降順）
-        # 既定で VS19/VS18 を最優先、次に VS20、残りは VS番号昇順で網羅（VS33+含む）
         known_priority = ["VS19", "VS18", "VS20"]
         others = sorted([vn for vn in vs_groups.keys() if vn not in known_priority], key=lambda x: int(x[2:]))
         vs_priority = known_priority + others
@@ -23074,7 +23023,6 @@ def generate_mapping_file():
                         if bmp_pua_current <= bmp_pua_end:
                             pua_char = "\\u{:04X}".format(bmp_pua_current)
                             js_mappings.append(f"  '{char_data['ivs_sequence']}': '{pua_char}',  // {char_data['c_value']}")
-                            ivs_to_pua_map[char_data['ivs_sequence']] = pua_char
                             bmp_pua_current += 1
                             bmp_pua_allocated += 1
                         else:
@@ -23083,7 +23031,6 @@ def generate_mapping_file():
                             low = ((smp_pua_current - 0x10000) & 0x3FF) + 0xDC00
                             pua_char = "\\u{:04X}\\u{:04X}".format(high, low)
                             js_mappings.append(f"  '{char_data['ivs_sequence']}': '{pua_char}',  // {char_data['c_value']}")
-                            ivs_to_pua_map[char_data['ivs_sequence']] = pua_char
                             smp_pua_current += 1
                             smp_pua_allocated += 1
                     
@@ -23118,7 +23065,6 @@ def generate_mapping_file():
                         low = ((smp_pua_current - 0x10000) & 0x3FF) + 0xDC00
                         pua_char = "\\u{:04X}\\u{:04X}".format(high, low)
                         js_mappings.append(f"  '{char_data['ivs_sequence']}': '{pua_char}',  // {char_data['c_value']}")
-                        ivs_to_pua_map[char_data['ivs_sequence']] = pua_char
                         smp_pua_current += 1
                         smp_pua_allocated += 1
                     
@@ -23129,50 +23075,44 @@ def generate_mapping_file():
         print(f"SMP PUA: {smp_pua_allocated:,}文字 (0x{smp_pua_start:05X}-0x{smp_pua_current-1:05X})")
         print(f"総マッピング数: {len(js_mappings):,}")
         
-        # JavaScript内容を生成（純粋なマップのみ）
+        # JavaScript内容を生成（SMP文字対応ユーティリティ付き）
         js_content = """// IVS文字マッピング定義（段階的PUA配置対応）
 // BMP PUA: 0xE000-0xF8FF (6,400文字) - 高頻度VS優先
 // SMP PUA: 0xF0000- (65,534文字) - 残りのVS
 
+// SMP文字変換ユーティリティ
+export function convertSMPToString(codePoint) {
+    if (codePoint > 0xFFFF) {
+        // サロゲートペアに変換
+        const high = Math.floor((codePoint - 0x10000) / 0x400) + 0xD800;
+        const low = ((codePoint - 0x10000) % 0x400) + 0xDC00;
+        return String.fromCharCode(high, low);
+    }
+    return String.fromCharCode(codePoint);
+}
+
+// PUA文字の平面判定
+export function getPUAPlane(puaChar) {
+    const codePoint = puaChar.codePointAt(0);
+    if (codePoint >= 0xE000 && codePoint <= 0xF8FF) {
+        return 'BMP';
+    } else if (codePoint >= 0xF0000 && codePoint <= 0xFFFFD) {
+        return 'SMP_P15';
+    } else if (codePoint >= 0x100000 && codePoint <= 0x10FFFD) {
+        return 'SMP_P16';
+    }
+    return 'UNKNOWN';
+}
+
+// IVS→PUA変換（段階的配置対応）
+export function convertIVSText(text) {
+    return text.replace(/[\\u3400-\\u9fff][\\uDB40-\\uDB7F][\\uDC00-\\uDFFF]/g, 
+        match => ivsToExternalCharMap[match] || match);
+}
+
 export const ivsToExternalCharMap = {
 """
         js_content += "\n".join(js_mappings)
-        js_content += "\n};\n"
-
-        # 基本文字フォールバック（base_mj）: 基本文字だけが与えられた際に既定異体のPUAへ置換するためのマップ
-        # mji_analysis_f_to_c_mapping.json の base_f_tag を使ってIVSを再構成し、割当PUAを引く
-        base_fallback_js = []
-        for unicode_key, entry in data.items():
-            if not (unicode_key.startswith('U+') and isinstance(entry, dict)):
-                continue
-            base_f = entry.get('base_f_tag')
-            if not (isinstance(base_f, str) and '_' in base_f):
-                continue
-            base_hex, sel = base_f.split('_', 1)
-            try:
-                base_code = int(base_hex, 16)
-            except Exception:
-                continue
-            if not sel.upper().startswith('E01'):
-                continue
-            selector_num = int(sel[3:], 16)
-            vs_code = 0xE0100 + selector_num
-            high = ((vs_code - 0x10000) >> 10) + 0xD800
-            low = ((vs_code - 0x10000) & 0x3FF) + 0xDC00
-            # base char escape (handle non-BMP)
-            if base_code <= 0xFFFF:
-                base_esc = "\\u{:04X}".format(base_code)
-            else:
-                bh = ((base_code - 0x10000) >> 10) + 0xD800
-                bl = ((base_code - 0x10000) & 0x3FF) + 0xDC00
-                base_esc = "\\u{:04X}\\u{:04X}".format(bh, bl)
-            ivs_key = f"{base_esc}\\u{high:04X}\\u{low:04X}"
-            pua_char = ivs_to_pua_map.get(ivs_key)
-            if pua_char:
-                base_fallback_js.append(f"  '{base_esc}': '{pua_char}',")
-
-        js_content += "\nexport const baseCharFallbackToExternalMap = {\n"
-        js_content += "\n".join(base_fallback_js)
         js_content += "\n};\n"
         
         # 配置統計をJSに追加
@@ -23195,9 +23135,8 @@ export const puaAllocationStats = {{
 """
         
         # ファイルに出力
-        out_utils_dir = os.path.join(_ROOT_DIR, "src", "utils")
-        os.makedirs(out_utils_dir, exist_ok=True)
-        with open(os.path.join(out_utils_dir, "ivsCharacterMap.js"), "w", encoding="utf-8") as f:
+        os.makedirs("../src/utils", exist_ok=True)
+        with open("../src/utils/ivsCharacterMap.js", "w", encoding="utf-8") as f:
             f.write(js_content)
         
         print(f"IVS文字マッピング定義ファイルを作成しました: src/utils/ivsCharacterMap.js")
@@ -23219,12 +23158,8 @@ if __name__ == "__main__":
         print("✗ IVS文字の抽出に失敗しました")
         sys.exit(1)
     
-    # マッピングファイルを生成（共通スクリプトを呼び出し）
-    if gen_mapping is not None:
-        gen_mapping()
-    else:
-        print("⚠ 共通マッピングスクリプトの読み込みに失敗したため、従来の内蔵ロジックにフォールバックします")
-        generate_mapping_file()
+    # マッピングファイルを生成
+    generate_mapping_file()
     print("✓ マッピングファイルの生成が完了しました")
     
     print("\n完了! 次のステップ:")
