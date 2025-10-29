@@ -24,7 +24,7 @@ def extract_ivs_glyphs():
     input_font_path = os.path.join(_ROOT_DIR, "fonts", "ipam.ttf")
     
     if not os.path.exists(input_font_path):
-        print(f"エラー: {input_font_path} が見つかりません")
+        print(f"エラー: {input_font_path} が見つかりません")g
         return False
     
     try:
@@ -65,14 +65,59 @@ def extract_ivs_glyphs():
         ):
             if hasattr(original_font, attr) and hasattr(external_font, attr):
                 setattr(external_font, attr, getattr(original_font, attr))
+        # 追加: USE_TYPO_METRICS フラグ、CapHeight / xHeight、PANOSE/FamilyClass/Vendorなど
+        for attr in (
+            'os2_use_typo_metrics','os2_capheight','os2_xheight',
+            'os2_panose','os2_family_class','os2_vendor','os2_weight','os2_width','os2_fstype'
+        ):
+            if hasattr(original_font, attr) and hasattr(external_font, attr):
+                try:
+                    setattr(external_font, attr, getattr(original_font, attr))
+                except Exception:
+                    pass
         # hhea テーブル相当
         for attr in ('hhea_ascent','hhea_descent','hhea_linegap'):
+            if hasattr(original_font, attr) and hasattr(external_font, attr):
+                setattr(external_font, attr, getattr(original_font, attr))
+        # vhea（縦組メトリクス）
+        for attr in ('vhea_ascent','vhea_descent','vhea_linegap'):
             if hasattr(original_font, attr) and hasattr(external_font, attr):
                 setattr(external_font, attr, getattr(original_font, attr))
         # 下線位置/太さ
         for attr in ('upos','uwidth'):
             if hasattr(original_font, attr) and hasattr(external_font, attr):
                 setattr(external_font, attr, getattr(original_font, attr))
+
+        # gasp テーブル（ヒンティング表示の閾値）
+        if hasattr(original_font, 'gasp') and hasattr(external_font, 'gasp'):
+            try:
+                external_font.gasp = original_font.gasp
+            except Exception:
+                pass
+
+        # GSUB/GPOS/Kern のルックアップを可能な範囲でコピー
+        def _copy_lookups(kind: str):
+            lookups_attr = f"{kind}_lookups"  # 'gsub_lookups' or 'gpos_lookups'
+            if not hasattr(original_font, lookups_attr) or not hasattr(external_font, 'addLookup'):
+                return
+            try:
+                for lk in getattr(original_font, lookups_attr):
+                    try:
+                        info = original_font.getLookupInfo(lk)
+                        # info: (type, flags, feature scripts)
+                        ltype, lflags, lfeats = info[0], info[1], info[2]
+                        # 追加
+                        external_font.addLookup(lk, ltype, lflags, lfeats)
+                        # サブテーブルも作成
+                        for st in original_font.getLookupSubtables(lk):
+                            external_font.addLookupSubtable(lk, st)
+                    except Exception:
+                        continue
+            except Exception:
+                pass
+
+        _copy_lookups('gsub')
+        _copy_lookups('gpos')
         
         # 基本的な文字セットをコピー（ひらがな、カタカナ、基本漢字、記号など）
         print("基本文字セットをコピー中...")
