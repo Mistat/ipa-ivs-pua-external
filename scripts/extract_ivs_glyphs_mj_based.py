@@ -22980,7 +22980,55 @@ def extract_ivs_glyphs():
                 failed_count += 1
         
         print(f"抽出完了: {extracted_count}個成功, {failed_count}個失敗")
-        
+
+        # 追加: 実際のグリフ集合から Win/ascent/descents を安全側に再計算
+        try:
+            xmin, ymin, xmax, ymax = external_font.boundingBox()
+            # OS/2 Win metrics を十分大きく（クリッピング回避）
+            if hasattr(external_font, 'os2_winascent'):
+                try:
+                    external_font.os2_winascent = int(max(getattr(external_font, 'os2_winascent', 0) or 0, ymax))
+                except Exception:
+                    pass
+            if hasattr(external_font, 'os2_windescent'):
+                try:
+                    external_font.os2_windescent = int(max(getattr(external_font, 'os2_windescent', 0) or 0, -ymin))
+                except Exception:
+                    pass
+
+            # 行間を過度に増やさないため Typo メトリクスを基準に hhea を正規化
+            # 多くのレイアウトエンジンは fsSelection.UseTypoMetrics が立っていれば Typo を行間に使用
+            typo_ascent = getattr(original_font, 'os2_typoascent', external_font.ascent)
+            typo_descent = abs(getattr(original_font, 'os2_typodescent', external_font.descent))
+            # fsSelection.UseTypoMetrics を有効化
+            if hasattr(external_font, 'os2_use_typo_metrics'):
+                try:
+                    external_font.os2_use_typo_metrics = True
+                except Exception:
+                    pass
+            # hhea を Typo に合わせ、LineGap は 0 に抑える
+            try:
+                external_font.hhea_ascent = int(typo_ascent)
+            except Exception:
+                pass
+            try:
+                external_font.hhea_descent = int(typo_descent)
+            except Exception:
+                pass
+            if hasattr(external_font, 'hhea_linegap'):
+                try:
+                    external_font.hhea_linegap = 0
+                except Exception:
+                    pass
+            # TypoLineGap も 0 を推奨（必要なら原本値に）
+            if hasattr(external_font, 'os2_typolinegap') and hasattr(original_font, 'os2_typolinegap'):
+                try:
+                    external_font.os2_typolinegap = original_font.os2_typolinegap
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
         # フォントディレクトリを作成（ルート/fonts）
         os.makedirs(os.path.join(_ROOT_DIR, 'fonts'), exist_ok=True)
         

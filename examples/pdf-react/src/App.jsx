@@ -132,20 +132,21 @@ const App = () => {
       <h1>IVS Font Processor - React + pdfme Example</h1>
       
       <div className="input-section">
-        <input
+        <textarea
           type="text"
           value={textValue}
           onChange={(e) => setTextValue(e.target.value)}
           placeholder="テキストを入力してください（IVS文字対応）"
           className="text-input"
+
         />
       </div>
 
       {textValue && (
         <div className="preview">
           <div className="preview-label">プレビュー（変換後）:</div>
-          <div className="preview-text">{displayText}</div>
-          <div className="preview-text">{textValue}</div>
+          <pre className="preview-text">{displayText}</pre>
+          <pre className="preview-text">{textValue}</pre>
 
           {hasIVS && (
             <div className="ivs-info">
@@ -156,7 +157,7 @@ const App = () => {
                 {ivsDetails.map((detail, index) => (
                   <div key={index} className="ivs-detail-item">
                     <div className="char-display">
-                      <span className="ivs-char">{detail.ivs}</span>
+                      <plain className="ivs-char">{detail.ivs}</plain>
                       <span className="char-code">{detail.ivsCode}</span>
                     </div>
                     <span className="arrow">→</span>

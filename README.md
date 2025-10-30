@@ -195,6 +195,30 @@ export default {
 
 詳細な配置戦略については、[scripts/README.md](scripts/README.md)を参照してください。
 
+## Font Metrics Strategy
+
+PDFや複数行レイアウトでの見切れ・行間過多を避けるため、フォント生成時に以下のメトリクスを調整・継承します。
+
+- 基本コピー
+  - OS/2: win/typo 系（Ascent/Descent/LineGap）、Panose、FamilyClass、Vendor、Weight/Width、UnicodeRange/CodePageRange
+  - hhea/vhea: Ascent/Descent/LineGap、縦組メトリクスの有効化（hasvmetrics）
+  - 下線: underlinePosition（upos）、underlineThickness（uwidth）
+  - gasp: 元フォントのテーブルを継承
+- クリッピング回避（Win系を安全側に）
+  - 全グリフの外接矩形（boundingBox）から yMax/-yMin を取得し、OS/2 の WinAscent/WinDescent を少なくともそれ以上に引き上げ
+  - 目的: PDF等でクリッピングにWin系が用いられる場合の見切れ防止
+- 行間の正規化（Typo基準に）
+  - fsSelection.UseTypoMetrics を有効化
+  - hhea_ascent/desc を OS/2 TypoAscent/TypoDescent に合わせる
+  - hhea_linegap は 0（不要な行間を足さない）
+  - OS/2 TypoLineGap は元フォントの値に揃える
+- 縦組/PUAグリフ
+  - 基本文字/PUAの vwidth をコピー（無い場合は em を既定値）
+
+備考
+- 元フォント（IPA明朝）と収録グリフが異なるため、Win系を厳密一致にするとPUA追加分で見切れが発生する可能性があります。本プロジェクトでは「Win系は安全側」「行間はTypo基準でタイト」にすることで、PDFの見切れと複数行の行間過多を同時に避ける方針としています。
+- 必要に応じて、Win系/Typo系の調整（よりタイト/より安全側）へ切り替え可能です。
+
 ## Browser Support
 
 - Chrome 60+
