@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Font Metrics Check</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif; margin: 24px; }
+    .row { margin-bottom: 16px; }
+    .muted { color: #666; font-size: 12px; }
+    .sample { padding: 8px; border: 1px solid #ddd; margin-top: 8px; }
+    .sample-inline { display: inline-block; white-space: pre; }
+    .grid { display: grid; grid-template-columns: 180px 1fr; gap: 8px 12px; align-items: center; }
+    input[type="text"], textarea { width: 100%; padding: 8px; font-size: 14px; }
+    button { padding: 8px 12px; }
+    code { background: #f5f5f5; padding: 0 4px; }
+  </style>
+  <style>
+    /* フォントはプロジェクトルートの fonts/ から相対参照 */
+    @font-face {
+      font-family: 'IPA-IVS-External';
+      src: url('../../fonts/ipa-ivs-external.woff2') format('woff2'),
+           url('../../fonts/ipa-ivs-external.ttf') format('truetype');
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'IPAmOriginal';
+      src: url('../../fonts/ipam.ttf') format('truetype');
+      font-display: swap;
+    }
+    .use-ivs-font { font-family: 'IPA-IVS-External', serif; }
+    .use-compare { font-family: 'IPAmOriginal', serif; }
+  </style>
+</head>
+<body>
+  <h1>Font Metrics Check</h1>
+  <p class="muted">同じテキストで「計測（Canvas）」と「描画（DOM）」の幅を比較し、フォールバック混在を検出します。必要に応じて DevTools の “Rendered Fonts” でも確認してください。</p>
+
+  <div class="row grid">
+    <label>代表テキスト</label>
+    <textarea id="inputText" rows="3">邉󠄖 ABC 123</textarea>
+
+    <label>フォントサイズ</label>
+    <input id="fontSize" type="text" value="48px" />
+
+    <label>フォント指定</label>
+    <input id="fontFamily" type="text" value="'IPA-IVS-External', serif" />
+
+    <label>比較フォント</label>
+    <input id="fontFamilyB" type="text" value="'IPAmOriginal', serif" />
+
+    <div></div>
+    <div>
+      <button id="btnLoad">フォントをロード</button>
+      <button id="btnMeasure">IVS→PUAして計測/描画</button>
+      <button id="btnCompare">フォールバック比較</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="muted">描画サンプル（指定フォント／比較フォント）</div>
+    <div class="sample" style="font-size:48px">
+      <span id="sampleWith" class="sample-inline use-ivs-font"></span>
+    </div>
+    <div class="sample" style="font-size:48px; margin-top: 6px;">
+      <span id="sampleCompare" class="sample-inline use-compare"></span>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="muted">結果</div>
+    <pre id="result" class="sample" style="font-size:13px"></pre>
+  </div>
+
+  <script type="module">
+    import { convertIVSToExternal } from '../../src/utils/ivsUtils.js';
+
+    const $ = (id) => document.getElementById(id);
+    const input = $('inputText');
+    const size = $('fontSize');
+    const family = $('fontFamily');
+    const familyB = $('fontFamilyB');
+    const sampleWith = $('sampleWith');
+    const sampleCompare = $('sampleCompare');
+    const result = $('result');
+
+    async function loadFont() {
+      const fontStrA = `${size.value} ${family.value}`;
+      const fontStrB = `${size.value} ${familyB.value}`;
+      await document.fonts.load(fontStrA, 'あ');
+      await document.fonts.load(fontStrB, 'あ');
+      await document.fonts.ready;
+      log(`Fonts loaded: ${fontStrA} / ${fontStrB}`);
+    }
+
+    function canvasMeasureBox(text, fontCSS) {
+      const cvs = document.createElement('canvas');
+      const ctx = cvs.getContext('2d');
+      ctx.font = fontCSS;
+      const m = ctx.measureText(text);
+      const w = m.width;
+      // Try to use ascent/descent when available; fallback to font-size numeric
+      let ascent = (typeof m.actualBoundingBoxAscent === 'number') ? m.actualBoundingBoxAscent : NaN;
+      let descent = (typeof m.actualBoundingBoxDescent === 'number') ? m.actualBoundingBoxDescent : NaN;
+      let h;
+      if (!Number.isNaN(ascent) && !Number.isNaN(descent)) {
+        h = ascent + descent;
+      } else {
+        // crude fallback: parse font-size from CSS string
+        const msize = /(^|\s)(\d+(?:\.\d+)?)(px)/i.exec(fontCSS);
+        h = msize ? parseFloat(msize[2]) : 0;
+      }
+      return { w, h, ascent: ascent || 0, descent: descent || 0 };
+    }
+
+    function elementWidth(el) {
+      return el.getBoundingClientRect().width;
+    }
+    function elementHeight(el) {
+      return el.getBoundingClientRect().height;
+    }
+
+    function cssFont() {
+      return `${size.value} ${family.value}`;
+    }
+
+    function log(msg) {
+      result.textContent += (typeof msg === 'string' ? msg : JSON.stringify(msg, null, 2)) + '\n';
+    }
+
+    $('btnLoad').addEventListener('click', async () => {
+      result.textContent = '';
+      await loadFont();
+      log('✓ Font loaded');
+    });
+
+    $('btnMeasure').addEventListener('click', async () => {
+      result.textContent = '';
+      await loadFont();
+
+      const raw = input.value;
+      const converted = convertIVSToExternal(raw);
+      sampleWith.style.fontSize = size.value;
+      sampleWith.style.fontFamily = family.value;
+      sampleWith.textContent = converted;
+      
+      // 計測（Canvas）
+      const fontCSS = cssFont();
+      const boxCanvas = canvasMeasureBox(converted, fontCSS);
+      
+      // レイアウト反映後にDOM幅を取得
+      await new Promise(requestAnimationFrame);
+      const wRender = elementWidth(sampleWith);
+      const hRender = elementHeight(sampleWith);
+      
+      log({ context: 'measure+render', fontCSS, wCanvas: boxCanvas.w, hCanvas: boxCanvas.h, wRender, hRender, wDiff: wRender - boxCanvas.w, hDiff: hRender - boxCanvas.h });
+    });
+
+    $('btnCompare').addEventListener('click', async () => {
+      result.textContent = '';
+      await loadFont();
+
+      const raw = input.value;
+      const converted = convertIVSToExternal(raw);
+
+      // 指定フォントとfallbackで Canvas 計測差を見る
+      const withFont = `${size.value} ${family.value}`;
+      const compareFont = `${size.value} ${familyB.value}`;
+      const boxWith = canvasMeasureBox(converted, withFont);
+      const boxCompare = canvasMeasureBox(converted, compareFont);
+      log({ context: 'compare(canvas)', withFont, compareFont, wWith: boxWith.w, hWith: boxWith.h, wCompare: boxCompare.w, hCompare: boxCompare.h, wDiff: boxWith.w - boxCompare.w, hDiff: boxWith.h - boxCompare.h });
+      
+      // DOM描画でも比較（別spanで同時に描画して測る）
+      sampleWith.style.fontSize = size.value;
+      sampleWith.style.fontFamily = family.value; // 'IPA-IVS-External', serif
+      sampleWith.textContent = converted;
+
+      sampleCompare.style.fontSize = size.value;
+      sampleCompare.style.fontFamily = familyB.value; // 'IPAmOriginal', serif
+      sampleCompare.textContent = raw;
+
+      await new Promise(requestAnimationFrame);
+      const wRenderWith = elementWidth(sampleWith);
+      const hRenderWith = elementHeight(sampleWith);
+      const wRenderCompare = elementWidth(sampleCompare);
+      const hRenderCompare = elementHeight(sampleCompare);
+
+      log({ context: 'compare(dom)', wRenderWith, hRenderWith, wRenderCompare, hRenderCompare, wDiff: wRenderWith - wRenderCompare, hDiff: hRenderWith - hRenderCompare });
+      log('DevTools → Elements → Computed → Rendered Fonts で実際のフォントを確認してください');
+    });
+  </script>
+</body>
+</html>
