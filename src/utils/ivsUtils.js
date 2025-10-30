@@ -2,14 +2,21 @@
 // BMP PUA: 0xE000-0xF8FF (6,400文字) - 高頻度VS優先
 // SMP PUA: 0xF0000- (65,534文字) - 残りのVS
 
-import { ivsToExternalCharMap, puaAllocationStats } from './ivsCharacterMap.js';
+import { ivsToExternalCharMap, baseCharFallbackToExternalMap, puaAllocationStats } from './ivsCharacterMap.js';
 
 
-export function convertIVSToExternal(text) {
+export function convertIVSToExternal(text, { enableBaseFallback = true } = {}) {
   let result = text;
+  // 1) IVS → PUA
   Object.entries(ivsToExternalCharMap).forEach(([ivs, external]) => {
     result = result.replace(new RegExp(ivs, 'g'), external);
   });
+  // 2) 任意: 基本文字フォールバック（B_value 既定異体）
+  if (enableBaseFallback) {
+    Object.entries(baseCharFallbackToExternalMap).forEach(([baseChar, external]) => {
+      result = result.replace(new RegExp(baseChar, 'g'), external);
+    });
+  }
   return result;
 }
 
@@ -64,5 +71,11 @@ export function getIVSCharacterDetails(text) {
   return details;
 }
 
-
-
+// 基本文字フォールバック（B_value 既定異体）を個別に適用したい場合のユーティリティ
+export function applyBaseCharFallback(text) {
+  let result = text;
+  Object.entries(baseCharFallbackToExternalMap).forEach(([baseChar, external]) => {
+    result = result.replace(new RegExp(baseChar, 'g'), external);
+  });
+  return result;
+}

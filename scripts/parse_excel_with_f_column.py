@@ -97,9 +97,10 @@ def parse_excel_with_f_column(filename):
                     # Use D as key
                     d_key = str(d_value)
                     
-                    # Set B value (assuming it's consistent for same D key)
+                    # Set B/E value (assuming it's consistent for same D key)
                     if result[d_key]["B_value"] is None:
                         result[d_key]["B_value"] = b_value
+                    # E列は保持しない（BaseMJ はC_values_with_F内の *_E0100 の有無で判定する）
                     
                     # Add C value to array if it's not already there
                     if c_value and c_value not in result[d_key]["C_values"]:
@@ -133,6 +134,76 @@ def parse_excel_with_f_column(filename):
                 value["C_values_with_F"] = c_with_f
                 # Keep original array for backward compatibility
                 # value["C_values"] = list(c_with_f.keys())
+
+            # Derive base (default) MJ per code point
+            # 優先順位:
+            #  1) C_values_with_F に E0100 がある場合はそれをBaseMJ（E列が存在するものをBaseMJとする）
+            #  2) B_value に VS があればその VS
+            #  3) それ以外は E0101
+            def _vs_from_bvalue(s: str):
+                if not isinstance(s, str):
+                    return None
+                for ch in s:
+                    cp = ord(ch)
+                    if 0xE0100 <= cp <= 0xE01EF:
+                        return f"E0{cp - 0xE0000:03X}"
+                return None
+
+            def _vs_rank(vs_tag: str):
+                try:
+                    if isinstance(vs_tag, str) and vs_tag.upper().startswith('E'):
+                        return int(vs_tag[1:], 16)
+                except Exception:
+                    pass
+                return 0x7FFFFFFF
+
+            for key, value in final_result.items():
+                # key example: "U+5E73"
+                try:
+                    hexcode = key[2:]
+                except Exception:
+                    hexcode = None
+
+                # Step 1: E列がある場合は E0100 を最優先
+                base_f_tag = None
+                base_mj = None
+                # E列の有無に関わらず、まず C_values_with_F を走査
+                cvf = value.get("C_values_with_F", {})
+                if isinstance(cvf, dict):
+                    # E0100 優先
+                    for mj, ftag in cvf.items():
+                        if isinstance(ftag, str) and ftag.endswith('_E0100'):
+                            base_f_tag = ftag
+                            base_mj = mj
+                            break
+
+                # Step 2: 見つからなければ B_value の VS
+                if base_mj is None:
+                    b_vs = _vs_from_bvalue(value.get("B_value")) or 'E0101'
+                    if hexcode:
+                        expected_f = f"{hexcode}_{b_vs}"
+                        for mj, ftag in cvf.items():
+                            if ftag == expected_f:
+                                base_f_tag = ftag
+                                base_mj = mj
+                                break
+
+                # Step 3: それでも無ければ最小VS
+                if base_mj is None:
+                    best = (0x7FFFFFFF, None, None)
+                    for mj, ftag in cvf.items():
+                        if isinstance(ftag, str) and '_' in ftag:
+                            vs = ftag.split('_', 1)[1]
+                            r = _vs_rank(vs)
+                            if r < best[0]:
+                                best = (r, ftag, mj)
+                    if best[2] is not None:
+                        base_f_tag, base_mj = best[1], best[2]
+
+                # Store for downstream consumers
+                if base_mj is not None:
+                    value["base_f_tag"] = base_f_tag
+                    value["base_mj"] = base_mj
             
             # Show sample
             print("\\nSample results:")
@@ -167,7 +238,7 @@ def save_result(result, c_to_f_mapping, output_file, mapping_file):
         print(f"Error saving result: {e}")
 
 if __name__ == "__main__":
-    filename = "../ipa/mji.00602.xlsx"
+    filename = "./ipa/mji.00602.xlsx"
     result, c_to_f_mapping = parse_excel_with_f_column(filename)
     
     if result:

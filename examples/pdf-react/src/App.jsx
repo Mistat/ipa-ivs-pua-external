@@ -5,7 +5,7 @@ import { convertIVSToExternal, hasIVSCharacters, countIVSCharacters, getIVSChara
 import './App.css';
 
 const App = () => {
-  const [textValue, setTextValue] = useState('\u6AC2\uDB40\uDD01 \u7027\uDB40\uDD07 \u6406\uDB40\uDD03 \u3404\uDB40\uDD00 - \u3404\uDB40\uDD01 - \u3404\uDB40\uDD02 - \u3732\udb40\udd01 - \u4672\udb40\udd00');
+  const [textValue, setTextValue] = useState('邉󠄖 \u9089\u9089\uDB40\uDD0F※\u4F6D\u25A1\u3404佭佭󠄁全平成22年1月1日生\u6AC2\uDB40\uDD01 \u7027\uDB40\uDD07 \u6406\uDB40\uDD03 \u3404\uDB40\uDD00 - \u3404\uDB40\uDD01 - \u3404\uDB40\uDD02 - \u3732\udb40\udd01 - \u4672\udb40\udd00');
   const [fonts, setFonts] = useState({});
 
   // フォントを読み込み
@@ -132,20 +132,22 @@ const App = () => {
       <h1>IVS Font Processor - React + pdfme Example</h1>
       
       <div className="input-section">
-        <input
+        <textarea
           type="text"
           value={textValue}
           onChange={(e) => setTextValue(e.target.value)}
           placeholder="テキストを入力してください（IVS文字対応）"
           className="text-input"
+
         />
       </div>
 
       {textValue && (
         <div className="preview">
           <div className="preview-label">プレビュー（変換後）:</div>
-          <div className="preview-text">{displayText}</div>
-          
+          <pre className="preview-text">{displayText}</pre>
+          <pre className="preview-text">{textValue}</pre>
+
           {hasIVS && (
             <div className="ivs-info">
               <div className="ivs-summary">
@@ -155,7 +157,7 @@ const App = () => {
                 {ivsDetails.map((detail, index) => (
                   <div key={index} className="ivs-detail-item">
                     <div className="char-display">
-                      <span className="ivs-char">{detail.ivs}</span>
+                      <plain className="ivs-char">{detail.ivs}</plain>
                       <span className="char-code">{detail.ivsCode}</span>
                     </div>
                     <span className="arrow">→</span>

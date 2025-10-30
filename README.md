@@ -15,7 +15,7 @@ PDF生成ライブラリやその他の文書生成ライブラリでは、異�
 - 🔧 **TypeScript対応**: 完全な型定義
 - 📱 **クロスブラウザ対応**: Chrome, Firefox, Safari, Edge
 - ⚡ **軽量**: 必要な機能のみを提供
-- 🎯 **11,362文字対応**: 包括的なIVS→PUAマッピング
+- 🎯 **11,380文字対応**: 包括的なIVS→PUAマッピング
 
 ## Installation
 
@@ -36,7 +36,7 @@ npm install ivs-font-processor
 パッケージインストール後、フォントファイルをプロジェクトにコピーします：
 
 ```bash
-# デフォルト（./public/fonts/にインストール）
+# デフォルト（./fonts/にインストール）
 npx install-ivs-fonts
 
 # カスタムディレクトリにインストール
@@ -70,8 +70,8 @@ const count = countIVSCharacters(text);
 ```css
 @font-face {
   font-family: 'IVS-External';
-  src: url('./public/fonts/ipa-ivs-external.woff2') format('woff2'),
-       url('./public/fonts/ipa-ivs-external.ttf') format('truetype');
+  src: url('./fonts/ipa-ivs-external.woff2') format('woff2'),
+       url('./fonts/ipa-ivs-external.ttf') format('truetype');
   font-display: swap;
 }
 
@@ -113,6 +113,41 @@ PUA配置統計情報
 ### カスタムフォント生成
 
 独自のフォントを生成する場合は、[scripts/README.md](scripts/README.md)を参照してください。
+
+## IVS と Variation Selector (VS)
+
+IVS（Ideographic Variation Sequence）は「基底のCJK漢字」+「バリエーションセレクタ（VS）」で特定の字形を指定します。VSはゼロ幅で「既定無視（Default Ignorable）」のため、未対応環境ではVSが無視され既定字形で描画されます。
+
+### VS17–VS32（基本）
+
+これらは Variation Selectors Supplement（U+E0100–U+E01EF）に属し、主にCJKのIVS指定に用いられます。UTF-16ではサロゲートペアで表現されます。
+
+- VS17: U+E0100（`\uDB40\uDD00`）
+- VS18: U+E0101（`\uDB40\uDD01`）
+- VS19: U+E0102（`\uDB40\uDD02`）
+- VS20: U+E0103（`\uDB40\uDD03`）
+- VS21: U+E0104（`\uDB40\uDD04`）
+- VS22: U+E0105（`\uDB40\uDD05`）
+- VS23: U+E0106（`\uDB40\uDD06`）
+- VS24: U+E0107（`\uDB40\uDD07`）
+- VS25: U+E0108（`\uDB40\uDD08`）
+- VS26: U+E0109（`\uDB40\uDD09`）
+- VS27: U+E010A（`\uDB40\uDD0A`）
+- VS28: U+E010B（`\uDB40\uDD0B`）
+- VS29: U+E010C（`\uDB40\uDD0C`）
+- VS30: U+E010D（`\uDB40\uDD0D`）
+- VS31: U+E010E（`\uDB40\uDD0E`）
+- VS32: U+E010F（`\uDB40\uDD0F`）
+
+本ライブラリに同梱のマッピング（`src/utils/ivsCharacterMap.js`）は VS17–VS32 を含みます。
+
+### VS33 以降（VS256まで収録）
+
+VS33–VS256（U+E0110–U+E01EF）もIVSで利用され、本パッケージの同梱マッピングに収録されています（段階的PUA配置により、VS19/VS18はBMP優先、その他はSMP中心）。
+
+ヒント:
+- VSは目に見えないため、デバッグ時はコードポイント（例: `U+9089 U+E0116`）やエスケープ（例: `\uDB40\uDD16`）で確認します。
+- 変換後のPUAは同梱フォント（`fonts/ipa-ivs-external.*`）で描画されます。マッピング拡張時はフォントも必ず再生成してください。
 
 ## Examples
 
@@ -156,9 +191,33 @@ export default {
 
 ## PUA Allocation Strategy
 
-このライブラリは段階的PUA配置戦略を採用し、11,362文字のIVS→PUAマッピングを提供します。
+このライブラリは段階的PUA配置戦略を採用し、11,380文字のIVS→PUAマッピングを提供します。
 
 詳細な配置戦略については、[scripts/README.md](scripts/README.md)を参照してください。
+
+## Font Metrics Strategy
+
+PDFや複数行レイアウトでの見切れ・行間過多を避けるため、フォント生成時に以下のメトリクスを調整・継承します。
+
+- 基本コピー
+  - OS/2: win/typo 系（Ascent/Descent/LineGap）、Panose、FamilyClass、Vendor、Weight/Width、UnicodeRange/CodePageRange
+  - hhea/vhea: Ascent/Descent/LineGap、縦組メトリクスの有効化（hasvmetrics）
+  - 下線: underlinePosition（upos）、underlineThickness（uwidth）
+  - gasp: 元フォントのテーブルを継承
+- クリッピング回避（Win系を安全側に）
+  - 全グリフの外接矩形（boundingBox）から yMax/-yMin を取得し、OS/2 の WinAscent/WinDescent を少なくともそれ以上に引き上げ
+  - 目的: PDF等でクリッピングにWin系が用いられる場合の見切れ防止
+- 行間の正規化（Typo基準に）
+  - fsSelection.UseTypoMetrics を有効化
+  - hhea_ascent/desc を OS/2 TypoAscent/TypoDescent に合わせる
+  - hhea_linegap は 0（不要な行間を足さない）
+  - OS/2 TypoLineGap は元フォントの値に揃える
+- 縦組/PUAグリフ
+  - 基本文字/PUAの vwidth をコピー（無い場合は em を既定値）
+
+備考
+- 元フォント（IPA明朝）と収録グリフが異なるため、Win系を厳密一致にするとPUA追加分で見切れが発生する可能性があります。本プロジェクトでは「Win系は安全側」「行間はTypo基準でタイト」にすることで、PDFの見切れと複数行の行間過多を同時に避ける方針としています。
+- 必要に応じて、Win系/Typo系の調整（よりタイト/より安全側）へ切り替え可能です。
 
 ## Browser Support
 
