@@ -22981,52 +22981,100 @@ def extract_ivs_glyphs():
         
         print(f"抽出完了: {extracted_count}個成功, {failed_count}個失敗")
 
-        # 追加: 実際のグリフ集合から Win/ascent/descents を安全側に再計算
+        # 追加: 実際のグリフ集合から縦方向の外接を取得し、最終的なメトリクスを安全側かつタイトに再設定
         try:
-            xmin, ymin, xmax, ymax = external_font.boundingBox()
-            # OS/2 Win metrics を十分大きく（クリッピング回避）
+            # FontForge の font には boundingBox() が無い環境があるため、各グリフから集計
+            ymin, ymax = None, None
+            try:
+                for gname in external_font:
+                    try:
+                        g = external_font[gname]
+                        bb = g.boundingBox()
+                        if not bb:
+                            continue
+                        _, gymin, _, gymax = bb
+                        if ymin is None or gymin < ymin:
+                            ymin = gymin
+                        if ymax is None or gymax > ymax:
+                            ymax = gymax
+                    except Exception:
+                        # 個別グリフの bbox 取得失敗は無視
+                        pass
+            except Exception:
+                pass
+
+            # フォールバック（万一 bbox が取れなかった場合）
+            if ymin is None or ymax is None:
+                ymin, ymax = -getattr(original_font, 'os2_windescent', 0), getattr(original_font, 'os2_winascent', 0)
+
+            # OS/2 Win metrics は「見切れ防止のために必要最小限」に引き上げる（過大にしない）
             if hasattr(external_font, 'os2_winascent'):
                 try:
-                    external_font.os2_winascent = int(max(getattr(external_font, 'os2_winascent', 0) or 0, ymax))
+                    orig_win_asc = getattr(original_font, 'os2_winascent', 0) or 0
+                    external_font.os2_winascent = int(max(orig_win_asc, ymax))
                 except Exception:
                     pass
             if hasattr(external_font, 'os2_windescent'):
                 try:
-                    external_font.os2_windescent = int(max(getattr(external_font, 'os2_windescent', 0) or 0, -ymin))
+                    orig_win_des = abs(getattr(original_font, 'os2_windescent', 0) or 0)
+                    external_font.os2_windescent = int(max(orig_win_des, abs(ymin)))
                 except Exception:
                     pass
 
-            # 行間を過度に増やさないため Typo メトリクスを基準に hhea を正規化
-            # 多くのレイアウトエンジンは fsSelection.UseTypoMetrics が立っていれば Typo を行間に使用
-            typo_ascent = getattr(original_font, 'os2_typoascent', external_font.ascent)
-            typo_descent = abs(getattr(original_font, 'os2_typodescent', external_font.descent))
-            # fsSelection.UseTypoMetrics を有効化
+            # Typo メトリクス（行送り基準）を元フォント値に固定し、UseTypoMetrics を有効化
+            if hasattr(original_font, 'os2_typoascent') and hasattr(external_font, 'os2_typoascent'):
+                try:
+                    external_font.os2_typoascent = int(original_font.os2_typoascent)
+                except Exception:
+                    pass
+            if hasattr(original_font, 'os2_typodescent') and hasattr(external_font, 'os2_typodescent'):
+                try:
+                    # sTypoDescender は負の値を維持
+                    external_font.os2_typodescent = int(original_font.os2_typodescent)
+                except Exception:
+                    pass
             if hasattr(external_font, 'os2_use_typo_metrics'):
                 try:
                     external_font.os2_use_typo_metrics = True
                 except Exception:
                     pass
-            # hhea を Typo に合わせ、LineGap は 0 に抑える
-            try:
-                external_font.hhea_ascent = int(typo_ascent)
-            except Exception:
-                pass
-            try:
-                external_font.hhea_descent = int(typo_descent)
-            except Exception:
-                pass
-            if hasattr(external_font, 'hhea_linegap'):
+            if hasattr(external_font, 'os2_typolinegap'):
                 try:
+                    override = os.getenv('METRICS_TYPO_LINEGAP', '').lower()
+                    if override in ('keep', 'orig', 'original') and hasattr(original_font, 'os2_typolinegap'):
+                        external_font.os2_typolinegap = original_font.os2_typolinegap
+                    else:
+                        external_font.os2_typolinegap = 0
+                except Exception:
+                    pass
+
+            # hhea を Typo に同期（descender は負で設定）、LineGap は 0
+            try:
+                typo_asc = getattr(original_font, 'os2_typoascent', getattr(original_font, 'ascent', None))
+                typo_des = getattr(original_font, 'os2_typodescent', getattr(original_font, 'descent', None))
+                if typo_asc is not None and hasattr(external_font, 'hhea_ascent'):
+                    external_font.hhea_ascent = int(typo_asc)
+                if typo_des is not None and hasattr(external_font, 'hhea_descent'):
+                    # hhea.descender は負値
+                    d = int(typo_des)
+                    if d > 0:
+                        d = -d
+                    external_font.hhea_descent = d
+                if hasattr(external_font, 'hhea_linegap'):
                     external_font.hhea_linegap = 0
-                except Exception:
-                    pass
-            # TypoLineGap も 0 を推奨（必要なら原本値に）
-            if hasattr(external_font, 'os2_typolinegap') and hasattr(original_font, 'os2_typolinegap'):
-                try:
-                    external_font.os2_typolinegap = original_font.os2_typolinegap
-                except Exception:
-                    pass
+            except Exception:
+                pass
+
+            # FontForge の font.ascent/descent も整合のため更新
+            try:
+                if hasattr(original_font, 'ascent') and hasattr(external_font, 'ascent'):
+                    external_font.ascent = int(original_font.ascent)
+                if hasattr(original_font, 'descent') and hasattr(external_font, 'descent'):
+                    external_font.descent = int(original_font.descent)
+            except Exception:
+                pass
         except Exception:
+            # いずれかの処理に失敗しても生成自体は継続
             pass
 
         # フォントディレクトリを作成（ルート/fonts）
@@ -23039,7 +23087,87 @@ def extract_ivs_glyphs():
         print("WebFont形式で保存中...")
         external_font.generate(output_woff2_path)
         external_font.generate(output_ttf_path)
-        
+
+        # 生成直後に FontForge が内部再計算で hhea/OS2 Typo を肥大化させる場合がある。
+        # 一度書き出したTTFを開き直し、最終メトリクスを確実に上書きしてから再保存する。
+        try:
+            fix = fontforge.open(output_ttf_path)
+            # 元フォント由来の Typo 値を適用
+            try:
+                if hasattr(fix, 'os2_typoascent') and hasattr(original_font, 'os2_typoascent'):
+                    fix.os2_typoascent = int(original_font.os2_typoascent)
+                if hasattr(fix, 'os2_typodescent') and hasattr(original_font, 'os2_typodescent'):
+                    fix.os2_typodescent = int(original_font.os2_typodescent)
+                if hasattr(fix, 'os2_use_typo_metrics'):
+                    fix.os2_use_typo_metrics = True
+                if hasattr(fix, 'os2_typolinegap'):
+                    fix.os2_typolinegap = 0
+            except Exception:
+                pass
+
+            # 全グリフ bbox から WinAscent/Descent の下限を算出し、過大化しないように調整
+            ymin2, ymax2 = None, None
+            for gname in fix:
+                try:
+                    g = fix[gname]
+                    bb = g.boundingBox()
+                    if not bb:
+                        continue
+                    _, y0, _, y1 = bb
+                    if ymin2 is None or y0 < ymin2:
+                        ymin2 = y0
+                    if ymax2 is None or y1 > ymax2:
+                        ymax2 = y1
+                except Exception:
+                    pass
+            if ymin2 is None or ymax2 is None:
+                ymin2, ymax2 = -abs(getattr(original_font, 'os2_windescent', 0) or 0), getattr(original_font, 'os2_winascent', 0) or 0
+            try:
+                if hasattr(fix, 'os2_winascent'):
+                    fix.os2_winascent = int(max(getattr(original_font, 'os2_winascent', 0) or 0, ymax2))
+                if hasattr(fix, 'os2_windescent'):
+                    fix.os2_windescent = int(max(abs(getattr(original_font, 'os2_windescent', 0) or 0), abs(ymin2)))
+            except Exception:
+                pass
+
+            # hhea を Typo に同期し、LineGap を 0 に固定
+            try:
+                if hasattr(fix, 'hhea_ascent'):
+                    fix.hhea_ascent = int(getattr(original_font, 'os2_typoascent', original_font.ascent))
+                if hasattr(fix, 'hhea_descent'):
+                    d = int(getattr(original_font, 'os2_typodescent', -abs(original_font.descent)))
+                    if d > 0:
+                        d = -d
+                    fix.hhea_descent = d
+                if hasattr(fix, 'hhea_linegap'):
+                    fix.hhea_linegap = 0
+            except Exception:
+                pass
+
+            # FontForge の ascent/descent も同期
+            try:
+                fix.ascent = int(original_font.ascent)
+                fix.descent = int(original_font.descent)
+            except Exception:
+                pass
+
+            # 再保存（上書き）
+            try:
+                fix.generate(output_ttf_path)
+            except Exception:
+                pass
+            try:
+                fix.generate(output_woff2_path)
+            except Exception:
+                pass
+            try:
+                fix.close()
+            except Exception:
+                pass
+        except Exception:
+            # 後処理に失敗しても致命ではない
+            pass
+
         print(f"外字フォントを作成しました:")
         print(f"  - {output_woff2_path}")
         print(f"  - {output_ttf_path}")
