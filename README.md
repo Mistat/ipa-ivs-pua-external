@@ -259,6 +259,25 @@ npm run test:e2e
 - 通常の `npm test` はユニットテストのみを実行し、この E2E は走りません。
 - テスト内容は `__tests__/metrics-check.e2e.test.js` を参照してください。
 
+## 互換漢字の正規化（PDF対策）
+
+PDF出力などで CJK 互換漢字（U+F900–U+FAFF など）がそのままでは表示されない場合に備え、`convertIVSToExternal()` はデフォルトで互換漢字を統合漢字へ正規化（NFKCベース）します。
+
+- 例: `U+F929 (朗)` → `U+6717 (朗)` に変換された上で、IVSやフォールバック処理が適用されます。
+- オプション: `normalizeCJKCompat: false` を指定すると、互換漢字の正規化を無効化できます。
+
+使用例:
+
+```js
+import { convertIVSToExternal } from './src/utils/ivsUtils.js';
+
+// 既定: 互換漢字を統合漢字へ正規化 → IVS→PUA → 既定異体フォールバック
+const out = convertIVSToExternal('\uF929'); // => '朗'（さらに必要ならPUA化）
+
+// PDF用途で“正規化のみ”にしたい場合（基底フォールバックを無効化）
+const outPdf = convertIVSToExternal('\uF929', { enableBaseFallback: false }); // => '朗'
+```
+
 ## CI（GitHub Actions）
 
 本リポジトリには、ユニットテストと headless E2E を自動実行する GitHub Actions ワークフローを含めています（`.github/workflows/ci.yml`）。

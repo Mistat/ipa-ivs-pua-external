@@ -27,10 +27,17 @@ describe('convertIVSToExternal', () => {
   });
 
   test('平全月 (fallback enabled)', () => {
-    const s = '平全月';
+    const s = '平全月󠄅';
     const out = convertIVSToExternal(s);
     const arr = cphex(out);
-    expect(out).toEqual('平全月');
+    expect(out).toEqual('平全月󠄅');
   });
+
+  test('CJK Compatibility Ideograph U+F929 → U+6717 (朗)', () => {
+    const s = '\uF929'; // 朗
+    const out = convertIVSToExternal(s, { enableBaseFallback: false });
+    expect(out).toEqual('朗');
+  });
+
 
 });
