@@ -234,6 +234,62 @@ PDFや複数行レイアウトでの見切れ・行間過多を避けるため�
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+## E2Eテスト（Headless）: examples/metrics-check
+
+`examples/metrics-check` をヘッドレス環境で自動検証する E2E テストを追加しています。Puppeteer でサンプルページを起動し、Canvas 計測値と DOM 実描画の幅が近似しているかをチェックします。
+
+- 目的: 計測用フォントと描画用フォントが一致しており、フォールバック混在が起きていないかの簡易検証
+- 仕組み: ルート直下を静的配信 → `examples/metrics-check/index.html` を自動操作 → 幅の差分を閾値（±2px）以内で検証
+
+実行手順:
+
+```bash
+# 1) Puppeteer を開発依存に追加
+npm i -D puppeteer
+
+# 2) フォントが未生成の場合は用意
+npm run generate:fonts
+
+# 3) Headless E2E を実行
+npm run test:e2e
+```
+
+補足:
+- Puppeteer が未導入の場合、このテストは自動スキップされます。
+- 通常の `npm test` はユニットテストのみを実行し、この E2E は走りません。
+- テスト内容は `__tests__/metrics-check.e2e.test.js` を参照してください。
+
+## 互換漢字の正規化（PDF対策）
+
+PDF出力などで CJK 互換漢字（U+F900–U+FAFF など）がそのままでは表示されない場合に備え、`convertIVSToExternal()` はデフォルトで互換漢字を統合漢字へ正規化（NFKCベース）します。
+
+- 例: `U+F929 (朗)` → `U+6717 (朗)` に変換された上で、IVSやフォールバック処理が適用されます。
+- オプション: `normalizeCJKCompat: false` を指定すると、互換漢字の正規化を無効化できます。
+
+使用例:
+
+```js
+import { convertIVSToExternal } from './src/utils/ivsUtils.js';
+
+// 既定: 互換漢字を統合漢字へ正規化 → IVS→PUA → 既定異体フォールバック
+const out = convertIVSToExternal('\uF929'); // => '朗'（さらに必要ならPUA化）
+
+// PDF用途で“正規化のみ”にしたい場合（基底フォールバックを無効化）
+const outPdf = convertIVSToExternal('\uF929', { enableBaseFallback: false }); // => '朗'
+```
+
+## CI（GitHub Actions）
+
+本リポジトリには、ユニットテストと headless E2E を自動実行する GitHub Actions ワークフローを含めています（`.github/workflows/ci.yml`）。
+
+- トリガー: push / pull_request
+- ジョブ:
+  - `unit-tests`: `npm ci` → `npm test`
+  - `e2e-metrics-check`: `npm ci` → `npm i -D puppeteer` → `npm run test:e2e`
+- 備考:
+  - Puppeteer は CI 用に動的に導入します（リポジトリの依存には固定しません）。
+  - E2E 実行時は `CI=true` を付与し、Puppeteer を `--no-sandbox` で起動するようにしています。
+
 ## License
 
 ### ソフトウェアライセンス

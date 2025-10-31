@@ -4,9 +4,29 @@
 
 import { ivsToExternalCharMap, baseCharFallbackToExternalMap, puaAllocationStats } from './ivsCharacterMap.js';
 
+// Normalize CJK Compatibility Ideographs to their unified code points.
+// - U+F900–U+FAFF (CJK Compatibility Ideographs)
+// - U+2F800–U+2FA1F (CJK Compatibility Ideographs Supplement)
+function normalizeCJKCompatibilityIdeographs(text) {
+  const out = [];
+  for (const ch of text) {
+    const cp = ch.codePointAt(0);
+    if ((cp >= 0xF900 && cp <= 0xFAFF) || (cp >= 0x2F800 && cp <= 0x2FA1F)) {
+      out.push(ch.normalize('NFKC'));
+    } else {
+      out.push(ch);
+    }
+  }
+  return out.join('');
+}
 
-export function convertIVSToExternal(text, { enableBaseFallback = true } = {}) {
+
+export function convertIVSToExternal(text, { enableBaseFallback = true, normalizeCJKCompat = true } = {}) {
   let result = text;
+  // 0) Compatibility Ideographs → Unified CJK
+  if (normalizeCJKCompat) {
+    result = normalizeCJKCompatibilityIdeographs(result);
+  }
   // 1) IVS → PUA
   Object.entries(ivsToExternalCharMap).forEach(([ivs, external]) => {
     result = result.replace(new RegExp(ivs, 'g'), external);
