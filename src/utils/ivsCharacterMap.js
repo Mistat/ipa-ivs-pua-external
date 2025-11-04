@@ -11414,6 +11414,97 @@ export const ivsToExternalCharMap = {
   '\u9089\uDB40\uDD1D': '\uDB84\uDF72',  // MJ026196
   '\u9089\uDB40\uDD1F': '\uDB84\uDF73',  // MJ026193
 };
+export const cjkCompatibilityMap = {
+  '\uF91D': '\u6B04',
+  '\uF928': '\u5ECA',
+  '\uF929': '\u6717',
+  '\uF936': '\u865C',
+  '\uF970': '\u6BBA',
+  '\uF9D0': '\u985E',
+  '\uF9DC': '\u9686',
+  '\uFA10': '\u585A',
+  '\uFA12': '\u6674',
+  '\uFA15': '\u51DE',
+  '\uFA16': '\u732A',
+  '\uFA17': '\u76CA',
+  '\uFA18': '\u793C',
+  '\uFA19': '\u795E',
+  '\uFA1A': '\u7965',
+  '\uFA1B': '\u798F',
+  '\uFA1C': '\u9756',
+  '\uFA1D': '\u7CBE',
+  '\uFA1E': '\u7FBD',
+  '\uFA20': '\u8612',
+  '\uFA22': '\u8AF8',
+  '\uFA25': '\u9038',
+  '\uFA26': '\u90FD',
+  '\uFA2A': '\u98EF',
+  '\uFA2B': '\u98FC',
+  '\uFA2C': '\u9928',
+  '\uFA2D': '\u9DB4',
+  '\uFA30': '\u4FAE',
+  '\uFA31': '\u50E7',
+  '\uFA32': '\u514D',
+  '\uFA33': '\u52C9',
+  '\uFA34': '\u52E4',
+  '\uFA35': '\u5351',
+  '\uFA36': '\u559D',
+  '\uFA37': '\u5606',
+  '\uFA38': '\u5668',
+  '\uFA39': '\u5840',
+  '\uFA3A': '\u58A8',
+  '\uFA3B': '\u5C64',
+  '\uFA3C': '\u5C6E',
+  '\uFA3D': '\u6094',
+  '\uFA3E': '\u6168',
+  '\uFA3F': '\u618E',
+  '\uFA40': '\u61F2',
+  '\uFA41': '\u654F',
+  '\uFA42': '\u65E2',
+  '\uFA43': '\u6691',
+  '\uFA44': '\u6885',
+  '\uFA45': '\u6D77',
+  '\uFA46': '\u6E1A',
+  '\uFA47': '\u6F22',
+  '\uFA48': '\u716E',
+  '\uFA49': '\u722B',
+  '\uFA4A': '\u7422',
+  '\uFA4B': '\u7891',
+  '\uFA4C': '\u793E',
+  '\uFA4D': '\u7949',
+  '\uFA4E': '\u7948',
+  '\uFA4F': '\u7950',
+  '\uFA50': '\u7956',
+  '\uFA51': '\u795D',
+  '\uFA52': '\u798D',
+  '\uFA53': '\u798E',
+  '\uFA54': '\u7A40',
+  '\uFA55': '\u7A81',
+  '\uFA56': '\u7BC0',
+  '\uFA57': '\u7DF4',
+  '\uFA58': '\u7E09',
+  '\uFA59': '\u7E41',
+  '\uFA5A': '\u7F72',
+  '\uFA5B': '\u8005',
+  '\uFA5C': '\u81ED',
+  '\uFA5D': '\u8279',
+  '\uFA5E': '\u8279',
+  '\uFA5F': '\u8457',
+  '\uFA60': '\u8910',
+  '\uFA61': '\u8996',
+  '\uFA62': '\u8B01',
+  '\uFA63': '\u8B39',
+  '\uFA64': '\u8CD3',
+  '\uFA65': '\u8D08',
+  '\uFA66': '\u8FB6',
+  '\uFA67': '\u9038',
+  '\uFA68': '\u96E3',
+  '\uFA69': '\u97FF',
+  '\uFA6A': '\u983B',
+  '\uFA6B': '\u6075',
+  '\uFA6C': '\uD850\uDEEE',
+  '\uFA6D': '\u8218'
+};
 
 export const baseCharFallbackToExternalMap = {
   '\uD848\uDC34': '\uDB83\uDC81',
@@ -12038,7 +12129,87 @@ export const baseCharFallbackToExternalMap = {
   '\uD86D\uDC68': '\uDB83\uDFED',
   '\uD87A\uDDC0': '\uDB83\uDFEE',
   '\uD87A\uDDF2': '\uDB83\uDFEF',
-  '\uD87A\uDE41': '\uDB83\uDFF0'
+  '\uD87A\uDE41': '\uDB83\uDFF0',
+  '\u5ECA': '\uDB84\uDC4A',  // MJ030184
+  '\u6717': '\uDB84\uDEC1',  // MJ030185
+  '\u865C': '\uDB82\uDD8F',  // MJ030186
+  '\u6BBA': '\uDB81\uDF7D',  // MJ030187
+  '\u985E': '\uDB82\uDED8',  // MJ030188
+  '\u9686': '\uDB84\uDEF2',  // MJ030189
+  '\u585A': '\uDB84\uDDF5',  // MJ030194
+  '\u6674': '\uDB81\uDF16',  // MJ030199
+  '\u51DE': '\uDB84\uDF46',  // MJ030205
+  '\u732A': '\uDB81\uDFE3',  // MJ030208
+  '\u76CA': '\uDB82\uDC0F',  // MJ030209
+  '\u793C': '\uDB82\uDC29',  // MJ030210
+  '\u795E': '\uDB82\uDC35',  // MJ030211
+  '\u7965': '\uDB82\uDC37',  // MJ030212
+  '\u798F': '\uDB82\uDC3C',  // MJ030213
+  '\u9756': '\uDB82\uDEBA',  // MJ030214
+  '\u7CBE': '\uDB82\uDC78',  // MJ030215
+  '\u7FBD': '\uDB82\uDCA9',  // MJ030216
+  '\u8612': '\uDB84\uDE5C',  // MJ030224
+  '\u8AF8': '\uDB82\uDDDA',  // MJ030226
+  '\u9038': '\uDB84\uDF2E',  // MJ030234
+  '\u90FD': '\uDB82\uDE7A',  // MJ030235
+  '\u98EF': '\uDB84\uDDB4',  // MJ030240
+  '\u98FC': '\uDB82\uDEE2',  // MJ030241
+  '\u9928': '\uDB82\uDEF0',  // MJ030242
+  '\u9DB4': '\uDB82\uDF2A',  // MJ030243
+  '\u4FAE': '\uDB81\uDD9A',  // MJ030244
+  '\u50E7': '\uDB84\uDDDC',  // MJ030245
+  '\u514D': '\uDB84\uDC01',  // MJ030246
+  '\u52C9': '\uDB81\uDDD8',  // MJ030247
+  '\u52E4': '\uDB81\uDDDC',  // MJ030248
+  '\u5351': '\uDB81\uDDE9',  // MJ030249
+  '\u559D': '\uDB81\uDE0A',  // MJ030250
+  '\u5606': '\uDB81\uDE11',  // MJ030251
+  '\u5668': '\uDB81\uDE16',  // MJ030252
+  '\u5840': '\uDB81\uDE2D',  // MJ030253
+  '\u58A8': '\uDB81\uDE34',  // MJ030254
+  '\u5C64': '\uDB81\uDE66',  // MJ030255
+  '\u5C6E': '\uDB81\uDE67',  // MJ030256
+  '\u6094': '\uDB81\uDEB3',  // MJ030257
+  '\u6168': '\uDB84\uDF24',  // MJ030258
+  '\u618E': '\uDB81\uDEC8',  // MJ030259
+  '\u61F2': '\uDB84\uDE03',  // MJ030260
+  '\u654F': '\uDB81\uDF01',  // MJ030262
+  '\u65E2': '\uDB84\uDC70',  // MJ030263
+  '\u6691': '\uDB81\uDF1A',  // MJ030264
+  '\u6885': '\uDB81\uDF49',  // MJ030265
+  '\u6D77': '\uDB81\uDF8E',  // MJ030266
+  '\u6E1A': '\uDB81\uDF95',  // MJ030267
+  '\u6F22': '\uDB81\uDFA7',  // MJ030268
+  '\u716E': '\uDB81\uDFCD',  // MJ030269
+  '\u722B': '\uE5AA',  // MJ030270
+  '\u7422': '\uDB84\uDE24',  // MJ030271
+  '\u7891': '\uDB82\uDC23',  // MJ030272
+  '\u793E': '\uDB82\uDC2A',  // MJ030274
+  '\u7949': '\uDB82\uDC2F',  // MJ030275
+  '\u7948': '\uDB82\uDC2E',  // MJ030276
+  '\u7950': '\uDB82\uDC30',  // MJ030277
+  '\u7956': '\uDB82\uDC32',  // MJ030278
+  '\u795D': '\uDB82\uDC34',  // MJ030279
+  '\u798E': '\uDB82\uDC3B',  // MJ030281
+  '\u7BC0': '\uDB84\uDE36',  // MJ030285
+  '\u7DF4': '\uDB82\uDC93',  // MJ030286
+  '\u7E09': '\uDB82\uDC94',  // MJ030287
+  '\u81ED': '\uDB82\uDCDC',  // MJ030291
+  '\u8279': '\uDB82\uDCEA',  // MJ030292
+  '\u8457': '\uDB84\uDD1F',  // MJ030294
+  '\u8910': '\uDB82\uDDB2',  // MJ030295
+  '\u8996': '\uDB82\uDDC0',  // MJ030296
+  '\u8B01': '\uDB82\uDDDC',  // MJ030297
+  '\u8B39': '\uDB84\uDD5A',  // MJ030298
+  '\u8CD3': '\uDB82\uDDFE',  // MJ030299
+  '\u8D08': '\uDB82\uDE02',  // MJ030301
+  '\u8FB6': '\uEBC5',  // MJ030302
+  // '\u9038': '\uDB84\uDF16',  // MJ030303 (omitted to avoid duplicate key; MJ030234 kept)
+  '\u96E3': '\uDB84\uDDA5',  // MJ030304
+  '\u97FF': '\uDB84\uDF34',  // MJ030305
+  '\u983B': '\uDB82\uDED7',  // MJ030307
+  '\u6075': '\uDB81\uDEB1',  // MJ030308
+  '\u8218': '\uDB82\uDCE0',  // MJ030310
 };
 
 // 配置統計（段階的PUA戦略）
