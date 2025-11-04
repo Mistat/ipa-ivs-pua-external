@@ -11507,6 +11507,7 @@ export const cjkCompatibilityMap = {
 };
 
 export const baseCharFallbackToExternalMap = {
+  '\uFA0E': '\uDB80\uDF11',
   '\uD848\uDC34': '\uDB83\uDC81',
   '\uD84F\uDD60': '\uDB83\uDCD8',
   '\uD853\uDD38': '\uDB83\uDCFA',
