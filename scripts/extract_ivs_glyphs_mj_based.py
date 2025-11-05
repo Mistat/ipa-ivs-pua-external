@@ -10,6 +10,8 @@ except ModuleNotFoundError:
 import sys
 import os
 import json
+import zipfile
+import xml.etree.ElementTree as ET
 
 # スクリプト位置基準でプロジェクトルートを解決
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -12034,7 +12036,136 @@ def generate_mapping_file():
         print(f"BMP PUA: {bmp_pua_allocated:,}文字 (0x{bmp_pua_start:04X}-0x{bmp_pua_current-1:04X})")
         print(f"SMP PUA: {smp_pua_allocated:,}文字 (0x{smp_pua_start:05X}-0x{smp_pua_current-1:05X})")
         print(f"総マッピング数: {len(js_mappings):,}")
-        
+
+        # 互換漢字 → 統合漢字 マップをExcelから生成
+        def _uplus_to_char(s: str) -> str | None:
+            s = (s or '').strip().upper()
+            if s.startswith('U+'):
+                try:
+                    return chr(int(s[2:], 16))
+                except Exception:
+                    return None
+            return s if len(s) == 1 else None
+
+        def _is_compat_cp(cp: int) -> bool:
+            return (0xF900 <= cp <= 0xFAFF) or (0x2F800 <= cp <= 0x2FA1F)
+
+        def _read_shared_strings(z: zipfile.ZipFile):
+            try:
+                xml = z.read('xl/sharedStrings.xml')
+            except KeyError:
+                return []
+            root = ET.fromstring(xml)
+            out = []
+            for si in root.iter():
+                if si.tag.endswith('si'):
+                    text = ''
+                    for t in si.iter():
+                        if t.tag.endswith('t') and t.text is not None:
+                            text = t.text
+                            break
+                    out.append(text)
+            return out
+
+        def _read_rows(z: zipfile.ZipFile):
+            xml = z.read('xl/worksheets/sheet1.xml')
+            root = ET.fromstring(xml)
+            return [r for r in root.iter() if r.tag.endswith('row')]
+
+        def _col_letters(ref: str) -> str:
+            return ''.join(c for c in ref if c.isalpha())
+
+        def build_cjk_compat_map_from_excel(xlsx_path: str) -> dict[str, str]:
+            mapping: dict[str, str] = {}
+            try:
+                with zipfile.ZipFile(xlsx_path, 'r') as z:
+                    shared = _read_shared_strings(z)
+                    rows = _read_rows(z)
+                    # ヘッダー
+                    header_map: dict[str, str] = {}
+                    for c in rows[0]:
+                        if not c.tag.endswith('c'):
+                            continue
+                        ref = c.get('r', '')
+                        col = _col_letters(ref)
+                        ctype = c.get('t', '')
+                        val = ''
+                        for v in c:
+                            if v.tag.endswith('v') and v.text is not None:
+                                val = v.text
+                                break
+                        if ctype == 's' and val.isdigit():
+                            idx = int(val)
+                            val = shared[idx] if 0 <= idx < len(shared) else ''
+                        header_map[col] = val
+
+                    # 対象列の推定
+                    compat_char_col = None
+                    unified_ucs_col = None
+                    for col, name in header_map.items():
+                        n = name or ''
+                        if n == '対応する互換漢字':
+                            compat_char_col = col
+                        if n in ('対応するUCS', '実装したUCS'):
+                            unified_ucs_col = col if unified_ucs_col is None else unified_ucs_col
+
+                    # セルからテキスト取得
+                    def cell_text(cc) -> str:
+                        ctype = cc.get('t', '')
+                        val = None
+                        for v in cc:
+                            if v.tag.endswith('v') and v.text is not None:
+                                val = v.text
+                                break
+                        if val is None:
+                            return ''
+                        if ctype == 's' and val.isdigit():
+                            idx = int(val)
+                            return shared[idx] if 0 <= idx < len(shared) else ''
+                        return val
+
+                    import unicodedata as ud
+
+                    for r in rows[1:]:
+                        cells = {}
+                        for c in r:
+                            if not c.tag.endswith('c'):
+                                continue
+                            col = _col_letters(c.get('r', ''))
+                            cells[col] = cell_text(c)
+
+                        compat_char = cells.get(compat_char_col, '') if compat_char_col else ''
+                        compat_char = compat_char if len(compat_char) == 1 else _uplus_to_char(compat_char)
+
+                        # 互換レンジの候補を UCS 列からも判定
+                        if (not compat_char) and unified_ucs_col and cells.get(unified_ucs_col):
+                            cc2 = _uplus_to_char(cells.get(unified_ucs_col))
+                            if cc2 and _is_compat_cp(ord(cc2)):
+                                compat_char = cc2
+
+                        if not compat_char or not _is_compat_cp(ord(compat_char)):
+                            continue
+
+                        # 統合側はNFKCで折り畳みを試行
+                        unified_char = None
+                        try:
+                            folded = ud.normalize('NFKC', compat_char)
+                            if folded and folded != compat_char and len(folded) == 1:
+                                unified_char = folded
+                        except Exception:
+                            pass
+
+                        if unified_char:
+                            mapping[compat_char] = unified_char
+            except Exception as e:
+                print(f"⚠ 互換漢字マップ生成に失敗: {e}")
+
+            print(f"互換漢字マップ: {len(mapping)} 件を生成（ExcelとNFKCからの自動決定のみ）")
+            return mapping
+
+        excel_path = os.path.join(_ROOT_DIR, 'ipa', 'mji.00602.xlsx')
+        cjk_compat_map = build_cjk_compat_map_from_excel(excel_path)
+
         # JavaScript内容を生成（SMP文字対応ユーティリティ付き）
         js_content = """// IVS文字マッピング定義（段階的PUA配置対応）
 // BMP PUA: 0xE000-0xF8FF (6,400文字) - 高頻度VS優先
@@ -12073,6 +12204,14 @@ export function convertIVSText(text) {
 export const ivsToExternalCharMap = {
 """
         js_content += "\n".join(js_mappings)
+        js_content += "\n};\n"
+
+        # 互換漢字 → 統合漢字 マップを出力
+        js_content += "export const cjkCompatibilityMap = {\n"
+        compat_lines = []
+        for k, v in sorted(cjk_compat_map.items(), key=lambda x: ord(x[0])):
+            compat_lines.append(f"  '{_js_escape_codepoint(ord(k))}': '{_js_escape_codepoint(ord(v))}'")
+        js_content += ",\n".join(compat_lines)
         js_content += "\n};\n"
 
         # 既定異体ベースフォールバックのブロックを追加

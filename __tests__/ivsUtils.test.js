@@ -2,6 +2,7 @@
 // Run with: npm run test:unit
 
 import { convertIVSToExternal } from '../src/utils/ivsUtils.js';
+import * as ivsMap from '../src/utils/ivsCharacterMap.js';
 
 function cphex(str) {
   return Array.from(str).map(c => 'U+' + c.codePointAt(0).toString(16).toUpperCase());
@@ -39,5 +40,12 @@ describe('convertIVSToExternal', () => {
     expect(out).toEqual('朗');
   });
 
+
+  test('﨎', () => {
+    const s = '\uFA0E';
+    const out = convertIVSToExternal(s);
+    const arr = cphex(out);
+    expect(out).toEqual('\uDB80\uDF11');
+  });
 
 });

@@ -40,3 +40,4 @@ jobs:
           CI: 'true'
         run: npm run test:e2e
 
+  # compat-map job removed: mapping is embedded during generate:fonts

@@ -276,7 +276,22 @@ const out = convertIVSToExternal('\uF929'); // => '朗'（さらに必要ならP
 
 // PDF用途で“正規化のみ”にしたい場合（基底フォールバックを無効化）
 const outPdf = convertIVSToExternal('\uF929', { enableBaseFallback: false }); // => '朗'
+
+// PDF用途で、特定の互換漢字の置換を強制したい場合（Excel/NFKCで導出できないとき）
+// compatMapOverride に最小限の置換表を渡せます。
+// 例（置換先は環境要件に合わせて設定してください）:
+// const outPdf2 = convertIVSToExternal(text, {
+//   enableBaseFallback: false,
+//   compatMapOverride: {
+//     '\\uFA11': '崎', // 﨑 → 崎（例）
+//     // ... 必要な最小限のみ
+//   }
+// });
 ```
+
+## 互換漢字マップ（Excel取り込み）
+
+`npm run setup`（= `npm run parse && npm run generate:fonts`）の中で、`ipa/mji.00602.xlsx` を読み取り、CJK互換漢字（U+F900–U+FAFF, U+2F800–U+2FA1F）から統合漢字へのマッピングを自動生成し、`src/utils/ivsCharacterMap.js` に `cjkCompatibilityMap` として同梱します。ランタイムでは `ivsUtils` がこのマップを優先的に参照し、未収録のものはNFKCで折り畳みます（例: `U+F929(朗)`→`朗`）。
 
 ## CI（GitHub Actions）
 
