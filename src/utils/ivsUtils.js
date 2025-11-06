@@ -3,8 +3,15 @@
 // SMP PUA: 0xF0000- (65,534文字) - 残りのVS
 
 import * as ivsMap from './ivsCharacterMap.js';
-const ivsToExternalCharMap = ivsMap.ivsToExternalCharMap || {};
-const baseCharFallbackToExternalMap = ivsMap.baseCharFallbackToExternalMap || {};
+// Always import overrides (file exists in repo; exports empty objects by default)
+import * as overrides from './ivsOverrides.js';
+const ivsOverrides = overrides.ivsToExternalCharMap || {};
+const baseFallbackOverrides = overrides.baseCharFallbackToExternalMap || {};
+
+// Merge maps with overrides taking precedence
+const ivsToExternalCharMap = { ...(ivsMap.ivsToExternalCharMap || {}), ...ivsOverrides };
+// Merge generated fallback with overrides (overrides take precedence)
+const baseCharFallbackToExternalMap = { ...(ivsMap.baseCharFallbackToExternalMap || {}), ...baseFallbackOverrides };
 export const puaAllocationStats = ivsMap.puaAllocationStats || {};
 
 // Normalize CJK Compatibility Ideographs to their unified code points.
@@ -47,7 +54,9 @@ export function convertIVSToExternal(text, { enableBaseFallback = true, normaliz
   // 2) 任意: 基本文字フォールバック（B_value 既定異体）
   if (enableBaseFallback) {
     Object.entries(baseCharFallbackToExternalMap).forEach(([baseChar, external]) => {
-      result = result.replace(new RegExp(baseChar, 'g'), external);
+      // 負荷の低い防御: 直後に VS (U+DB40..DB7F + U+DC00..DFFF) が続く場合は置換しない
+      const pattern = new RegExp(`${baseChar}(?![\uDB40-\uDB7F][\uDC00-\uDFFF])`, 'g');
+      result = result.replace(pattern, external);
     });
   }
   return result;
