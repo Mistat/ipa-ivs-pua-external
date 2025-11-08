@@ -119,7 +119,7 @@ export default {
                 Top: "2in",
                 Left: "2in",
                 Width: "4in",
-                Height: "0.5in"
+                Height: "10.5in"
               }
             ]
           },

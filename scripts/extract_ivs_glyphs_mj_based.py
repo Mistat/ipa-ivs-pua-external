@@ -164,10 +164,15 @@ def extract_ivs_glyphs():
                     base_cp = int(unicode_key[2:], 16)
                 except Exception:
                     continue
-                cvf = entry.get('C_values_with_F', {})
-                if not isinstance(cvf, dict):
+                # Allow either C_values_with_F (C->F) or F_to_C (F->C) structures
+                items = None
+                if isinstance(entry.get('C_values_with_F'), dict) and entry.get('C_values_with_F'):
+                    items = entry['C_values_with_F'].items()  # (MJ -> F)
+                elif isinstance(entry.get('F_to_C'), dict) and entry.get('F_to_C'):
+                    items = entry['F_to_C'].items()  # (F -> MJ)
+                else:
                     continue
-                for ftag, mj in cvf.items():
+                for ftag, mj in (items if items and 'F_to_C' in entry else ((v, k) for k, v in entry.get('C_values_with_F', {}).items())):
                     if not isinstance(ftag, str) or '_' not in ftag or ';' in ftag:
                         continue
                     try:
@@ -184,8 +189,16 @@ def extract_ivs_glyphs():
             if dyn_map:
                 ivs_to_mj_mapping = dyn_map
                 print(f"IVS→MJ マッピングをJSONから再構築: {len(ivs_to_mj_mapping)} 件")
+
+            # JSONからIVS→PUA（抽出用: Python文字列→整数PUA）の決定版マップも作成
+            try:
+                _, _pairs_for_fb, ivs_to_pua_py, _stats = _build_ivs_allocation_from_json(mapping_data)
+            except Exception as e:
+                print(f"警告: JSONからのIVS→PUA割当の構築に失敗: {e}")
+                ivs_to_pua_py = {}
         except Exception as e:
             print(f"警告: JSONからのIVS→MJマッピング再構築に失敗しました: {e}")
+            ivs_to_pua_py = {}
 
         # IVS文字列からPUAコードへのマッピング
         ivs_mappings = {
@@ -11574,9 +11587,31 @@ def extract_ivs_glyphs():
         # MJ文字図形名を使用してIVS文字を抽出
         extracted_count = 0
         failed_count = 0
-        
+        skipped_unmapped = 0
+
+        # JSON由来のIVS→MJマップに、PUA未割り当てのIVSが混じる場合がある。
+        # その場合はスキップして処理を継続する（KeyErrorで全体が落ちないようにする）。
         for ivs_sequence, mj_name in ivs_to_mj_mapping.items():
-            pua_code = ivs_mappings[ivs_sequence]
+            # 決定版のIVS→PUAマップ（ivs_to_pua_py）を優先して使用。なければレガシーマップにフォールバック
+            pua_code = ivs_to_pua_py.get(ivs_sequence)
+            if pua_code is None:
+                try:
+                    pua_code = ivs_mappings.get(ivs_sequence)
+                except Exception:
+                    pua_code = None
+            if pua_code is None:
+                # 該当IVSにPUAが定義されていないためスキップ
+                # 例: '𫧤\udb40\udd00' (U+E0100) 等の未定義バリアント
+                skipped_unmapped += 1
+                if skipped_unmapped <= 10:
+                    # ノイズを抑えるため、先頭数件のみ詳細を出力
+                    try:
+                        base_cp = ord(ivs_sequence[0])
+                        vs_cp = (ord(ivs_sequence[1]) - 0xD800) * 0x400 + (ord(ivs_sequence[2]) - 0xDC00) + 0x10000
+                        print(f"  スキップ: PUA未定義のIVS {repr(ivs_sequence)} (base=U+{base_cp:04X}, VS=U+{vs_cp:05X}) → MJ={mj_name}")
+                    except Exception:
+                        print(f"  スキップ: PUA未定義のIVS {repr(ivs_sequence)} → MJ={mj_name}")
+                continue
             
             # MJ文字図形名がフォントに存在するかチェック
             if mj_name in original_font:
@@ -11606,7 +11641,8 @@ def extract_ivs_glyphs():
                 print(f"  警告: MJ文字図形名 '{mj_name}' がフォントに見つかりません")
                 failed_count += 1
         
-        print(f"抽出完了: {extracted_count}個成功, {failed_count}個失敗")
+        extra_note = f", {skipped_unmapped}件PUA未定義によりスキップ" if skipped_unmapped else ""
+        print(f"抽出完了: {extracted_count}個成功, {failed_count}個失敗{extra_note}")
 
         # 追加: 実際のグリフ集合から縦方向の外接を取得し、最終的なメトリクスを安全側かつタイトに再設定
         try:
@@ -11818,6 +11854,175 @@ def _js_escape_codepoint(cp: int) -> str:
     low = ((cp - 0x10000) & 0x3FF) + 0xDC00
     return f"\\u{high:04X}\\u{low:04X}"
 
+def _ivs_literal_py(base_cp: int, vs_cp: int) -> str:
+    """Return Python literal IVS sequence string used in this script.
+    Base code point is a single char (BMP or SMP via chr). VS is represented
+    as surrogate pair (DB40/DD00+idx), matching how ivs_to_mj_mapping keys are built.
+    """
+    # base as code point
+    base = chr(base_cp)
+    # VS written as surrogate pair (U+E0100..E01EF)
+    hi = ((vs_cp - 0x10000) >> 10) + 0xD800
+    lo = ((vs_cp - 0x10000) & 0x3FF) + 0xDC00
+    return base + chr(hi) + chr(lo)
+
+def _build_ivs_allocation_from_json(data: dict) -> tuple[list[str], dict[tuple[int,int], str], dict[str, int], dict[str,int]]:
+    """Allocate PUA for all IVS pairs from JSON using staged strategy.
+
+    Returns:
+      - js_lines: list of lines to include under ivsToExternalCharMap in JS file
+      - ivs_to_pua_pairs: dict[(base_cp, vs_cp)] = JS-escaped PUA string (for fallback block)
+      - ivs_to_pua_py: dict[ivs_literal_py] = pua_codepoint_int (for extraction)
+      - stats: dict with bmp_allocated, smp_allocated, bmp_range_end, smp_range_end
+    """
+    # PUA strategy
+    try:
+        from pua_allocation_strategy_staged import get_staged_pua_strategy
+        pua_strategy = get_staged_pua_strategy()
+        bmp_pua_start = pua_strategy['bmp_pua']['start']  # 0xE000
+        smp_pua_start = pua_strategy['smp_pua']['start']  # 0xF0000
+        print(f"✓ 段階的PUA戦略を使用: BMP=0x{bmp_pua_start:04X}, SMP=0x{smp_pua_start:05X}")
+    except Exception as e:
+        print(f"⚠ 段階的PUA戦略の読み込みに失敗、修正済み方式を使用: {e}")
+        bmp_pua_start = 0xE000
+        smp_pua_start = 0xF0000
+
+    js_lines: list[str] = []
+    ivs_to_pua_pairs: dict[tuple[int,int], str] = {}
+    ivs_to_pua_py: dict[str, int] = {}
+
+    # 収集とVS別グループ
+    temp_chars = []
+    vs_groups: dict[str, list[dict]] = {}
+    for unicode_key, entry in data.items():
+        if not (isinstance(unicode_key, str) and unicode_key.startswith('U+')):
+            continue
+        try:
+            unicode_code = int(unicode_key[2:], 16)
+        except Exception:
+            continue
+        # Accept either C_values_with_F (C->F) or F_to_C (F->C)
+        if isinstance(entry.get("C_values_with_F"), dict) and entry["C_values_with_F"]:
+            pairs = ((f_value, c_value) for c_value, f_value in entry["C_values_with_F"].items())
+        elif isinstance(entry.get("F_to_C"), dict) and entry["F_to_C"]:
+            pairs = entry["F_to_C"].items()
+        else:
+            pairs = []
+        for f_value, c_value in pairs:
+            if '_' not in f_value:
+                continue
+            parts = f_value.split('_')
+            if len(parts) != 2:
+                continue
+            selector_hex = parts[1]  # E0100..E01EF
+            if not selector_hex.startswith('E01'):
+                continue
+            try:
+                selector_num = int(selector_hex[3:], 16)
+            except Exception:
+                continue
+            vs_code = 0xE0100 + selector_num
+            vs_name = f"VS{17 + selector_num}"
+
+            # JS-escaped base
+            if unicode_code <= 0xFFFF:
+                base_char_escaped = f"\\u{unicode_code:04X}"
+            else:
+                hi = ((unicode_code - 0x10000) >> 10) + 0xD800
+                lo = ((unicode_code - 0x10000) & 0x3FF) + 0xDC00
+                base_char_escaped = f"\\u{hi:04X}\\u{lo:04X}"
+            # JS-escaped VS
+            vs_hi = ((vs_code - 0x10000) >> 10) + 0xD800
+            vs_lo = ((vs_code - 0x10000) & 0x3FF) + 0xDC00
+            vs_chars_escaped = f"\\u{vs_hi:04X}\\u{vs_lo:04X}"
+
+            char_data = {
+                'ivs_sequence_js': base_char_escaped + vs_chars_escaped,
+                'unicode_code': unicode_code,
+                'vs_code': vs_code,
+                'vs_name': vs_name,
+                'c_value': c_value,
+            }
+            vs_groups.setdefault(vs_name, []).append(char_data)
+            temp_chars.append(char_data)
+
+    print(f"✓ 収集完了: {len(temp_chars)}文字、{len(vs_groups)}種類のVS")
+
+    # 段階的配置
+    known_priority = ["VS19", "VS18", "VS20"]
+    others = sorted([vn for vn in vs_groups.keys() if vn not in known_priority], key=lambda x: int(x[2:]))
+    vs_priority = known_priority + others
+
+    bmp_pua_current = bmp_pua_start
+    smp_pua_current = smp_pua_start
+    bmp_pua_end = 0xF8FF
+    bmp_pua_allocated = 0
+    smp_pua_allocated = 0
+
+    def smp_escape(cp: int) -> str:
+        hi = ((cp - 0x10000) >> 10) + 0xD800
+        lo = ((cp - 0x10000) & 0x3FF) + 0xDC00
+        return f"\\u{hi:04X}\\u{lo:04X}"
+
+    for vs_name in vs_priority:
+        if vs_name not in vs_groups:
+            continue
+        chars_in_vs = vs_groups[vs_name]
+        if vs_name in ["VS19", "VS18"]:
+            for char_data in chars_in_vs:
+                if bmp_pua_current <= bmp_pua_end:
+                    pua_cp = bmp_pua_current
+                    pua_char = f"\\u{pua_cp:04X}"
+                    bmp_pua_current += 1
+                    bmp_pua_allocated += 1
+                else:
+                    pua_cp = smp_pua_current
+                    pua_char = smp_escape(pua_cp)
+                    smp_pua_current += 1
+                    smp_pua_allocated += 1
+                js_lines.append(f"  '{char_data['ivs_sequence_js']}': '{pua_char}',  // {char_data['c_value']}")
+                ivs_to_pua_pairs[(char_data['unicode_code'], char_data['vs_code'])] = pua_char
+                ivs_to_pua_py[_ivs_literal_py(char_data['unicode_code'], char_data['vs_code'])] = pua_cp
+            print(f"✓ {vs_name}: {len(chars_in_vs):,}文字 → BMP優先")
+        elif vs_name == "VS20":
+            bmp_portion = min(len(chars_in_vs), bmp_pua_end - bmp_pua_current + 1)
+            for i, char_data in enumerate(chars_in_vs):
+                if i < bmp_portion and bmp_pua_current <= bmp_pua_end:
+                    pua_cp = bmp_pua_current
+                    pua_char = f"\\u{pua_cp:04X}"
+                    bmp_pua_current += 1
+                    bmp_pua_allocated += 1
+                else:
+                    pua_cp = smp_pua_current
+                    pua_char = smp_escape(pua_cp)
+                    smp_pua_current += 1
+                    smp_pua_allocated += 1
+                js_lines.append(f"  '{char_data['ivs_sequence_js']}': '{pua_char}',  // {char_data['c_value']}")
+                ivs_to_pua_pairs[(char_data['unicode_code'], char_data['vs_code'])] = pua_char
+                ivs_to_pua_py[_ivs_literal_py(char_data['unicode_code'], char_data['vs_code'])] = pua_cp
+            print(f"⚠ {vs_name}: {bmp_portion:,}文字 → BMP, {len(chars_in_vs)-bmp_portion:,}文字 → SMP")
+        else:
+            for char_data in chars_in_vs:
+                pua_cp = smp_pua_current
+                pua_char = smp_escape(pua_cp)
+                smp_pua_current += 1
+                smp_pua_allocated += 1
+                js_lines.append(f"  '{char_data['ivs_sequence_js']}': '{pua_char}',  // {char_data['c_value']}")
+                ivs_to_pua_pairs[(char_data['unicode_code'], char_data['vs_code'])] = pua_char
+                ivs_to_pua_py[_ivs_literal_py(char_data['unicode_code'], char_data['vs_code'])] = pua_cp
+            print(f"→ {vs_name}: {len(chars_in_vs):,}文字 → SMP")
+
+    stats = {
+        'bmp_allocated': bmp_pua_allocated,
+        'smp_allocated': smp_pua_allocated,
+        'bmp_range_end': bmp_pua_current - 1,
+        'smp_range_end': smp_pua_current - 1,
+        'bmp_start': bmp_pua_start,
+        'smp_start': smp_pua_start,
+        'total': len(js_lines),
+    }
+    return js_lines, ivs_to_pua_pairs, ivs_to_pua_py, stats
+
 
 def _build_base_fallback_block(data: dict, ivs_to_pua: dict) -> tuple[str, int]:
     """Return (js_block_text, count).
@@ -11878,164 +12083,12 @@ def generate_mapping_file():
         
         print("IVS文字マッピングを段階的PUA戦略で生成中...")
         
-        # 段階的PUA配置戦略をインポート
-        try:
-            from pua_allocation_strategy_staged import get_staged_pua_strategy
-            pua_strategy = get_staged_pua_strategy()
-            bmp_pua_start = pua_strategy['bmp_pua']['start']  # 0xE000
-            smp_pua_start = pua_strategy['smp_pua']['start']  # 0xF0000
-            print(f"✓ 段階的PUA戦略を使用: BMP=0x{bmp_pua_start:04X}, SMP=0x{smp_pua_start:05X}")
-        except Exception as e:
-            print(f"⚠ 段階的PUA戦略の読み込みに失敗、修正済み方式を使用: {e}")
-            bmp_pua_start = 0xE000  # 修正: 0xE200 -> 0xE000
-            smp_pua_start = 0xF0000
-        
-        # JavaScript用のマッピングを生成
-        js_mappings = []
-        # base フォールバック用: (base_cp, vs_cp) -> JSエスケープしたPUA文字
-        ivs_to_pua: dict[tuple[int,int], str] = {}
-
-        # 第1段階: 全てのIVS文字を収集してVS別にグループ化
-        temp_chars = []
-        vs_groups = {}
-        
-        # 各エントリからIVS文字列を生成してVS別にグループ化
-        for unicode_key, entry in data.items():
-            if unicode_key.startswith('U+'):
-                try:
-                    unicode_code = int(unicode_key[2:], 16)
-                    
-                    # F列の値からIVS文字列を生成
-                    if "C_values_with_F" in entry:
-                        for f_value, c_value in entry["C_values_with_F"].items():
-                            if '_' in f_value:
-                                parts = f_value.split('_')
-                                if len(parts) == 2:
-                                    selector_hex = parts[1]  # E0100
-                                    
-                                    if selector_hex.startswith('E01'):
-                                        selector_num = int(selector_hex[3:], 16)
-                                        
-                                        # VS17-VS256の範囲（E0100-E01EF）
-                                        vs_code = 0xE0100 + selector_num
-                                        vs_name = f"VS{17 + selector_num}"
-                                        
-                                        # JavaScript用文字列を生成（エスケープ形式、SMP対応）
-                                        if unicode_code <= 0xFFFF:
-                                            base_char_escaped = "\\u{:04X}".format(unicode_code)
-                                        else:
-                                            # SMP文字はサロゲートペアとして表現
-                                            high = ((unicode_code - 0x10000) >> 10) + 0xD800
-                                            low = ((unicode_code - 0x10000) & 0x3FF) + 0xDC00
-                                            base_char_escaped = "\\u{:04X}\\u{:04X}".format(high, low)
-                                        
-                                        # サロゲートペアを計算
-                                        high_surrogate = ((vs_code - 0x10000) >> 10) + 0xD800
-                                        low_surrogate = ((vs_code - 0x10000) & 0x3FF) + 0xDC00
-                                        
-                                        vs_chars_escaped = "\\u{:04X}\\u{:04X}".format(high_surrogate, low_surrogate)
-                                        
-                                        # IVS文字データを一時保存
-                                        char_data = {
-                                            'ivs_sequence': base_char_escaped + vs_chars_escaped,
-                                            'vs_name': vs_name,
-                                            'c_value': c_value,
-                                            'unicode_code': unicode_code,
-                                            'vs_code': vs_code
-                                        }
-                                        
-                                        # VS別にグループ化
-                                        if vs_name not in vs_groups:
-                                            vs_groups[vs_name] = []
-                                        vs_groups[vs_name].append(char_data)
-                                        temp_chars.append(char_data)
-                                        
-                except ValueError:
-                    continue
-        
-        print(f"✓ 収集完了: {len(temp_chars)}文字、{len(vs_groups)}種類のVS")
-        
-        # 第2段階: 段階的PUA配置戦略に基づくJavaScript生成
-        print(f"\n第2段階: 段階的PUA配置...")
-        
-        # VS優先度リスト（使用頻度降順）
-        known_priority = ["VS19", "VS18", "VS20"]
-        others = sorted([vn for vn in vs_groups.keys() if vn not in known_priority], key=lambda x: int(x[2:]))
-        vs_priority = known_priority + others
-        
-        bmp_pua_current = bmp_pua_start  # 0xE000
-        smp_pua_current = smp_pua_start  # 0xF0000
-        bmp_pua_end = 0xF8FF
-        bmp_pua_allocated = 0
-        smp_pua_allocated = 0
-        
-        # 段階的配置によるJavaScriptマッピング生成
-        for vs_name in vs_priority:
-            if vs_name in vs_groups:
-                chars_in_vs = vs_groups[vs_name]
-                
-                if vs_name in ["VS19", "VS18"]:
-                    # 全てBMP PUAに配置
-                    for char_data in chars_in_vs:
-                        if bmp_pua_current <= bmp_pua_end:
-                            pua_char = "\\u{:04X}".format(bmp_pua_current)
-                            js_mappings.append(f"  '{char_data['ivs_sequence']}': '{pua_char}',  // {char_data['c_value']}")
-                            ivs_to_pua[(char_data['unicode_code'], char_data['vs_code'])] = pua_char
-                            bmp_pua_current += 1
-                            bmp_pua_allocated += 1
-                        else:
-                            # BMP PUA領域が満杯の場合、SMP PUAに移行（サロゲートペア）
-                            high = ((smp_pua_current - 0x10000) >> 10) + 0xD800
-                            low = ((smp_pua_current - 0x10000) & 0x3FF) + 0xDC00
-                            pua_char = "\\u{:04X}\\u{:04X}".format(high, low)
-                            js_mappings.append(f"  '{char_data['ivs_sequence']}': '{pua_char}',  // {char_data['c_value']}")
-                            ivs_to_pua[(char_data['unicode_code'], char_data['vs_code'])] = pua_char
-                            smp_pua_current += 1
-                            smp_pua_allocated += 1
-                    
-                    print(f"✓ {vs_name}: {len(chars_in_vs):,}文字 → BMP PUA")
-                    
-                elif vs_name == "VS20":
-                    # VS20は部分的配置
-                    bmp_portion = min(len(chars_in_vs), bmp_pua_end - bmp_pua_current + 1)
-                    
-                    for i, char_data in enumerate(chars_in_vs):
-                        if i < bmp_portion and bmp_pua_current <= bmp_pua_end:
-                            # BMP PUAに配置
-                            pua_char = "\\u{:04X}".format(bmp_pua_current)
-                            js_mappings.append(f"  '{char_data['ivs_sequence']}': '{pua_char}',  // {char_data['c_value']}")
-                            ivs_to_pua[(char_data['unicode_code'], char_data['vs_code'])] = pua_char
-                            bmp_pua_current += 1
-                            bmp_pua_allocated += 1
-                        else:
-                            # SMP PUAに配置（サロゲートペア）
-                            high = ((smp_pua_current - 0x10000) >> 10) + 0xD800
-                            low = ((smp_pua_current - 0x10000) & 0x3FF) + 0xDC00
-                            pua_char = "\\u{:04X}\\u{:04X}".format(high, low)
-                            js_mappings.append(f"  '{char_data['ivs_sequence']}': '{pua_char}',  // {char_data['c_value']}")
-                            ivs_to_pua[(char_data['unicode_code'], char_data['vs_code'])] = pua_char
-                            smp_pua_current += 1
-                            smp_pua_allocated += 1
-                    
-                    print(f"⚠ {vs_name}: {bmp_portion:,}文字 → BMP PUA, {len(chars_in_vs)-bmp_portion:,}文字 → SMP PUA")
-                    
-                else:
-                    # VS17, VS21以降は全てSMP PUAに配置（サロゲートペア）
-                    for char_data in chars_in_vs:
-                        high = ((smp_pua_current - 0x10000) >> 10) + 0xD800
-                        low = ((smp_pua_current - 0x10000) & 0x3FF) + 0xDC00
-                        pua_char = "\\u{:04X}\\u{:04X}".format(high, low)
-                        js_mappings.append(f"  '{char_data['ivs_sequence']}': '{pua_char}',  // {char_data['c_value']}")
-                        ivs_to_pua[(char_data['unicode_code'], char_data['vs_code'])] = pua_char
-                        smp_pua_current += 1
-                        smp_pua_allocated += 1
-                    
-                    print(f"→ {vs_name}: {len(chars_in_vs):,}文字 → SMP PUA")
-        
-        print(f"\nJavaScript配置完了:")
-        print(f"BMP PUA: {bmp_pua_allocated:,}文字 (0x{bmp_pua_start:04X}-0x{bmp_pua_current-1:04X})")
-        print(f"SMP PUA: {smp_pua_allocated:,}文字 (0x{smp_pua_start:05X}-0x{smp_pua_current-1:05X})")
-        print(f"総マッピング数: {len(js_mappings):,}")
+        # 収集〜PUA配置を一括実行し、JS/抽出用の両マップを取得
+        js_mappings, ivs_to_pua_pairs, ivs_to_pua_py, stats = _build_ivs_allocation_from_json(data)
+        print("\nJavaScript配置完了:")
+        print(f"BMP PUA: {stats['bmp_allocated']:,}文字 (0x{stats['bmp_start']:04X}-0x{stats['bmp_range_end']:04X})")
+        print(f"SMP PUA: {stats['smp_allocated']:,}文字 (0x{stats['smp_start']:05X}-0x{stats['smp_range_end']:05X})")
+        print(f"総マッピング数: {stats['total']:,}")
 
         # 互換漢字 → 統合漢字 マップをExcelから生成
         def _uplus_to_char(s: str) -> str | None:
@@ -12197,8 +12250,9 @@ export function getPUAPlane(puaChar) {
 
 // IVS→PUA変換（段階的配置対応）
 export function convertIVSText(text) {
-    return text.replace(/[\\u3400-\\u9fff][\\uDB40-\\uDB7F][\\uDC00-\\uDFFF]/g, 
-        match => ivsToExternalCharMap[match] || match);
+    // BMP基底字 (U+3400–U+9FFF) または SMP基底字 (サロゲートペア) + VS のパターン
+    const ivsPattern = /(?:[\\u3400-\\u9FFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])[\\uDB40-\\uDB7F][\\uDC00-\\uDFFF]/g;
+    return text.replace(ivsPattern, match => ivsToExternalCharMap[match] || match);
 }
 
 export const ivsToExternalCharMap = {
@@ -12215,7 +12269,7 @@ export const ivsToExternalCharMap = {
         js_content += "\n};\n"
 
         # 既定異体ベースフォールバックのブロックを追加
-        fallback_block, fb_count = _build_base_fallback_block(data, ivs_to_pua)
+        fallback_block, fb_count = _build_base_fallback_block(data, ivs_to_pua_pairs)
         js_content += fallback_block
         print(f"baseCharFallbackToExternalMap: {fb_count} entries")
         

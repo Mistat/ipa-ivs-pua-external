@@ -89,6 +89,24 @@ def parse_excel_with_f_column(filename):
                     c_value = row_data['C']
                     d_value = row_data['D']
                     f_value = row_data['F']
+
+                    # Normalize F: handle rare multi-values like "2B9E4_E0100;535A_E010A"
+                    # Prefer the token whose base hex matches D column (e.g., U+2B9E4 → "2B9E4_...")
+                    try:
+                        if isinstance(f_value, str) and ';' in f_value and isinstance(d_value, str) and d_value.startswith('U+'):
+                            hexcode = d_value[2:].upper()
+                            tokens = [t.strip() for t in f_value.split(';') if t.strip()]
+                            picked = None
+                            for t in tokens:
+                                if t.upper().startswith(hexcode + '_'):
+                                    picked = t
+                                    break
+                            if picked is None and tokens:
+                                picked = tokens[0]
+                            if picked:
+                                f_value = picked
+                    except Exception:
+                        pass
                     
                     # Create mapping from C to F
                     if c_value:
@@ -105,6 +123,12 @@ def parse_excel_with_f_column(filename):
                     # Add C value to array if it's not already there
                     if c_value and c_value not in result[d_key]["C_values"]:
                         result[d_key]["C_values"].append(c_value)
+                    # Also store per-D C→F mapping (contextual F selection)
+                    try:
+                        per_d = result[d_key].setdefault("C_values_with_F", {})
+                        per_d[c_value] = f_value
+                    except Exception:
+                        pass
                     
                     rows_processed += 1
                     
@@ -123,14 +147,34 @@ def parse_excel_with_f_column(filename):
             # Convert to regular dict
             final_result = dict(result)
             
-            # Now update the result to include F column mapping for C values
+            # Now ensure each entry has a normalized C_values_with_F. If missing, fallback to global map.
             for key, value in final_result.items():
-                c_with_f = {}
-                for c_value in value["C_values"]:
-                    f_value = c_to_f_mapping.get(c_value, None)
-                    c_with_f[c_value] = f_value
-                
-                # Replace C_values array with C_values mapping
+                c_with_f = value.get("C_values_with_F") or {}
+                # If missing or incomplete, fill from global C→F
+                if not c_with_f or any(cv not in c_with_f for cv in value["C_values"]):
+                    for c_value in value["C_values"]:
+                        if c_value not in c_with_f:
+                            c_with_f[c_value] = c_to_f_mapping.get(c_value, None)
+                # Normalize any accidental multi-tag strings like "2B9E4_E0100;535A_E010A" with D-context
+                try:
+                    if isinstance(key, str) and key.startswith('U+'):
+                        hexcode = key[2:].upper()
+                    else:
+                        hexcode = None
+                    if hexcode:
+                        for mj, ftag in list(c_with_f.items()):
+                            if isinstance(ftag, str) and ';' in ftag:
+                                tokens = [t.strip() for t in ftag.split(';') if t.strip()]
+                                picked = None
+                                for t in tokens:
+                                    if t.upper().startswith(hexcode + '_'):
+                                        picked = t
+                                        break
+                                if picked is None and tokens:
+                                    picked = tokens[0]
+                                c_with_f[mj] = picked
+                except Exception:
+                    pass
                 value["C_values_with_F"] = c_with_f
                 # Keep original array for backward compatibility
                 # value["C_values"] = list(c_with_f.keys())

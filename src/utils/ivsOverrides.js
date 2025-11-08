@@ -11,7 +11,7 @@
 export const ivsToExternalCharMap = {
   // U+2B9E4 U+E0100 (𫧤󠄀) → provisional PUA for MJ059399
   // NOTE: Font needs regeneration to embed MJ059399 glyph at this PUA.
-  '\uD86E\uDDE4\uDB40\uDD00': '\uEEF0',
+  //'\uD86E\uDDE4\uDB40\uDD00': '\uEEF0',
 };
 
 export const baseCharFallbackToExternalMap = {

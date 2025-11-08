@@ -6,6 +6,115 @@ ivsCharacterMap.jsを解析してHTMLに直接データを埋め込み
 import json
 import re
 import os
+import datetime
+import struct
+
+def _read_u16(b, off):
+    return struct.unpack_from('>H', b, off)[0]
+
+def _read_u24(b, off):
+    a, c = struct.unpack_from('>HB', b, off)
+    return (a << 8) | c
+
+def _read_u32(b, off):
+    return struct.unpack_from('>I', b, off)[0]
+
+def _find_table(buf, tag):
+    # sfnt header: scaler type(4), numTables(2), searchRange(2), entrySelector(2), rangeShift(2)
+    num = _read_u16(buf, 4)
+    off = 12
+    tag_val = tag.encode('ascii')
+    if len(tag_val) != 4:
+        return None, 0
+    tag_u32 = struct.unpack('>I', tag_val)[0]
+    for _ in range(num):
+        tTag = _read_u32(buf, off)
+        tOffset = _read_u32(buf, off + 8)
+        tLength = _read_u32(buf, off + 12)
+        if tTag == tag_u32:
+            return tOffset, tLength
+        off += 16
+    return None, 0
+
+def _build_has_cp_checker(font_path):
+    try:
+        with open(font_path, 'rb') as f:
+            buf = f.read()
+    except Exception:
+        return lambda cp: False
+    cmap_off, _ = _find_table(buf, 'cmap')
+    if not cmap_off:
+        return lambda cp: False
+    numTables = _read_u16(buf, cmap_off + 2)
+    format4 = None
+    format12 = None
+    for i in range(numTables):
+        rec = cmap_off + 4 + i * 8
+        platformID = _read_u16(buf, rec)
+        subOffset = _read_u32(buf, rec + 4)
+        subBase = cmap_off + subOffset
+        fmt = _read_u16(buf, subBase)
+        if fmt == 12 or (fmt == 0 and _read_u16(buf, subBase + 2) == 12):
+            format12 = {'base': subBase}
+        elif fmt == 4 and platformID == 3:
+            format4 = {'base': subBase}
+    def has_cp(cp: int) -> bool:
+        # Try format 12 for SMP
+        if cp > 0xFFFF and format12:
+            b = format12['base']
+            nGroups = _read_u32(buf, b + 12)
+            lo, hi = 0, nGroups - 1
+            off = b + 16
+            while lo <= hi:
+                mid = (lo + hi) >> 1
+                m = off + mid * 12
+                start = _read_u32(buf, m)
+                end = _read_u32(buf, m + 4)
+                if cp < start:
+                    hi = mid - 1
+                elif cp > end:
+                    lo = mid + 1
+                else:
+                    startGlyphID = _read_u32(buf, m + 8)
+                    gid = startGlyphID + (cp - start)
+                    return gid != 0
+        # Try format 4 for BMP
+        if cp <= 0xFFFF and format4:
+            b = format4['base']
+            segCount = _read_u16(buf, b + 6) // 2
+            endOff = b + 14
+            startOff = endOff + segCount * 2 + 2
+            idDeltaOff = startOff + segCount * 2
+            idRangeOffsetOff = idDeltaOff + segCount * 2
+            lo, hi = 0, segCount - 1
+            while lo <= hi:
+                mid = (lo + hi) >> 1
+                endv = _read_u16(buf, endOff + mid * 2)
+                if cp > endv:
+                    lo = mid + 1
+                else:
+                    hi = mid - 1
+            i = lo
+            if i >= segCount:
+                return False
+            endv = _read_u16(buf, endOff + i * 2)
+            startv = _read_u16(buf, startOff + i * 2)
+            if cp < startv or cp > endv:
+                return False
+            idDelta = _read_u16(buf, idDeltaOff + i * 2)
+            idRangeOffset = _read_u16(buf, idRangeOffsetOff + i * 2)
+            if idRangeOffset == 0:
+                gid = (cp + idDelta) & 0xFFFF
+                return gid != 0
+            roff = idRangeOffsetOff + i * 2 + idRangeOffset
+            idx = (cp - startv) * 2
+            glyphIndex = _read_u16(buf, roff + idx)
+            if glyphIndex == 0:
+                return False
+            gid = (glyphIndex + idDelta) & 0xFFFF
+            return gid != 0
+        return False
+    return has_cp
 
 def generate_static_font_test():
     """静的なfont-test.htmlを生成"""
@@ -13,8 +122,12 @@ def generate_static_font_test():
     print("静的Font Test HTMLページを生成中...")
     print("=" * 50)
     
+    # 実行ディレクトリに依存せず、スクリプト位置からパスを解決
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    root_dir = os.path.normpath(os.path.join(script_dir, '..'))
+
     # ivsCharacterMap.jsを読み込んで解析
-    ivs_mapping_file = "../src/utils/ivsCharacterMap.js"
+    ivs_mapping_file = os.path.join(root_dir, 'src', 'utils', 'ivsCharacterMap.js')
     
     if not os.path.exists(ivs_mapping_file):
         print(f"✗ エラー: {ivs_mapping_file} が見つかりません")
@@ -51,72 +164,130 @@ def generate_static_font_test():
         
         print(f"✓ {len(matches)} 個のマッピングエントリを発見")
         
+        # 概念上の「基本文字があるか」を MJI の JSON から判定
+        # U+XXXX → entry.F_to_C に ftag(XXXX_E01YY) が存在し値があれば「基本文字あり」
+        mji_json_path = os.path.join(root_dir, 'mji_analysis_f_to_c_mapping.json')
+        mji_data = {}
+        try:
+            with open(mji_json_path, 'r', encoding='utf-8') as jf:
+                mji_data = json.load(jf)
+        except Exception:
+            mji_data = {}
+
+        # 実際に ipam.ttf にグリフがあるか（描画可能か）も併せてチェック
+        base_font_path = os.path.join(root_dir, 'fonts', 'ipam.ttf')
+        has_base_cp = _build_has_cp_checker(base_font_path)
+
         for i, (ivs_sequence, pua_char, comment) in enumerate(matches):
             # Unicode エスケープ文字列を実際の文字に変換
             try:
                 # \\uXXXX 形式を実際のUnicode文字に変換
                 ivs_actual = ivs_sequence.encode().decode('unicode-escape')
                 pua_actual = pua_char.encode().decode('unicode-escape')
-                
-                base_char = ivs_actual[0] if ivs_actual else '?'
-                base_unicode = ord(base_char)
-                
+
+                # 基本文字（SMPはサロゲート2文字連結で表示）とコードポイント
+                base_text = '?'
+                base_cp = None
+                idx = 0
+                if ivs_actual:
+                    c0 = ord(ivs_actual[0])
+                    if len(ivs_actual) >= 2 and 0xD800 <= c0 <= 0xDBFF and 0xDC00 <= ord(ivs_actual[1]) <= 0xDFFF:
+                        c1 = ord(ivs_actual[1])
+                        base_text = ivs_actual[0] + ivs_actual[1]
+                        base_cp = ((c0 - 0xD800) << 10) + (c1 - 0xDC00) + 0x10000
+                        idx = 2
+                    else:
+                        base_text = ivs_actual[0]
+                        base_cp = c0
+                        idx = 1
+
+                # VSを判定（DB40/DDxx: E0100系, FE00..FE0F: VS1..VS16）
+                vs_name = 'VS?'
+                vs_code = None
+                if len(ivs_actual) >= idx + 2:
+                    h = ord(ivs_actual[idx])
+                    l = ord(ivs_actual[idx + 1])
+                    if 0xDB40 <= h <= 0xDB40 and 0xDD00 <= l <= 0xDDEF:
+                        vs_code = 0xE0100 + (l - 0xDD00)
+                        vs_num = (vs_code - 0xE0100) + 17
+                        vs_name = f"VS{vs_num}"
+                if vs_code is None and len(ivs_actual) >= idx + 1:
+                    v = ord(ivs_actual[idx])
+                    if 0xFE00 <= v <= 0xFE0F:
+                        vs_code = v
+                        vs_num = (v - 0xFE00) + 1
+                        vs_name = f"VS{vs_num}"
+
+                # MJI由来の論理的な有無（F_to_C があれば基本文字あり）
+                base_exists_mji = False
+                try:
+                    ukey = f"U+{base_cp:X}" if base_cp is not None else None
+                    entry = mji_data.get(ukey) or {}
+                    f_to_c = entry.get('F_to_C') or {}
+                    if vs_code and 0xE0100 <= vs_code <= 0xE01EF:
+                        ftag = f"{base_cp:X}_{vs_code:X}"  # 例: 2B9E4_E0102
+                        base_exists_mji = bool(f_to_c.get(ftag))
+                    else:
+                        base_exists_mji = False
+                except Exception:
+                    base_exists_mji = False
+
+                # 実フォント収録の有無（cmap）
+                base_exists_font = bool(base_cp is not None and has_base_cp(base_cp))
+
+                # 最終的に「基本文字あり」とするのは双方満たす場合のみ
+                base_exists = bool(base_exists_mji and base_exists_font)
+
                 # PUA文字のコードポイントを取得（SMP文字対応）
                 if len(pua_actual) == 1:
-                    # BMP文字
                     pua_code = ord(pua_actual)
                 elif len(pua_actual) == 2:
-                    # サロゲートペア（SMP文字）
-                    high = ord(pua_actual[0])
-                    low = ord(pua_actual[1])
+                    high = ord(pua_actual[0]); low = ord(pua_actual[1])
                     if 0xD800 <= high <= 0xDBFF and 0xDC00 <= low <= 0xDFFF:
                         pua_code = ((high - 0xD800) << 10) + (low - 0xDC00) + 0x10000
                     else:
-                        pua_code = ord(pua_actual[0])  # フォールバック
+                        pua_code = ord(pua_actual[0])
                 else:
-                    pua_code = ord(pua_actual[0])  # フォールバック
-                    
+                    pua_code = ord(pua_actual[0])
+
             except Exception as e:
                 print(f"  警告: 文字変換エラー - {ivs_sequence} -> {e}")
                 continue
-            
-            # VSを判定（サロゲートペアから）
-            vs_name = 'VS?'
-            if len(ivs_actual) >= 3:
-                try:
-                    # UTF-16サロゲートペアをデコード
-                    high = ord(ivs_actual[1])
-                    low = ord(ivs_actual[2])
-                    if 0xDB40 <= high <= 0xDB40 and 0xDD00 <= low <= 0xDDEF:
-                        vs_code = ((high - 0xDB40) << 10) + (low - 0xDD00) + 0xE0100
-                        vs_num = vs_code - 0xE0100 + 17
-                        vs_name = f"VS{vs_num}"
-                except:
-                    pass
             
             # MJ番号をコメントから抽出
             mj_match = re.search(r'(MJ\d+)', comment)
             mj_number = mj_match.group(1) if mj_match else 'MJ??????'
             
+            # VS? の場合は強制的に基本文字なし扱い
+            if vs_name == 'VS?':
+                base_exists = False
+
+            # 基本文字のUnicode表示（サロゲートや不明は '—' にする）
+            if base_cp is None or (0xD800 <= (base_cp or 0) <= 0xDFFF) or vs_name == 'VS?':
+                base_unicode_str = '—'
+            else:
+                base_unicode_str = f"U+{base_cp:X}"
+
             character_data.append({
                 'ivs_sequence': ivs_actual,
                 'pua_char': pua_actual,
-                'base_char': base_char,
-                'base_unicode': f"U+{base_unicode:04X}",
+                'base_char': base_text if base_exists else 'なし',
+                'base_unicode': base_unicode_str,
                 'vs_name': vs_name,
                 'mj_number': mj_number,
                 'pua_code': f"U+{pua_code:04X}",
-                'comment': comment.strip()
+                'comment': comment.strip(),
+                'base_exists': base_exists,
             })
             
             if i < 10:  # 最初の10個をサンプル表示
-                print(f"  {base_char} {vs_name} -> {pua_actual} ({mj_number})")
+                print(f"  {base_text} {vs_name} -> {pua_actual} ({mj_number})")
         
         print(f"✓ {len(character_data)} 個の文字データを処理しました")
         
         # 統計情報を計算
         total_count = len(character_data)
-        unique_base_chars = len(set(item['base_char'] for item in character_data))
+        unique_base_chars = len(set(item['base_char'] for item in character_data if item.get('base_exists')))
         vs_counts = {}
         for item in character_data:
             vs = item['vs_name']
@@ -128,6 +299,9 @@ def generate_static_font_test():
         print(f"✗ エラー: {ivs_mapping_file} の解析に失敗 - {e}")
         return False
     
+    # 生成時刻（最終更新）
+    generated_at = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
     # HTMLテンプレートを生成
     html_content = f'''<!DOCTYPE html>
 <html lang="ja">
@@ -277,6 +451,10 @@ def generate_static_font_test():
             font-weight: 500;
         }}
         
+        .base-char {{
+            font-family: 'IPAMincho';
+        }}
+        
         .mj-code {{
             font-family: 'Courier New', monospace;
             background: #f8f9fa;
@@ -318,15 +496,15 @@ def generate_static_font_test():
 
         @font-face {{
           font-family: 'IPAMincho';
-          src: url('./fonts/ipam.ttf') format('truetype');
+          src: url('../../fonts/ipam.ttf') format('truetype');
           font-weight: normal;
           font-style: normal;
         }}
         
         @font-face {{
             font-family: 'IPA-IVS-External';
-            src: url('./fonts/ipa-ivs-external.woff2') format('woff2'),
-                 url('./fonts/ipa-ivs-external.ttf') format('truetype');
+            src: url('../../fonts/ipa-ivs-external.woff2') format('woff2'),
+                 url('../../fonts/ipa-ivs-external.ttf') format('truetype');
             font-display: swap;
         }}
         
@@ -362,6 +540,10 @@ def generate_static_font_test():
         <header class="header">
             <h1>IVS外字フォントテストビュー</h1>
         </header>
+
+        <div class="generation-info">
+            最終更新: {generated_at}
+        </div>
         
         <div class="controls">
             <div class="control-group">
@@ -442,8 +624,9 @@ def generate_static_font_test():
         ivs_js = repr(item['ivs_sequence'])
         pua_js = repr(item['pua_char'])
         base_js = repr(item['base_char'])
+        base_exists_js = 'true' if item.get('base_exists') else 'false'
         
-        js_item = f'{{ivsSequence: {ivs_js}, puaChar: {pua_js}, baseChar: {base_js}, baseUnicode: "{item["base_unicode"]}", vsName: "{item["vs_name"]}", mjNumber: "{item["mj_number"]}", puaCode: "{item["pua_code"]}"}}'
+        js_item = f'{{ivsSequence: {ivs_js}, puaChar: {pua_js}, baseChar: {base_js}, baseExists: {base_exists_js}, baseUnicode: "{item["base_unicode"]}", vsName: "{item["vs_name"]}", mjNumber: "{item["mj_number"]}", puaCode: "{item["pua_code"]}"}}'
         js_character_data.append(js_item)
     
     js_data_str = ', '.join(js_character_data)
@@ -460,7 +643,7 @@ def generate_static_font_test():
         function updateStats() {{
             const totalCount = characterData.length;
             const filteredCount = filteredRows.length;
-            const uniqueBaseChars = new Set(filteredRows.map(item => item.baseChar)).size;
+            const uniqueBaseChars = new Set(filteredRows.filter(i=>i.baseExists).map(item => item.baseChar)).size;
             
             document.getElementById('totalCount').textContent = totalCount.toLocaleString();
             document.getElementById('filteredCount').textContent = filteredCount.toLocaleString();
@@ -499,7 +682,7 @@ def generate_static_font_test():
                 row.innerHTML = 
                     '<td><div class="char-display ivs-char" style="font-size: ' + fontSize + 'px;">' + item.ivsSequence + '</div></td>' +
                     '<td><div class="char-display pua-char" style="font-size: ' + fontSize + 'px;">' + item.puaChar + '</div></td>' +
-                    '<td><div class="char-display" style="font-size: ' + fontSize + 'px;">' + item.baseChar + '</div></td>' +
+                    '<td><div class="char-display base-char" style="font-size: ' + fontSize + 'px;">' + ((item.baseExists && item.vsName !== 'VS?') ? item.baseChar : 'なし') + '</div></td>' +
                     '<td><span class="vs-badge">' + item.vsName + '</span></td>' +
                     '<td><span class="mj-code">' + item.mjNumber + '</span></td>' +
                     '<td><span class="unicode-code">' + item.baseUnicode + '</span></td>' +
@@ -530,9 +713,14 @@ def generate_static_font_test():
 </html>'''
     
     # 静的HTMLファイルを保存
-    output_file = "../public/font-test-static.html"
+    output_file = os.path.join(root_dir, 'examples', 'font-test', 'font-test-static.html')
     
     try:
+        # 出力先ディレクトリを作成
+        out_dir = os.path.dirname(output_file)
+        if out_dir and not os.path.exists(out_dir):
+            os.makedirs(out_dir, exist_ok=True)
+
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(html_content)
         
@@ -543,16 +731,16 @@ def generate_static_font_test():
         
         # 統計情報も保存
         stats = {
-            "generation_timestamp": "2025-07-12",
-            "source_file": ivs_mapping_file,
-            "output_file": output_file,
+            "generation_timestamp": generated_at,
+            "source_file": os.path.relpath(ivs_mapping_file, root_dir),
+            "output_file": os.path.relpath(output_file, root_dir),
             "total_characters": total_count,
             "unique_base_characters": unique_base_chars,
             "vs_distribution": vs_counts,
             "file_size_mb": round(len(html_content)/1024/1024, 2)
         }
         
-        with open("../static_font_test_stats.json", 'w', encoding='utf-8') as f:
+        with open(os.path.join(root_dir, "static_font_test_stats.json"), 'w', encoding='utf-8') as f:
             json.dump(stats, f, ensure_ascii=False, indent=2)
         
         print(f"✓ 統計情報を保存しました: static_font_test_stats.json")
