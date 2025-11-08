@@ -148,7 +148,7 @@ describe('U+2B9E4 display mapping around MJ059399/MJ059400', () => {
     const name = nameOf(gidBase);
     expect(name).toBe('mj059399');
 
-    // External font: the PUA codepoint should carry the exact same outline
+    // External font: the PUA codepoint should carry the exact same outl__tests__/mji_2B9E4_display.test.jsine
     const cp = pua.codePointAt(0);
     const cpToGID = parseCmapCpToGID(extFont);
     const gidExt = cpToGID(cp);
@@ -175,5 +175,126 @@ describe('U+2B9E4 display mapping around MJ059399/MJ059400', () => {
     const nameOf = parsePost(baseFont);
     const name = nameOf(gid);
     expect(name).toBe('mj059400');
+  });
+});
+
+// Bulk verification for many MJ glyphs referenced in ivsCharacterMap.js comments.
+// For each MJ code below, we locate the corresponding IVS→PUA line in
+// src/utils/ivsCharacterMap.js (by parsing the source file to keep the MJ comment),
+// then verify:
+//  - Base font (ipam.ttf) has a Non-Default UVS entry mapping that IVS to a glyph
+//    and the glyph name in 'post' table matches the expected mjXXXXX.
+//  - External font (ipa-ivs-external.ttf) has the PUA codepoint present.
+
+function parseIvsMapComments() {
+  const jsPath = path.join(__dirname, '..', 'src', 'utils', 'ivsCharacterMap.js');
+  const src = fs.readFileSync(jsPath, 'utf-8');
+  const lines = src.split(/\r?\n/);
+  const out = new Map(); // MJxxxxx -> { ivsLiteral, pua }
+  const re = /'([^']+)':\s*'([^']+)',\s*\/\/\s*(MJ\d{6})/;
+  for (const line of lines) {
+    const m = line.match(re);
+    if (m) {
+      const ivsLiteral = m[1];
+      const pua = m[2];
+      const mj = m[3];
+      out.set(mj, { ivsLiteral, pua });
+    }
+  }
+  return out;
+}
+
+function decodeEscapedJS(jsEscaped) {
+  // jsEscaped like "\\uD86E\\uDDE4\\uDB40\\uDD02" → string with surrogate pairs
+  return jsEscaped.replace(/\\u([0-9A-Fa-f]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+}
+
+function ivsToBaseAndVS(ivsStr) {
+  // Return { baseCP, vsCP } from actual string
+  // base may be SMP (surrogate pair). VS is either E0100..E01EF (DB40/DDxx) or FE00..FE0F.
+  if (!ivsStr || ivsStr.length < 2) return { baseCP: 0, vsCP: 0 };
+  let i = 0;
+  const c0 = ivsStr.charCodeAt(0);
+  let baseCP;
+  if (c0 >= 0xD800 && c0 <= 0xDBFF && ivsStr.length >= 2) {
+    const c1 = ivsStr.charCodeAt(1);
+    baseCP = 0x10000 + ((c0 - 0xD800) << 10) + (c1 - 0xDC00);
+    i = 2;
+  } else {
+    baseCP = c0;
+    i = 1;
+  }
+  let vsCP = 0;
+  if (ivsStr.length >= i + 2) {
+    const h = ivsStr.charCodeAt(i);
+    const l = ivsStr.charCodeAt(i + 1);
+    if (h === 0xDB40 && l >= 0xDD00 && l <= 0xDDEF) {
+      vsCP = 0xE0100 + (l - 0xDD00);
+      return { baseCP, vsCP };
+    }
+  }
+  const v = ivsStr.charCodeAt(i);
+  if (v >= 0xFE00 && v <= 0xFE0F) vsCP = v;
+  return { baseCP, vsCP };
+}
+
+describe('Bulk MJ glyph checks via ivsCharacterMap.js comments', () => {
+  const extFontPath = path.join(__dirname, '..', 'fonts', 'ipa-ivs-external.ttf');
+  const baseFontPath = path.join(__dirname, '..', 'fonts', 'ipam.ttf');
+  const extFont = u8(extFontPath);
+  const baseFont = u8(baseFontPath);
+  const cpToGIDExt = parseCmapCpToGID(extFont);
+  const mjMap = parseIvsMapComments();
+
+  const targets = [
+    'MJ021335','MJ023164','MJ030293','MJ030309','MJ030319','MJ030387','MJ030550','MJ030742','MJ030927','MJ030984',
+    'MJ031729','MJ031960','MJ032098','MJ032337','MJ032503','MJ032961','MJ032991','MJ033194','MJ033196','MJ033205',
+    'MJ033579','MJ033817','MJ034186','MJ034313','MJ034543','MJ034827','MJ035471','MJ035828','MJ036334','MJ036351',
+    'MJ037889','MJ037939','MJ038052','MJ038223','MJ038344','MJ038377','MJ038420','MJ038425','MJ039218','MJ039442',
+    'MJ041409','MJ042964','MJ042970','MJ042975','MJ042980','MJ043007','MJ043035','MJ043047','MJ043051','MJ043063',
+    'MJ043075','MJ043092','MJ043175','MJ043243','MJ043547','MJ043732','MJ044738','MJ045111','MJ045235','MJ045558',
+    'MJ046224','MJ046309','MJ046537','MJ046954','MJ047032','MJ047141','MJ047259','MJ047772','MJ047986','MJ048162',
+    'MJ048374','MJ048486','MJ048895','MJ049239','MJ049294','MJ049590','MJ049742','MJ049758','MJ050768','MJ050780',
+    'MJ050822','MJ050868','MJ050877','MJ050933','MJ050936','MJ050944','MJ050956','MJ050991','MJ051009','MJ051044',
+    'MJ051051','MJ051061','MJ051123','MJ051167','MJ051172','MJ052666','MJ053282','MJ053809','MJ053861','MJ053865',
+    'MJ053980','MJ054089','MJ054116','MJ054143','MJ055217','MJ055265','MJ055301','MJ055928','MJ056431','MJ056830',
+    'MJ056893','MJ056904','MJ056928','MJ056959','MJ056988','MJ056994','MJ057019','MJ057121','MJ057181','MJ057198',
+    'MJ057235','MJ057266','MJ057285','MJ057447','MJ057482','MJ057545','MJ057641','MJ057782','MJ057879','MJ057891',
+    'MJ057892','MJ057949','MJ057999','MJ058133','MJ058240','MJ058258','MJ058376','MJ058705','MJ058708','MJ058710',
+    'MJ058869','MJ059002','MJ059016','MJ059171','MJ059252','MJ059329','MJ059399','MJ059400','MJ059483','MJ059514',
+    'MJ059575','MJ059601','MJ059636','MJ059641','MJ059747','MJ059817','MJ059821','MJ059831','MJ059846','MJ059876',
+    'MJ059996','MJ060113','MJ060245','MJ060253','MJ068061','MJ068075','MJ068076','MJ068078','MJ068080','MJ068081',
+    'MJ068083','MJ068086','MJ068087','MJ068088','MJ068090','MJ068091','MJ068092','MJ068093','MJ068095','MJ068097',
+    'MJ068098','MJ068099','MJ068100'
+  ];
+
+  test('all target MJs exist in ivsCharacterMap.js', () => {
+    const missing = targets.filter(mj => !mjMap.has(mj));
+    if (missing.length) {
+      throw new Error('Missing MJ entries in ivsCharacterMap.js: ' + missing.join(', '));
+    }
+  });
+
+  test('PUA presence and base font mj-name for targets', () => {
+    for (const mj of targets) {
+      const rec = mjMap.get(mj);
+      const ivsStr = decodeEscapedJS(rec.ivsLiteral);
+      const puaStr = decodeEscapedJS(rec.pua);
+      const { baseCP, vsCP } = ivsToBaseAndVS(ivsStr);
+
+      // External font must contain PUA codepoint
+      const puaCP = puaStr.codePointAt(0);
+      const gidExt = cpToGIDExt(puaCP);
+      if (gidExt === 0) throw new Error(`${mj}: PUA U+${puaCP.toString(16).toUpperCase()} missing in external font`);
+
+      // Base font mj-name via UVS
+      const gidBase = getGIDFromUVS(baseFont, baseCP, vsCP);
+      if (gidBase === 0) throw new Error(`${mj}: base UVS not present in ipam.ttf (U+${baseCP.toString(16)} + U+${vsCP.toString(16)})`);
+      const nameOf = parsePost(baseFont);
+      const gname = nameOf(gidBase);
+      if ((gname || '').toLowerCase() !== mj.toLowerCase().replace('mj','mj')) {
+        throw new Error(`${mj}: glyph name mismatch in ipam.ttf → ${gname}`);
+      }
+    }
   });
 });
