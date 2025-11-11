@@ -15,6 +15,21 @@ export const ivsToExternalCharMap = {
 };
 
 export const baseCharFallbackToExternalMap = {
+  // PDF whitelist: apply base→PUA fallback only for specific needed codepoints.
+  // Use this together with convertIVSToExternal(text, { enableBaseFallback: true }) on PDF path.
+  // 𫟋 (MJ021335)
+  '\uD86D\uDFCB': '\uE821',
+  // 𬟓 (MJ023164)
+  '\uD871\uDFD3': '\uF8AF',
+  // 𠆻 (MJ030550)
+  '\uD840\uDDBB': '\uDB80\uDF1C',
+  // 𠒖 (MJ030927)
+  '\uD841\uDC96': '\uDB80\uDF26',
+  // 𠔉 (MJ030984)
+  '\uD841\uDD09': '\uDB80\uDF27',
+  // 𠮓 (MJ032098)
+  '\uD842\uDF93': '\uDB80\uDF38',
+  
   // // Base fallback entries (IVSが続く場合は適用しないロジックは ivsUtils.js 側に実装)
   // '\uD86D\uDFCB': '\uDB83\uDD35', // MJ021335
   // '\uD871\uDFD3': '\uDB83\uDD58', // MJ023164
