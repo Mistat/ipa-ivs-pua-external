@@ -29,6 +29,20 @@ export const baseCharFallbackToExternalMap = {
   '\uD841\uDD09': '\uDB80\uDF27',
   // 𠮓 (MJ032098)
   '\uD842\uDF93': '\uDB80\uDF38',
+
+  // ----- Additional PDF whitelist -----
+  // MJ042964..MJ043092 block (SMP base codepoints)
+  '\uD855\uDE07': '\uDB80\uDFD2', // MJ042964
+  '\uD855\uDE26': '\uDB80\uDFD3', // MJ042970
+  '\uD855\uDE2C': '\uDB80\uDFD4', // MJ042975
+  '\uD855\uDE30': '\uDB80\uDFD5', // MJ042980
+  '\uD855\uDE6E': '\uDB80\uDFD6', // MJ043007
+  '\uD855\uDEC6': '\uDB80\uDFD7', // MJ043035
+  '\uD855\uDED9': '\uDB80\uDFD8', // MJ043047
+  '\uD855\uDEDC': '\uDB80\uDFD9', // MJ043051
+  '\uD855\uDEF2': '\uDB80\uDFDA', // MJ043063
+  '\uD855\uDF05': '\uDB80\uDFDB', // MJ043075
+  '\uD855\uDF26': '\uDB80\uDFDD', // MJ043092
   
   // // Base fallback entries (IVSが続く場合は適用しないロジックは ivsUtils.js 側に実装)
   // '\uD86D\uDFCB': '\uDB83\uDD35', // MJ021335
