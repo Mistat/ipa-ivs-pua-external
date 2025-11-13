@@ -12103,7 +12103,6 @@ export const baseCharFallbackToExternalMap = {
   '\uD874\uDC28': '\uDB83\uDFD2',
   '\uD86E\uDD30': '\uDB83\uDFD3',
   '\uD874\uDCB2': '\uDB83\uDFD4',
-  '\uD86E\uDDE4': '\uEEF2',
   '\uD874\uDE60': '\uDB83\uDFD6',
   '\uD874\uDF80': '\uDB83\uDFD7',
   '\uD86E\uDFF1': '\uDB83\uDFD8',
@@ -12132,7 +12131,7 @@ export const baseCharFallbackToExternalMap = {
   '\uD86D\uDC68': '\uDB83\uDFEF',
   '\uD87A\uDDC0': '\uDB83\uDFF0',
   '\uD87A\uDDF2': '\uDB83\uDFF1',
-  '\uD87A\uDE41': '\uDB83\uDFF2',
+  '\uD87A\uDE41': '\uDB83\uDFF2'
 };
 
 // 配置統計（段階的PUA戦略）

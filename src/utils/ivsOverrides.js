@@ -30,6 +30,11 @@ export const baseCharFallbackToExternalMap = {
   // 𠮓 (MJ032098)
   '\uD842\uDF93': '\uDB80\uDF38',
 
+  // Compatibility ideograph → PUA (PDF-only): 艹 (U+FA5D) → PUA for target MJ
+  // Reason: normalizeCJKCompat maps U+FA5D → U+8279, which is not present in the external font.
+  // Mapping directly to the PUA ensures the glyph is available in 'IPA-IVS-External' for PDF output.
+  '\uFA5D': '\uDB84\uDE47',
+
   // ----- Additional PDF whitelist -----
   // MJ042964..MJ043092 block (SMP base codepoints)
   '\uD855\uDE07': '\uDB80\uDFD2', // MJ042964

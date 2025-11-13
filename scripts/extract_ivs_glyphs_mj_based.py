@@ -12279,14 +12279,14 @@ export const ivsToExternalCharMap = {
 export const puaAllocationStats = {{
     strategy: 'staged_pua_allocation',
     bmpPUA: {{
-        allocated: {bmp_pua_allocated},
+        allocated: {stats['bmp_allocated']},
         capacity: 6400,
-        range: '0x{bmp_pua_start:04X}-0x{bmp_pua_current-1:04X}'
+        range: '0x{stats['bmp_start']:04X}-0x{stats['bmp_range_end']:04X}'
     }},
     smpPUA: {{
-        allocated: {smp_pua_allocated},
+        allocated: {stats['smp_allocated']},
         capacity: 65534,
-        range: '0x{smp_pua_start:05X}-0x{smp_pua_current-1:05X}'
+        range: '0x{stats['smp_start']:05X}-0x{stats['smp_range_end']:05X}'
     }},
     totalCharacters: {len(js_mappings)}
 }};
