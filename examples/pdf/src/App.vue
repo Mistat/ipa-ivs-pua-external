@@ -34,6 +34,7 @@
 import { Core, PdfExport, XlsxExport } from '@grapecity/activereports'
 import { convertIVSToExternal, hasIVSCharacters, countIVSCharacters, getIVSCharacterDetails } from 'ivs-font-processor'
 
+const op = {enableBaseFallback: true};
 export default {
   name: 'App',
   data() {
@@ -43,7 +44,7 @@ export default {
   },
   computed: {
     displayText() {
-      return convertIVSToExternal(this.textValue)
+      return convertIVSToExternal(this.textValue, op)
     },
     hasIVS() {
       return hasIVSCharacters(this.textValue)
@@ -58,6 +59,7 @@ export default {
   methods: {
     async generatePDF() {
       try {
+        // 必要に応じてここで前処理を行う
         // フォントの登録（相対パス）
         const ipaFont = {
           name: "IPA明朝",
@@ -78,8 +80,8 @@ export default {
         const registeredFonts = Core.FontStore.getFonts()
         console.log('登録されたフォント:', registeredFonts)
         
-        // 変換されたテキストを確認
-        const convertedText = convertIVSToExternal(this.textValue) || "（未入力）"
+        // 変換されたテキストを確認（従来のIVS→PUA変換）
+        const convertedText = convertIVSToExternal(this.textValue, op) || "（未入力）"
         console.log('元のテキスト:', this.textValue)
         console.log('変換後のテキスト:', convertedText)
         console.log('変換後の文字コード:', Array.from(convertedText).map(c => `U+${c.codePointAt(0).toString(16).toUpperCase()}`))
