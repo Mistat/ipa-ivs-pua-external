@@ -41,12 +41,9 @@ function normalizeCJKCompatibilityIdeographs(text, overrideMap) {
 }
 
 
-export function convertIVSToExternal(text, { enableBaseFallback = true, normalizeCJKCompat = true, compatMapOverride = undefined } = {}) {
+export function convertIVSToExternal(text, { enableBaseFallback = true } = {}) {
   let result = text;
-  // 0) Compatibility Ideographs → Unified CJK
-  if (normalizeCJKCompat) {
-    result = normalizeCJKCompatibilityIdeographs(result, compatMapOverride);
-  }
+
   // 1) IVS → PUA
   Object.entries(ivsToExternalCharMap).forEach(([ivs, external]) => {
     result = result.replace(new RegExp(ivs, 'g'), external);

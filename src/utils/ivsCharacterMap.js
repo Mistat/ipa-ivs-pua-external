@@ -1,12151 +1,6358 @@
-// IVS文字マッピング定義（段階的PUA配置対応）
-// BMP PUA: 0xE000-0xF8FF (6,400文字) - 高頻度VS優先
-// SMP PUA: 0xF0000- (65,534文字) - 残りのVS
-
-// SMP文字変換ユーティリティ
-export function convertSMPToString(codePoint) {
-    if (codePoint > 0xFFFF) {
-        // サロゲートペアに変換
-        const high = Math.floor((codePoint - 0x10000) / 0x400) + 0xD800;
-        const low = ((codePoint - 0x10000) % 0x400) + 0xDC00;
-        return String.fromCharCode(high, low);
-    }
-    return String.fromCharCode(codePoint);
-}
-
-// PUA文字の平面判定
-export function getPUAPlane(puaChar) {
-    const codePoint = puaChar.codePointAt(0);
-    if (codePoint >= 0xE000 && codePoint <= 0xF8FF) {
-        return 'BMP';
-    } else if (codePoint >= 0xF0000 && codePoint <= 0xFFFFD) {
-        return 'SMP_P15';
-    } else if (codePoint >= 0x100000 && codePoint <= 0x10FFFD) {
-        return 'SMP_P16';
-    }
-    return 'UNKNOWN';
-}
-
-// IVS→PUA変換（段階的配置対応）
-export function convertIVSText(text) {
-    // BMP基底字 (U+3400–U+9FFF) または SMP基底字 (サロゲートペア) + VS のパターン
-    const ivsPattern = /(?:[\u3400-\u9FFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])[\uDB40-\uDB7F][\uDC00-\uDFFF]/g;
-    return text.replace(ivsPattern, match => ivsToExternalCharMap[match] || match);
-}
 
 export const ivsToExternalCharMap = {
-  '\u3404\uDB40\uDD02': '\uE000',  // MJ068055
-  '\u342C\uDB40\uDD02': '\uE001',  // MJ057397
-  '\u342E\uDB40\uDD02': '\uE002',  // MJ000028
-  '\u3479\uDB40\uDD02': '\uE003',  // MJ057674
-  '\u34BC\uDB40\uDD02': '\uE004',  // MJ057021
-  '\u34DE\uDB40\uDD02': '\uE005',  // MJ000184
-  '\u351F\uDB40\uDD02': '\uE006',  // MJ059383
-  '\u353A\uDB40\uDD02': '\uE007',  // MJ000278
-  '\u35F4\uDB40\uDD02': '\uE008',  // MJ000432
-  '\u3691\uDB40\uDD02': '\uE009',  // MJ000567
-  '\u382F\uDB40\uDD02': '\uE00A',  // MJ000944
-  '\u3836\uDB40\uDD02': '\uE00B',  // MJ059541
-  '\u38FA\uDB40\uDD02': '\uE00C',  // MJ001133
-  '\u3917\uDB40\uDD02': '\uE00D',  // MJ001165
-  '\u396F\uDB40\uDD02': '\uE00E',  // MJ001248
-  '\u39AE\uDB40\uDD02': '\uE00F',  // MJ001314
-  '\u39B8\uDB40\uDD02': '\uE010',  // MJ057539
-  '\u3A6E\uDB40\uDD02': '\uE011',  // MJ001486
-  '\u3AC4\uDB40\uDD02': '\uE012',  // MJ059671
-  '\u3AE0\uDB40\uDD02': '\uE013',  // MJ001589
-  '\u3B27\uDB40\uDD02': '\uE014',  // MJ001662
-  '\u3BCD\uDB40\uDD02': '\uE015',  // MJ057784
-  '\u3BF3\uDB40\uDD02': '\uE016',  // MJ001849
-  '\u3C4E\uDB40\uDD02': '\uE017',  // MJ068056
-  '\u3CDF\uDB40\uDD02': '\uE018',  // MJ002065
-  '\u3D1E\uDB40\uDD02': '\uE019',  // MJ002122
-  '\u3D31\uDB40\uDD02': '\uE01A',  // MJ002140
-  '\u3DC0\uDB40\uDD02': '\uE01B',  // MJ002268
-  '\u3DD4\uDB40\uDD02': '\uE01C',  // MJ002286
-  '\u3E83\uDB40\uDD02': '\uE01D',  // MJ002448
-  '\u4071\uDB40\uDD02': '\uE01E',  // MJ059941
-  '\u407E\uDB40\uDD02': '\uE01F',  // MJ002910
-  '\u4096\uDB40\uDD02': '\uE020',  // MJ002935
-  '\u4105\uDB40\uDD02': '\uE021',  // MJ003045
-  '\u4107\uDB40\uDD02': '\uE022',  // MJ003048
-  '\u4148\uDB40\uDD02': '\uE023',  // MJ003116
-  '\u42C6\uDB40\uDD02': '\uE024',  // MJ003511
-  '\u4313\uDB40\uDD02': '\uE025',  // MJ003588
-  '\u4343\uDB40\uDD02': '\uE026',  // MJ003628
-  '\u43F0\uDB40\uDD02': '\uE027',  // MJ003806
-  '\u440C\uDB40\uDD02': '\uE028',  // MJ003835
-  '\u44B3\uDB40\uDD02': '\uE029',  // MJ004001
-  '\u44B9\uDB40\uDD02': '\uE02A',  // MJ004011
-  '\u44BE\uDB40\uDD02': '\uE02B',  // MJ004019
-  '\u44D4\uDB40\uDD02': '\uE02C',  // MJ004046
-  '\u4508\uDB40\uDD02': '\uE02D',  // MJ004101
-  '\u4525\uDB40\uDD02': '\uE02E',  // MJ004134
-  '\u4543\uDB40\uDD02': '\uE02F',  // MJ058538
-  '\u454C\uDB40\uDD02': '\uE030',  // MJ004178
-  '\u455E\uDB40\uDD02': '\uE031',  // MJ004196
-  '\u457A\uDB40\uDD02': '\uE032',  // MJ004231
-  '\u459D\uDB40\uDD02': '\uE033',  // MJ004276
-  '\u4674\uDB40\uDD02': '\uE034',  // MJ004486
-  '\u470C\uDB40\uDD02': '\uE035',  // MJ058764
-  '\u471F\uDB40\uDD02': '\uE036',  // MJ004655
-  '\u47E6\uDB40\uDD02': '\uE037',  // MJ058806
-  '\u484E\uDB40\uDD02': '\uE038',  // MJ004940
-  '\u493F\uDB40\uDD02': '\uE039',  // MJ005181
-  '\u4B3B\uDB40\uDD02': '\uE03A',  // MJ005676
-  '\u4C17\uDB40\uDD02': '\uE03B',  // MJ005902
-  '\u4DB0\uDB40\uDD02': '\uE03C',  // MJ006288
-  '\u4E07\uDB40\uDD02': '\uE03D',  // MJ006301
-  '\u4E08\uDB40\uDD02': '\uE03E',  // MJ006303
-  '\u4E0E\uDB40\uDD02': '\uE03F',  // MJ006310
-  '\u4E11\uDB40\uDD02': '\uE040',  // MJ006318
-  '\u4E12\uDB40\uDD02': '\uE041',  // MJ006319
-  '\u4E14\uDB40\uDD02': '\uE042',  // MJ056831
-  '\u4E19\uDB40\uDD02': '\uE043',  // MJ006327
-  '\u4E26\uDB40\uDD02': '\uE044',  // MJ006341
-  '\u4E30\uDB40\uDD02': '\uE045',  // MJ006350
-  '\u4E35\uDB40\uDD02': '\uE046',  // MJ006356
-  '\u4E38\uDB40\uDD02': '\uE047',  // MJ006359
-  '\u4E39\uDB40\uDD02': '\uE048',  // MJ006360
-  '\u4E3B\uDB40\uDD02': '\uE049',  // MJ006362
-  '\u4E41\uDB40\uDD02': '\uE04A',  // MJ006371
-  '\u4E42\uDB40\uDD02': '\uE04B',  // MJ006373
-  '\u4E44\uDB40\uDD02': '\uE04C',  // MJ006377
-  '\u4E45\uDB40\uDD02': '\uE04D',  // MJ006379
-  '\u4E47\uDB40\uDD02': '\uE04E',  // MJ056858
-  '\u4E55\uDB40\uDD02': '\uE04F',  // MJ006394
-  '\u4E73\uDB40\uDD02': '\uE050',  // MJ006417
-  '\u4E75\uDB40\uDD02': '\uE051',  // MJ006420
-  '\u4E82\uDB40\uDD02': '\uE052',  // MJ006427
-  '\u4E88\uDB40\uDD02': '\uE053',  // MJ056873
-  '\u4E94\uDB40\uDD02': '\uE054',  // MJ056822
-  '\u4E9E\uDB40\uDD02': '\uE055',  // MJ056837
-  '\u4E9F\uDB40\uDD02': '\uE056',  // MJ006457
-  '\u4EA0\uDB40\uDD02': '\uE057',  // MJ006461
-  '\u4EA1\uDB40\uDD02': '\uE058',  // MJ006463
-  '\u4EA2\uDB40\uDD02': '\uE059',  // MJ056886
-  '\u4EA4\uDB40\uDD02': '\uE05A',  // MJ006467
-  '\u4EA5\uDB40\uDD02': '\uE05B',  // MJ006471
-  '\u4EA8\uDB40\uDD02': '\uE05C',  // MJ056890
-  '\u4EAB\uDB40\uDD02': '\uE05D',  // MJ056895
-  '\u4EAE\uDB40\uDD02': '\uE05E',  // MJ006478
-  '\u4EB6\uDB40\uDD02': '\uE05F',  // MJ006486
-  '\u4EB9\uDB40\uDD02': '\uE060',  // MJ006490
-  '\u4ED7\uDB40\uDD02': '\uE061',  // MJ056911
-  '\u4EDE\uDB40\uDD02': '\uE062',  // MJ006527
-  '\u4EE2\uDB40\uDD02': '\uE063',  // MJ056903
-  '\u4EE4\uDB40\uDD02': '\uE064',  // MJ056905
-  '\u4EE5\uDB40\uDD02': '\uE065',  // MJ057123
-  '\u4EED\uDB40\uDD02': '\uE066',  // MJ006539
-  '\u4F00\uDB40\uDD02': '\uE067',  // MJ006559
-  '\u4F0A\uDB40\uDD02': '\uE068',  // MJ059314
-  '\u4F0B\uDB40\uDD02': '\uE069',  // MJ006570
-  '\u4F33\uDB40\uDD02': '\uE06A',  // MJ006600
-  '\u4F34\uDB40\uDD02': '\uE06B',  // MJ006602
-  '\u4F36\uDB40\uDD02': '\uE06C',  // MJ006606
-  '\u4F40\uDB40\uDD02': '\uE06D',  // MJ006617
-  '\u4F4F\uDB40\uDD02': '\uE06E',  // MJ006632
-  '\u4F53\uDB40\uDD02': '\uE06F',  // MJ006638
-  '\u4F60\uDB40\uDD02': '\uE070',  // MJ006651
-  '\u4F69\uDB40\uDD02': '\uE071',  // MJ056914
-  '\u4F6A\uDB40\uDD02': '\uE072',  // MJ006660
-  '\u4F7A\uDB40\uDD02': '\uE073',  // MJ006679
-  '\u4F7C\uDB40\uDD02': '\uE074',  // MJ006682
-  '\u4F7D\uDB40\uDD02': '\uE075',  // MJ006684
-  '\u4F7E\uDB40\uDD02': '\uE076',  // MJ006685
-  '\u4F7F\uDB40\uDD02': '\uE077',  // MJ006687
-  '\u4F83\uDB40\uDD02': '\uE078',  // MJ059324
-  '\u4F89\uDB40\uDD02': '\uE079',  // MJ056918
-  '\u4F96\uDB40\uDD02': '\uE07A',  // MJ056919
-  '\u4FA1\uDB40\uDD02': '\uE07B',  // MJ056917
-  '\u4FAB\uDB40\uDD02': '\uE07C',  // MJ006726
-  '\u4FAE\uDB40\uDD02': '\uE07D',  // MJ006728
-  '\u4FB5\uDB40\uDD02': '\uE07E',  // MJ006737
-  '\u4FB9\uDB40\uDD02': '\uE07F',  // MJ006741
-  '\u4FBF\uDB40\uDD02': '\uE080',  // MJ006749
-  '\u4FCA\uDB40\uDD02': '\uE081',  // MJ006762
-  '\u4FD8\uDB40\uDD02': '\uE082',  // MJ006777
-  '\u4FDE\uDB40\uDD02': '\uE083',  // MJ006785
-  '\u5002\uDB40\uDD02': '\uE084',  // MJ006815
-  '\u500F\uDB40\uDD02': '\uE085',  // MJ006830
-  '\u5010\uDB40\uDD02': '\uE086',  // MJ006832
-  '\u5016\uDB40\uDD02': '\uE087',  // MJ006839
-  '\u501D\uDB40\uDD02': '\uE088',  // MJ056931
-  '\u5025\uDB40\uDD02': '\uE089',  // MJ006857
-  '\u5026\uDB40\uDD02': '\uE08A',  // MJ006859
-  '\u5029\uDB40\uDD02': '\uE08B',  // MJ006863
-  '\u5030\uDB40\uDD02': '\uE08C',  // MJ006872
-  '\u5036\uDB40\uDD02': '\uE08D',  // MJ006879
-  '\u5040\uDB40\uDD02': '\uE08E',  // MJ006886
-  '\u5042\uDB40\uDD02': '\uE08F',  // MJ006889
-  '\u5043\uDB40\uDD02': '\uE090',  // MJ006891
-  '\u5048\uDB40\uDD02': '\uE091',  // MJ006897
-  '\u5049\uDB40\uDD02': '\uE092',  // MJ006899
-  '\u504C\uDB40\uDD02': '\uE093',  // MJ006904
-  '\u504F\uDB40\uDD02': '\uE094',  // MJ006908
-  '\u5050\uDB40\uDD02': '\uE095',  // MJ006910
-  '\u5056\uDB40\uDD02': '\uE096',  // MJ006915
-  '\u505C\uDB40\uDD02': '\uE097',  // MJ056942
-  '\u5060\uDB40\uDD02': '\uE098',  // MJ006927
-  '\u5065\uDB40\uDD02': '\uE099',  // MJ006933
-  '\u5070\uDB40\uDD02': '\uE09A',  // MJ006947
-  '\u5077\uDB40\uDD02': '\uE09B',  // MJ006954
-  '\u5085\uDB40\uDD02': '\uE09C',  // MJ006967
-  '\u508D\uDB40\uDD02': '\uE09D',  // MJ006980
-  '\u508E\uDB40\uDD02': '\uE09E',  // MJ006982
-  '\u5094\uDB40\uDD02': '\uE09F',  // MJ006992
-  '\u5099\uDB40\uDD02': '\uE0A0',  // MJ006998
-  '\u50A2\uDB40\uDD02': '\uE0A1',  // MJ007008
-  '\u50AF\uDB40\uDD02': '\uE0A2',  // MJ007017
-  '\u50B3\uDB40\uDD02': '\uE0A3',  // MJ007024
-  '\u50B4\uDB40\uDD02': '\uE0A4',  // MJ007027
-  '\u50B9\uDB40\uDD02': '\uE0A5',  // MJ007033
-  '\u50BB\uDB40\uDD02': '\uE0A6',  // MJ007035
-  '\u50BD\uDB40\uDD02': '\uE0A7',  // MJ007039
-  '\u50C3\uDB40\uDD02': '\uE0A8',  // MJ007046
-  '\u50C5\uDB40\uDD02': '\uE0A9',  // MJ007048
-  '\u50C9\uDB40\uDD02': '\uE0AA',  // MJ056936
-  '\u50CF\uDB40\uDD02': '\uE0AB',  // MJ007062
-  '\u50DE\uDB40\uDD02': '\uE0AC',  // MJ007082
-  '\u50E2\uDB40\uDD02': '\uE0AD',  // MJ007088
-  '\u50E7\uDB40\uDD02': '\uE0AE',  // MJ007095
-  '\u50E8\uDB40\uDD02': '\uE0AF',  // MJ056951
-  '\u50ED\uDB40\uDD02': '\uE0B0',  // MJ007102
-  '\u50EE\uDB40\uDD02': '\uE0B1',  // MJ007105
-  '\u50EF\uDB40\uDD02': '\uE0B2',  // MJ007106
-  '\u50F2\uDB40\uDD02': '\uE0B3',  // MJ007110
-  '\u50F6\uDB40\uDD02': '\uE0B4',  // MJ056953
-  '\u5104\uDB40\uDD02': '\uE0B5',  // MJ007134
-  '\u5106\uDB40\uDD02': '\uE0B6',  // MJ007136
-  '\u5108\uDB40\uDD02': '\uE0B7',  // MJ059332
-  '\u510D\uDB40\uDD02': '\uE0B8',  // MJ007143
-  '\u5110\uDB40\uDD02': '\uE0B9',  // MJ007147
-  '\u5114\uDB40\uDD02': '\uE0BA',  // MJ007152
-  '\u511A\uDB40\uDD02': '\uE0BB',  // MJ007158
-  '\u511B\uDB40\uDD02': '\uE0BC',  // MJ007160
-  '\u512A\uDB40\uDD02': '\uE0BD',  // MJ007180
-  '\u512C\uDB40\uDD02': '\uE0BE',  // MJ007183
-  '\u5131\uDB40\uDD02': '\uE0BF',  // MJ007189
-  '\u5132\uDB40\uDD02': '\uE0C0',  // MJ007190
-  '\u513A\uDB40\uDD02': '\uE0C1',  // MJ007200
-  '\u513B\uDB40\uDD02': '\uE0C2',  // MJ007202
-  '\u513C\uDB40\uDD02': '\uE0C3',  // MJ056958
-  '\u5140\uDB40\uDD02': '\uE0C4',  // MJ007208
-  '\u5142\uDB40\uDD02': '\uE0C5',  // MJ007210
-  '\u5145\uDB40\uDD02': '\uE0C6',  // MJ007215
-  '\u5146\uDB40\uDD02': '\uE0C7',  // MJ007217
-  '\u5147\uDB40\uDD02': '\uE0C8',  // MJ056967
-  '\u514A\uDB40\uDD02': '\uE0C9',  // MJ007224
-  '\u514C\uDB40\uDD02': '\uE0CA',  // MJ007228
-  '\u514D\uDB40\uDD02': '\uE0CB',  // MJ007230
-  '\u514E\uDB40\uDD02': '\uE0CC',  // MJ007232
-  '\u5152\uDB40\uDD02': '\uE0CD',  // MJ007237
-  '\u5153\uDB40\uDD02': '\uE0CE',  // MJ007239
-  '\u515C\uDB40\uDD02': '\uE0CF',  // MJ057036
-  '\u5168\uDB40\uDD02': '\uE0D0',  // MJ007268
-  '\u5169\uDB40\uDD02': '\uE0D1',  // MJ007269
-  '\u516A\uDB40\uDD02': '\uE0D2',  // MJ007272
-  '\u516B\uDB40\uDD02': '\uE0D3',  // MJ007273
-  '\u516C\uDB40\uDD02': '\uE0D4',  // MJ007275
-  '\u516E\uDB40\uDD02': '\uE0D5',  // MJ007279
-  '\u5173\uDB40\uDD02': '\uE0D6',  // MJ007283
-  '\u5177\uDB40\uDD02': '\uE0D7',  // MJ007288
-  '\u5178\uDB40\uDD02': '\uE0D8',  // MJ056983
-  '\u517B\uDB40\uDD02': '\uE0D9',  // MJ007294
-  '\u517C\uDB40\uDD02': '\uE0DA',  // MJ007297
-  '\u5180\uDB40\uDD02': '\uE0DB',  // MJ056999
-  '\u5185\uDB40\uDD02': '\uE0DC',  // MJ057000
-  '\u5189\uDB40\uDD02': '\uE0DD',  // MJ007308
-  '\u518D\uDB40\uDD02': '\uE0DE',  // MJ007313
-  '\u518E\uDB40\uDD02': '\uE0DF',  // MJ057006
-  '\u5192\uDB40\uDD02': '\uE0E0',  // MJ007319
-  '\u5193\uDB40\uDD02': '\uE0E1',  // MJ007321
-  '\u5197\uDB40\uDD02': '\uE0E2',  // MJ007330
-  '\u5198\uDB40\uDD02': '\uE0E3',  // MJ057022
-  '\u519D\uDB40\uDD02': '\uE0E4',  // MJ007335
-  '\u51A1\uDB40\uDD02': '\uE0E5',  // MJ007340
-  '\u51A2\uDB40\uDD02': '\uE0E6',  // MJ007341
-  '\u51A4\uDB40\uDD02': '\uE0E7',  // MJ007347
-  '\u51A5\uDB40\uDD02': '\uE0E8',  // MJ057027
-  '\u51A6\uDB40\uDD02': '\uE0E9',  // MJ007352
-  '\u51AA\uDB40\uDD02': '\uE0EA',  // MJ007355
-  '\u51AC\uDB40\uDD02': '\uE0EB',  // MJ007359
-  '\u51B5\uDB40\uDD02': '\uE0EC',  // MJ007371
-  '\u51CA\uDB40\uDD02': '\uE0ED',  // MJ007392
-  '\u51CB\uDB40\uDD02': '\uE0EE',  // MJ007394
-  '\u51CC\uDB40\uDD02': '\uE0EF',  // MJ007395
-  '\u51E2\uDB40\uDD02': '\uE0F0',  // MJ007419
-  '\u51F6\uDB40\uDD02': '\uE0F1',  // MJ057037
-  '\u51FD\uDB40\uDD02': '\uE0F2',  // MJ007443
-  '\u51FE\uDB40\uDD02': '\uE0F3',  // MJ007446
-  '\u5203\uDB40\uDD02': '\uE0F4',  // MJ007451
-  '\u5204\uDB40\uDD02': '\uE0F5',  // MJ007453
-  '\u5206\uDB40\uDD02': '\uE0F6',  // MJ007455
-  '\u5207\uDB40\uDD02': '\uE0F7',  // MJ007459
-  '\u520B\uDB40\uDD02': '\uE0F8',  // MJ007465
-  '\u5213\uDB40\uDD02': '\uE0F9',  // MJ007474
-  '\u5224\uDB40\uDD02': '\uE0FA',  // MJ007491
-  '\u5238\uDB40\uDD02': '\uE0FB',  // MJ007512
-  '\u523B\uDB40\uDD02': '\uE0FC',  // MJ007517
-  '\u524A\uDB40\uDD02': '\uE0FD',  // MJ007528
-  '\u524D\uDB40\uDD02': '\uE0FE',  // MJ007532
-  '\u524F\uDB40\uDD02': '\uE0FF',  // MJ007535
-  '\u526A\uDB40\uDD02': '\uE100',  // MJ007561
-  '\u5273\uDB40\uDD02': '\uE101',  // MJ007575
-  '\u5275\uDB40\uDD02': '\uE102',  // MJ007577
-  '\u527F\uDB40\uDD02': '\uE103',  // MJ007590
-  '\u5283\uDB40\uDD02': '\uE104',  // MJ007595
-  '\u5289\uDB40\uDD02': '\uE105',  // MJ007601
-  '\u5291\uDB40\uDD02': '\uE106',  // MJ007610
-  '\u5292\uDB40\uDD02': '\uE107',  // MJ007612
-  '\u5298\uDB40\uDD02': '\uE108',  // MJ007620
-  '\u52A9\uDB40\uDD02': '\uE109',  // MJ057064
-  '\u52B5\uDB40\uDD02': '\uE10A',  // MJ007646
-  '\u52BE\uDB40\uDD02': '\uE10B',  // MJ007656
-  '\u52C3\uDB40\uDD02': '\uE10C',  // MJ057070
-  '\u52C6\uDB40\uDD02': '\uE10D',  // MJ007666
-  '\u52C7\uDB40\uDD02': '\uE10E',  // MJ007668
-  '\u52C9\uDB40\uDD02': '\uE10F',  // MJ007670
-  '\u52CC\uDB40\uDD02': '\uE110',  // MJ007673
-  '\u52D2\uDB40\uDD02': '\uE111',  // MJ007688
-  '\u52D6\uDB40\uDD02': '\uE112',  // MJ007693
-  '\u52D7\uDB40\uDD02': '\uE113',  // MJ007695
-  '\u52D8\uDB40\uDD02': '\uE114',  // MJ059386
-  '\u52DD\uDB40\uDD02': '\uE115',  // MJ007701
-  '\u52DF\uDB40\uDD02': '\uE116',  // MJ007704
-  '\u52E0\uDB40\uDD02': '\uE117',  // MJ007706
-  '\u52E4\uDB40\uDD02': '\uE118',  // MJ007710
-  '\u52E6\uDB40\uDD02': '\uE119',  // MJ007715
-  '\u52E8\uDB40\uDD02': '\uE11A',  // MJ007718
-  '\u52EC\uDB40\uDD02': '\uE11B',  // MJ007723
-  '\u52F1\uDB40\uDD02': '\uE11C',  // MJ007730
-  '\u52F2\uDB40\uDD02': '\uE11D',  // MJ007732
-  '\u52F3\uDB40\uDD02': '\uE11E',  // MJ007734
-  '\u52F5\uDB40\uDD02': '\uE11F',  // MJ007737
-  '\u52F8\uDB40\uDD02': '\uE120',  // MJ007741
-  '\u52F9\uDB40\uDD02': '\uE121',  // MJ007743
-  '\u52FA\uDB40\uDD02': '\uE122',  // MJ007745
-  '\u5305\uDB40\uDD02': '\uE123',  // MJ007758
-  '\u5306\uDB40\uDD02': '\uE124',  // MJ007759
-  '\u5307\uDB40\uDD02': '\uE125',  // MJ007761
-  '\u530B\uDB40\uDD02': '\uE126',  // MJ057082
-  '\u530F\uDB40\uDD02': '\uE127',  // MJ007771
-  '\u5316\uDB40\uDD02': '\uE128',  // MJ007779
-  '\u5317\uDB40\uDD02': '\uE129',  // MJ007781
-  '\u532C\uDB40\uDD02': '\uE12A',  // MJ007803
-  '\u5335\uDB40\uDD02': '\uE12B',  // MJ007812
-  '\u5339\uDB40\uDD02': '\uE12C',  // MJ007818
-  '\u533B\uDB40\uDD02': '\uE12D',  // MJ007821
-  '\u533C\uDB40\uDD02': '\uE12E',  // MJ007823
-  '\u533D\uDB40\uDD02': '\uE12F',  // MJ007826
-  '\u533E\uDB40\uDD02': '\uE130',  // MJ007828
-  '\u533F\uDB40\uDD02': '\uE131',  // MJ007830
-  '\u5340\uDB40\uDD02': '\uE132',  // MJ007832
-  '\u5345\uDB40\uDD02': '\uE133',  // MJ057092
-  '\u534A\uDB40\uDD02': '\uE134',  // MJ007844
-  '\u5351\uDB40\uDD02': '\uE135',  // MJ007851
-  '\u5352\uDB40\uDD02': '\uE136',  // MJ007853
-  '\u535A\uDB40\uDD02': '\uE137',  // MJ007860
-  '\u535E\uDB40\uDD02': '\uE138',  // MJ007869
-  '\u536F\uDB40\uDD02': '\uE139',  // MJ057108
-  '\u5371\uDB40\uDD02': '\uE13A',  // MJ007888
-  '\u5373\uDB40\uDD02': '\uE13B',  // MJ007892
-  '\u537D\uDB40\uDD02': '\uE13C',  // MJ007893
-  '\u5377\uDB40\uDD02': '\uE13D',  // MJ007898
-  '\u5378\uDB40\uDD02': '\uE13E',  // MJ007902
-  '\u537B\uDB40\uDD02': '\uE13F',  // MJ007907
-  '\u5396\uDB40\uDD02': '\uE140',  // MJ007932
-  '\u53A5\uDB40\uDD02': '\uE141',  // MJ057119
-  '\u53B0\uDB40\uDD02': '\uE142',  // MJ007963
-  '\u53B2\uDB40\uDD02': '\uE143',  // MJ007965
-  '\u53C8\uDB40\uDD02': '\uE144',  // MJ007986
-  '\u53C9\uDB40\uDD02': '\uE145',  // MJ007987
-  '\u53CA\uDB40\uDD02': '\uE146',  // MJ007990
-  '\u53CE\uDB40\uDD02': '\uE147',  // MJ007995
-  '\u53D0\uDB40\uDD02': '\uE148',  // MJ056861
-  '\u53D4\uDB40\uDD02': '\uE149',  // MJ057135
-  '\u53DB\uDB40\uDD02': '\uE14A',  // MJ008010
-  '\u53DD\uDB40\uDD02': '\uE14B',  // MJ008015
-  '\u53DF\uDB40\uDD02': '\uE14C',  // MJ008018
-  '\u53EB\uDB40\uDD02': '\uE14D',  // MJ008031
-  '\u53ED\uDB40\uDD02': '\uE14E',  // MJ008035
-  '\u53F1\uDB40\uDD02': '\uE14F',  // MJ008039
-  '\u53F2\uDB40\uDD02': '\uE150',  // MJ008041
-  '\u53F7\uDB40\uDD02': '\uE151',  // MJ057144
-  '\u540F\uDB40\uDD02': '\uE152',  // MJ008070
-  '\u541B\uDB40\uDD02': '\uE153',  // MJ008082
-  '\u541D\uDB40\uDD02': '\uE154',  // MJ008085
-  '\u541F\uDB40\uDD02': '\uE155',  // MJ059417
-  '\u5429\uDB40\uDD02': '\uE156',  // MJ008098
-  '\u542B\uDB40\uDD02': '\uE157',  // MJ057151
-  '\u5438\uDB40\uDD02': '\uE158',  // MJ008114
-  '\u5440\uDB40\uDD02': '\uE159',  // MJ008123
-  '\u5448\uDB40\uDD02': '\uE15A',  // MJ008133
-  '\u5455\uDB40\uDD02': '\uE15B',  // MJ008145
-  '\u5468\uDB40\uDD02': '\uE15C',  // MJ008159
-  '\u5471\uDB40\uDD02': '\uE15D',  // MJ008168
-  '\u5485\uDB40\uDD02': '\uE15E',  // MJ008190
-  '\u5486\uDB40\uDD02': '\uE15F',  // MJ008192
-  '\u548E\uDB40\uDD02': '\uE160',  // MJ057147
-  '\u54A2\uDB40\uDD02': '\uE161',  // MJ008218
-  '\u54AC\uDB40\uDD02': '\uE162',  // MJ008228
-  '\u54B2\uDB40\uDD02': '\uE163',  // MJ008236
-  '\u54BC\uDB40\uDD02': '\uE164',  // MJ057153
-  '\u54C9\uDB40\uDD02': '\uE165',  // MJ008261
-  '\u54CE\uDB40\uDD02': '\uE166',  // MJ008266
-  '\u54E0\uDB40\uDD02': '\uE167',  // MJ008271
-  '\u54E8\uDB40\uDD02': '\uE168',  // MJ008280
-  '\u54F2\uDB40\uDD02': '\uE169',  // MJ008291
-  '\u54FD\uDB40\uDD02': '\uE16A',  // MJ008303
-  '\u5506\uDB40\uDD02': '\uE16B',  // MJ008313
-  '\u550C\uDB40\uDD02': '\uE16C',  // MJ008321
-  '\u5510\uDB40\uDD02': '\uE16D',  // MJ008326
-  '\u5539\uDB40\uDD02': '\uE16E',  // MJ008357
-  '\u5544\uDB40\uDD02': '\uE16F',  // MJ008370
-  '\u5546\uDB40\uDD02': '\uE170',  // MJ008376
-  '\u5547\uDB40\uDD02': '\uE171',  // MJ057165
-  '\u554C\uDB40\uDD02': '\uE172',  // MJ008384
-  '\u5553\uDB40\uDD02': '\uE173',  // MJ008392
-  '\u555A\uDB40\uDD02': '\uE174',  // MJ008401
-  '\u555D\uDB40\uDD02': '\uE175',  // MJ008405
-  '\u557C\uDB40\uDD02': '\uE176',  // MJ008421
-  '\u5584\uDB40\uDD02': '\uE177',  // MJ008429
-  '\u5586\uDB40\uDD02': '\uE178',  // MJ008436
-  '\u558F\uDB40\uDD02': '\uE179',  // MJ008446
-  '\u5591\uDB40\uDD02': '\uE17A',  // MJ008449
-  '\u5593\uDB40\uDD02': '\uE17B',  // MJ008452
-  '\u5599\uDB40\uDD02': '\uE17C',  // MJ008460
-  '\u559C\uDB40\uDD02': '\uE17D',  // MJ008464
-  '\u559D\uDB40\uDD02': '\uE17E',  // MJ008468
-  '\u559E\uDB40\uDD02': '\uE17F',  // MJ008470
-  '\u55A8\uDB40\uDD02': '\uE180',  // MJ008481
-  '\u55AA\uDB40\uDD02': '\uE181',  // MJ057176
-  '\u55AE\uDB40\uDD02': '\uE182',  // MJ057178
-  '\u55B0\uDB40\uDD02': '\uE183',  // MJ008493
-  '\u55C5\uDB40\uDD02': '\uE184',  // MJ008512
-  '\u55D2\uDB40\uDD02': '\uE185',  // MJ008527
-  '\u55D4\uDB40\uDD02': '\uE186',  // MJ059423
-  '\u55DD\uDB40\uDD02': '\uE187',  // MJ008538
-  '\u55DE\uDB40\uDD02': '\uE188',  // MJ008541
-  '\u55E2\uDB40\uDD02': '\uE189',  // MJ008545
-  '\u55F9\uDB40\uDD02': '\uE18A',  // MJ008561
-  '\u5605\uDB40\uDD02': '\uE18B',  // MJ008574
-  '\u5606\uDB40\uDD02': '\uE18C',  // MJ008578
-  '\u5609\uDB40\uDD02': '\uE18D',  // MJ008581
-  '\u5614\uDB40\uDD02': '\uE18E',  // MJ008596
-  '\u561B\uDB40\uDD02': '\uE18F',  // MJ008604
-  '\u5629\uDB40\uDD02': '\uE190',  // MJ008611
-  '\u562C\uDB40\uDD02': '\uE191',  // MJ008614
-  '\u5630\uDB40\uDD02': '\uE192',  // MJ008620
-  '\u5632\uDB40\uDD02': '\uE193',  // MJ008623
-  '\u563C\uDB40\uDD02': '\uE194',  // MJ059434
-  '\u5642\uDB40\uDD02': '\uE195',  // MJ008642
-  '\u5644\uDB40\uDD02': '\uE196',  // MJ008646
-  '\u5646\uDB40\uDD02': '\uE197',  // MJ008648
-  '\u5647\uDB40\uDD02': '\uE198',  // MJ008651
-  '\u564C\uDB40\uDD02': '\uE199',  // MJ008656
-  '\u5660\uDB40\uDD02': '\uE19A',  // MJ008674
-  '\u5668\uDB40\uDD02': '\uE19B',  // MJ008683
-  '\u566B\uDB40\uDD02': '\uE19C',  // MJ008687
-  '\u5671\uDB40\uDD02': '\uE19D',  // MJ008694
-  '\u5674\uDB40\uDD02': '\uE19E',  // MJ008697
-  '\u5676\uDB40\uDD02': '\uE19F',  // MJ008701
-  '\u5678\uDB40\uDD02': '\uE1A0',  // MJ008704
-  '\u5680\uDB40\uDD02': '\uE1A1',  // MJ008712
-  '\u5684\uDB40\uDD02': '\uE1A2',  // MJ008718
-  '\u5686\uDB40\uDD02': '\uE1A3',  // MJ008721
-  '\u568A\uDB40\uDD02': '\uE1A4',  // MJ008726
-  '\u5694\uDB40\uDD02': '\uE1A5',  // MJ008734
-  '\u569D\uDB40\uDD02': '\uE1A6',  // MJ008745
-  '\u56A0\uDB40\uDD02': '\uE1A7',  // MJ008750
-  '\u56A5\uDB40\uDD02': '\uE1A8',  // MJ008752
-  '\u56A8\uDB40\uDD02': '\uE1A9',  // MJ008758
-  '\u56BC\uDB40\uDD02': '\uE1AA',  // MJ008779
-  '\u56C0\uDB40\uDD02': '\uE1AB',  // MJ008784
-  '\u56C1\uDB40\uDD02': '\uE1AC',  // MJ008785
-  '\u56C8\uDB40\uDD02': '\uE1AD',  // MJ008794
-  '\u56CC\uDB40\uDD02': '\uE1AE',  // MJ008799
-  '\u56CE\uDB40\uDD02': '\uE1AF',  // MJ008801
-  '\u56D3\uDB40\uDD02': '\uE1B0',  // MJ008810
-  '\u56DB\uDB40\uDD02': '\uE1B1',  // MJ008817
-  '\u56EE\uDB40\uDD02': '\uE1B2',  // MJ008836
-  '\u56F6\uDB40\uDD02': '\uE1B3',  // MJ008844
-  '\u5702\uDB40\uDD02': '\uE1B4',  // MJ008856
-  '\u5708\uDB40\uDD02': '\uE1B5',  // MJ008862
-  '\u570A\uDB40\uDD02': '\uE1B6',  // MJ008865
-  '\u570D\uDB40\uDD02': '\uE1B7',  // MJ008868
-  '\u5711\uDB40\uDD02': '\uE1B8',  // MJ008875
-  '\u5716\uDB40\uDD02': '\uE1B9',  // MJ057207
-  '\u571B\uDB40\uDD02': '\uE1BA',  // MJ008888
-  '\u5723\uDB40\uDD02': '\uE1BB',  // MJ008897
-  '\u572C\uDB40\uDD02': '\uE1BC',  // MJ008907
-  '\u572D\uDB40\uDD02': '\uE1BD',  // MJ057213
-  '\u5734\uDB40\uDD02': '\uE1BE',  // MJ008917
-  '\u5747\uDB40\uDD02': '\uE1BF',  // MJ008934
-  '\u576A\uDB40\uDD02': '\uE1C0',  // MJ008967
-  '\u5789\uDB40\uDD02': '\uE1C1',  // MJ008997
-  '\u578B\uDB40\uDD02': '\uE1C2',  // MJ008999
-  '\u5793\uDB40\uDD02': '\uE1C3',  // MJ009008
-  '\u5794\uDB40\uDD02': '\uE1C4',  // MJ009010
-  '\u579D\uDB40\uDD02': '\uE1C5',  // MJ009020
-  '\u57AA\uDB40\uDD02': '\uE1C6',  // MJ057228
-  '\u57C8\uDB40\uDD02': '\uE1C7',  // MJ009055
-  '\u57CE\uDB40\uDD02': '\uE1C8',  // MJ009062
-  '\u57D2\uDB40\uDD02': '\uE1C9',  // MJ009068
-  '\u57D3\uDB40\uDD02': '\uE1CA',  // MJ009069
-  '\u57D5\uDB40\uDD02': '\uE1CB',  // MJ009074
-  '\u57D6\uDB40\uDD02': '\uE1CC',  // MJ009075
-  '\u57E7\uDB40\uDD02': '\uE1CD',  // MJ009091
-  '\u57F6\uDB40\uDD02': '\uE1CE',  // MJ009110
-  '\u57F8\uDB40\uDD02': '\uE1CF',  // MJ009113
-  '\u5805\uDB40\uDD02': '\uE1D0',  // MJ057223
-  '\u580B\uDB40\uDD02': '\uE1D1',  // MJ009135
-  '\u5819\uDB40\uDD02': '\uE1D2',  // MJ009142
-  '\u581F\uDB40\uDD02': '\uE1D3',  // MJ009150
-  '\u5831\uDB40\uDD02': '\uE1D4',  // MJ009170
-  '\u5832\uDB40\uDD02': '\uE1D5',  // MJ009172
-  '\u5834\uDB40\uDD02': '\uE1D6',  // MJ009175
-  '\u5835\uDB40\uDD02': '\uE1D7',  // MJ009176
-  '\u583D\uDB40\uDD02': '\uE1D8',  // MJ009186
-  '\u5840\uDB40\uDD02': '\uE1D9',  // MJ009190
-  '\u584A\uDB40\uDD02': '\uE1DA',  // MJ057234
-  '\u584C\uDB40\uDD02': '\uE1DB',  // MJ009195
-  '\u5851\uDB40\uDD02': '\uE1DC',  // MJ009201
-  '\u5854\uDB40\uDD02': '\uE1DD',  // MJ009206
-  '\u5858\uDB40\uDD02': '\uE1DE',  // MJ009211
-  '\u5859\uDB40\uDD02': '\uE1DF',  // MJ009212
-  '\u585F\uDB40\uDD02': '\uE1E0',  // MJ009222
-  '\u5870\uDB40\uDD02': '\uE1E1',  // MJ009237
-  '\u5880\uDB40\uDD02': '\uE1E2',  // MJ009254
-  '\u5881\uDB40\uDD02': '\uE1E3',  // MJ009257
-  '\u5883\uDB40\uDD02': '\uE1E4',  // MJ009260
-  '\u588D\uDB40\uDD02': '\uE1E5',  // MJ009270
-  '\u5893\uDB40\uDD02': '\uE1E6',  // MJ009280
-  '\u589C\uDB40\uDD02': '\uE1E7',  // MJ009286
-  '\u589E\uDB40\uDD02': '\uE1E8',  // MJ009290
-  '\u589F\uDB40\uDD02': '\uE1E9',  // MJ009292
-  '\u58A8\uDB40\uDD02': '\uE1EA',  // MJ009301
-  '\u58AB\uDB40\uDD02': '\uE1EB',  // MJ009304
-  '\u58B3\uDB40\uDD02': '\uE1EC',  // MJ057244
-  '\u58B8\uDB40\uDD02': '\uE1ED',  // MJ009320
-  '\u58BA\uDB40\uDD02': '\uE1EE',  // MJ009323
-  '\u58C4\uDB40\uDD02': '\uE1EF',  // MJ009334
-  '\u58C7\uDB40\uDD02': '\uE1F0',  // MJ009338
-  '\u58CE\uDB40\uDD02': '\uE1F1',  // MJ009345
-  '\u58D0\uDB40\uDD02': '\uE1F2',  // MJ009348
-  '\u58D2\uDB40\uDD02': '\uE1F3',  // MJ009351
-  '\u58D3\uDB40\uDD02': '\uE1F4',  // MJ009353
-  '\u58D5\uDB40\uDD02': '\uE1F5',  // MJ009356
-  '\u58D9\uDB40\uDD02': '\uE1F6',  // MJ009361
-  '\u58DD\uDB40\uDD02': '\uE1F7',  // MJ009365
-  '\u58DF\uDB40\uDD02': '\uE1F8',  // MJ009369
-  '\u58E0\uDB40\uDD02': '\uE1F9',  // MJ009371
-  '\u58E1\uDB40\uDD02': '\uE1FA',  // MJ009373
-  '\u58E5\uDB40\uDD02': '\uE1FB',  // MJ009378
-  '\u58F3\uDB40\uDD02': '\uE1FC',  // MJ009390
-  '\u58F4\uDB40\uDD02': '\uE1FD',  // MJ009392
-  '\u58F7\uDB40\uDD02': '\uE1FE',  // MJ059463
-  '\u58FD\uDB40\uDD02': '\uE1FF',  // MJ057250
-  '\u5900\uDB40\uDD02': '\uE200',  // MJ009404
-  '\u5905\uDB40\uDD02': '\uE201',  // MJ009408
-  '\u590A\uDB40\uDD02': '\uE202',  // MJ009414
-  '\u590C\uDB40\uDD02': '\uE203',  // MJ057253
-  '\u590F\uDB40\uDD02': '\uE204',  // MJ009419
-  '\u5912\uDB40\uDD02': '\uE205',  // MJ009423
-  '\u5913\uDB40\uDD02': '\uE206',  // MJ009425
-  '\u5914\uDB40\uDD02': '\uE207',  // MJ009427
-  '\u5916\uDB40\uDD02': '\uE208',  // MJ009432
-  '\u591B\uDB40\uDD02': '\uE209',  // MJ009438
-  '\u5922\uDB40\uDD02': '\uE20A',  // MJ009447
-  '\u5938\uDB40\uDD02': '\uE20B',  // MJ009469
-  '\u5946\uDB40\uDD02': '\uE20C',  // MJ009480
-  '\u5953\uDB40\uDD02': '\uE20D',  // MJ009496
-  '\u5954\uDB40\uDD02': '\uE20E',  // MJ009498
-  '\u5958\uDB40\uDD02': '\uE20F',  // MJ009503
-  '\u595F\uDB40\uDD02': '\uE210',  // MJ009513
-  '\u5960\uDB40\uDD02': '\uE211',  // MJ009514
-  '\u5962\uDB40\uDD02': '\uE212',  // MJ009519
-  '\u5963\uDB40\uDD02': '\uE213',  // MJ009522
-  '\u5965\uDB40\uDD02': '\uE214',  // MJ009525
-  '\u5969\uDB40\uDD02': '\uE215',  // MJ009531
-  '\u5972\uDB40\uDD02': '\uE216',  // MJ009542
-  '\u5981\uDB40\uDD02': '\uE217',  // MJ009557
-  '\u5983\uDB40\uDD02': '\uE218',  // MJ009561
-  '\u5984\uDB40\uDD02': '\uE219',  // MJ009564
-  '\u599B\uDB40\uDD02': '\uE21A',  // MJ009586
-  '\u59A5\uDB40\uDD02': '\uE21B',  // MJ009599
-  '\u59CD\uDB40\uDD02': '\uE21C',  // MJ009637
-  '\u59DA\uDB40\uDD02': '\uE21D',  // MJ009650
-  '\u59E3\uDB40\uDD02': '\uE21E',  // MJ009661
-  '\u59EC\uDB40\uDD02': '\uE21F',  // MJ009670
-  '\u5A01\uDB40\uDD02': '\uE220',  // MJ009694
-  '\u5A1C\uDB40\uDD02': '\uE221',  // MJ009719
-  '\u5A29\uDB40\uDD02': '\uE222',  // MJ009735
-  '\u5A36\uDB40\uDD02': '\uE223',  // MJ009744
-  '\u5A41\uDB40\uDD02': '\uE224',  // MJ057300
-  '\u5A48\uDB40\uDD02': '\uE225',  // MJ009763
-  '\u5A4C\uDB40\uDD02': '\uE226',  // MJ009769
-  '\u5A66\uDB40\uDD02': '\uE227',  // MJ009797
-  '\u5A67\uDB40\uDD02': '\uE228',  // MJ009799
-  '\u5A6C\uDB40\uDD02': '\uE229',  // MJ009805
-  '\u5A7E\uDB40\uDD02': '\uE22A',  // MJ009821
-  '\u5A96\uDB40\uDD02': '\uE22B',  // MJ009846
-  '\u5A9B\uDB40\uDD02': '\uE22C',  // MJ009852
-  '\u5AA2\uDB40\uDD02': '\uE22D',  // MJ009860
-  '\u5AB5\uDB40\uDD02': '\uE22E',  // MJ009876
-  '\u5ABA\uDB40\uDD02': '\uE22F',  // MJ009882
-  '\u5ABF\uDB40\uDD02': '\uE230',  // MJ057310
-  '\u5AC1\uDB40\uDD02': '\uE231',  // MJ009892
-  '\u5AC2\uDB40\uDD02': '\uE232',  // MJ009893
-  '\u5ACB\uDB40\uDD02': '\uE233',  // MJ009908
-  '\u5ACC\uDB40\uDD02': '\uE234',  // MJ009910
-  '\u5AD7\uDB40\uDD02': '\uE235',  // MJ009918
-  '\u5ADA\uDB40\uDD02': '\uE236',  // MJ009921
-  '\u5ADC\uDB40\uDD02': '\uE237',  // MJ009926
-  '\u5AE1\uDB40\uDD02': '\uE238',  // MJ009933
-  '\u5B2A\uDB40\uDD02': '\uE239',  // MJ010009
-  '\u5B34\uDB40\uDD02': '\uE23A',  // MJ010021
-  '\u5B36\uDB40\uDD02': '\uE23B',  // MJ010025
-  '\u5B3E\uDB40\uDD02': '\uE23C',  // MJ010033
-  '\u5B5A\uDB40\uDD02': '\uE23D',  // MJ010060
-  '\u5B64\uDB40\uDD02': '\uE23E',  // MJ010072
-  '\u5B69\uDB40\uDD02': '\uE23F',  // MJ010078
-  '\u5B70\uDB40\uDD02': '\uE240',  // MJ057322
-  '\u5B73\uDB40\uDD02': '\uE241',  // MJ010087
-  '\u5B75\uDB40\uDD02': '\uE242',  // MJ010091
-  '\u5B76\uDB40\uDD02': '\uE243',  // MJ010092
-  '\u5B7C\uDB40\uDD02': '\uE244',  // MJ010100
-  '\u5B7D\uDB40\uDD02': '\uE245',  // MJ010101
-  '\u5B85\uDB40\uDD02': '\uE246',  // MJ057328
-  '\u5B90\uDB40\uDD02': '\uE247',  // MJ010122
-  '\u5BA3\uDB40\uDD02': '\uE248',  // MJ010140
-  '\u5BB2\uDB40\uDD02': '\uE249',  // MJ010158
-  '\u5BB5\uDB40\uDD02': '\uE24A',  // MJ010164
-  '\u5BB6\uDB40\uDD02': '\uE24B',  // MJ010166
-  '\u5BC0\uDB40\uDD02': '\uE24C',  // MJ010176
-  '\u5BC3\uDB40\uDD02': '\uE24D',  // MJ010179
-  '\u5BC7\uDB40\uDD02': '\uE24E',  // MJ010186
-  '\u5BD0\uDB40\uDD02': '\uE24F',  // MJ010197
-  '\u5BD2\uDB40\uDD02': '\uE250',  // MJ010199
-  '\u5BD7\uDB40\uDD02': '\uE251',  // MJ010206
-  '\u5BD9\uDB40\uDD02': '\uE252',  // MJ010211
-  '\u5BDB\uDB40\uDD02': '\uE253',  // MJ010213
-  '\u5BDE\uDB40\uDD02': '\uE254',  // MJ010218
-  '\u5BE2\uDB40\uDD02': '\uE255',  // MJ010223
-  '\u5BE4\uDB40\uDD02': '\uE256',  // MJ010226
-  '\u5BE5\uDB40\uDD02': '\uE257',  // MJ010228
-  '\u5BE7\uDB40\uDD02': '\uE258',  // MJ010231
-  '\u5BEC\uDB40\uDD02': '\uE259',  // MJ010237
-  '\u5BF5\uDB40\uDD02': '\uE25A',  // MJ010250
-  '\u5BF6\uDB40\uDD02': '\uE25B',  // MJ059512
-  '\u5BFD\uDB40\uDD02': '\uE25C',  // MJ010257
-  '\u5BFF\uDB40\uDD02': '\uE25D',  // MJ010259
-  '\u5C04\uDB40\uDD02': '\uE25E',  // MJ010266
-  '\u5C06\uDB40\uDD02': '\uE25F',  // MJ010269
-  '\u5C07\uDB40\uDD02': '\uE260',  // MJ059879
-  '\u5C08\uDB40\uDD02': '\uE261',  // MJ010273
-  '\u5C09\uDB40\uDD02': '\uE262',  // MJ057350
-  '\u5C0B\uDB40\uDD02': '\uE263',  // MJ010279
-  '\u5C0E\uDB40\uDD02': '\uE264',  // MJ010282
-  '\u5C19\uDB40\uDD02': '\uE265',  // MJ010295
-  '\u5C23\uDB40\uDD02': '\uE266',  // MJ010305
-  '\u5C28\uDB40\uDD02': '\uE267',  // MJ010310
-  '\u5C2D\uDB40\uDD02': '\uE268',  // MJ010317
-  '\u5C39\uDB40\uDD02': '\uE269',  // MJ010330
-  '\u5C46\uDB40\uDD02': '\uE26A',  // MJ010343
-  '\u5C4F\uDB40\uDD02': '\uE26B',  // MJ010353
-  '\u5C51\uDB40\uDD02': '\uE26C',  // MJ010356
-  '\u5C53\uDB40\uDD02': '\uE26D',  // MJ010359
-  '\u5C55\uDB40\uDD02': '\uE26E',  // MJ010362
-  '\u5C60\uDB40\uDD02': '\uE26F',  // MJ010373
-  '\u5C64\uDB40\uDD02': '\uE270',  // MJ010378
-  '\u5C65\uDB40\uDD02': '\uE271',  // MJ010379
-  '\u5C6E\uDB40\uDD02': '\uE272',  // MJ010388
-  '\u5C88\uDB40\uDD02': '\uE273',  // MJ010410
-  '\u5C8C\uDB40\uDD02': '\uE274',  // MJ010417
-  '\u5C91\uDB40\uDD02': '\uE275',  // MJ059523
-  '\u5C94\uDB40\uDD02': '\uE276',  // MJ010427
-  '\u5CBC\uDB40\uDD02': '\uE277',  // MJ010466
-  '\u5CED\uDB40\uDD02': '\uE278',  // MJ010507
-  '\u5CFA\uDB40\uDD02': '\uE279',  // MJ010522
-  '\u5CFB\uDB40\uDD02': '\uE27A',  // MJ010523
-  '\u5D06\uDB40\uDD02': '\uE27B',  // MJ010532
-  '\u5D0B\uDB40\uDD02': '\uE27C',  // MJ010538
-  '\u5D1A\uDB40\uDD02': '\uE27D',  // MJ010553
-  '\u5D1D\uDB40\uDD02': '\uE27E',  // MJ010558
-  '\u5D22\uDB40\uDD02': '\uE27F',  // MJ010565
-  '\u5D27\uDB40\uDD02': '\uE280',  // MJ010571
-  '\u5D29\uDB40\uDD02': '\uE281',  // MJ010574
-  '\u5D3F\uDB40\uDD02': '\uE282',  // MJ010593
-  '\u5D46\uDB40\uDD02': '\uE283',  // MJ057388
-  '\u5D69\uDB40\uDD02': '\uE284',  // MJ010634
-  '\u5D76\uDB40\uDD02': '\uE285',  // MJ010650
-  '\u5D82\uDB40\uDD02': '\uE286',  // MJ010663
-  '\u5D87\uDB40\uDD02': '\uE287',  // MJ010668
-  '\u5D90\uDB40\uDD02': '\uE288',  // MJ010678
-  '\u5D92\uDB40\uDD02': '\uE289',  // MJ010681
-  '\u5D99\uDB40\uDD02': '\uE28A',  // MJ010688
-  '\u5DB2\uDB40\uDD02': '\uE28B',  // MJ010714
-  '\u5DC3\uDB40\uDD02': '\uE28C',  // MJ010732
-  '\u5DC9\uDB40\uDD02': '\uE28D',  // MJ010737
-  '\u5DCD\uDB40\uDD02': '\uE28E',  // MJ010743
-  '\u5DCE\uDB40\uDD02': '\uE28F',  // MJ010745
-  '\u5DD3\uDB40\uDD02': '\uE290',  // MJ010751
-  '\u5DD6\uDB40\uDD02': '\uE291',  // MJ059537
-  '\u5DD9\uDB40\uDD02': '\uE292',  // MJ010757
-  '\u5DE1\uDB40\uDD02': '\uE293',  // MJ010767
-  '\u5DE2\uDB40\uDD02': '\uE294',  // MJ057404
-  '\u5DE4\uDB40\uDD02': '\uE295',  // MJ057405
-  '\u5DE6\uDB40\uDD02': '\uE296',  // MJ057406
-  '\u5DE8\uDB40\uDD02': '\uE297',  // MJ010777
-  '\u5DE9\uDB40\uDD02': '\uE298',  // MJ010779
-  '\u5DEE\uDB40\uDD02': '\uE299',  // MJ057408
-  '\u5DF7\uDB40\uDD02': '\uE29A',  // MJ010790
-  '\u5DF8\uDB40\uDD02': '\uE29B',  // MJ010792
-  '\u5DFB\uDB40\uDD02': '\uE29C',  // MJ059540
-  '\u5DFD\uDB40\uDD02': '\uE29D',  // MJ010801
-  '\u5E0C\uDB40\uDD02': '\uE29E',  // MJ057418
-  '\u5E1A\uDB40\uDD02': '\uE29F',  // MJ010831
-  '\u5E1D\uDB40\uDD02': '\uE2A0',  // MJ010833
-  '\u5E28\uDB40\uDD02': '\uE2A1',  // MJ010845
-  '\u5E2B\uDB40\uDD02': '\uE2A2',  // MJ057421
-  '\u5E2E\uDB40\uDD02': '\uE2A3',  // MJ010853
-  '\u5E2F\uDB40\uDD02': '\uE2A4',  // MJ057426
-  '\u5E30\uDB40\uDD02': '\uE2A5',  // MJ010855
-  '\u5E3D\uDB40\uDD02': '\uE2A6',  // MJ010868
-  '\u5E3E\uDB40\uDD02': '\uE2A7',  // MJ010870
-  '\u5E43\uDB40\uDD02': '\uE2A8',  // MJ010876
-  '\u5E54\uDB40\uDD02': '\uE2A9',  // MJ010896
-  '\u5E55\uDB40\uDD02': '\uE2AA',  // MJ010898
-  '\u5E5B\uDB40\uDD02': '\uE2AB',  // MJ010906
-  '\u5E5F\uDB40\uDD02': '\uE2AC',  // MJ010911
-  '\u5E62\uDB40\uDD02': '\uE2AD',  // MJ010915
-  '\u5E63\uDB40\uDD02': '\uE2AE',  // MJ010917
-  '\u5E64\uDB40\uDD02': '\uE2AF',  // MJ010918
-  '\u5E6A\uDB40\uDD02': '\uE2B0',  // MJ010927
-  '\u5E6D\uDB40\uDD02': '\uE2B1',  // MJ010931
-  '\u5E70\uDB40\uDD02': '\uE2B2',  // MJ010939
-  '\u5E73\uDB40\uDD02': '\uE2B3',  // MJ010943
-  '\u5E74\uDB40\uDD02': '\uE2B4',  // MJ010945
-  '\u5E75\uDB40\uDD02': '\uE2B5',  // MJ010947
-  '\u5E78\uDB40\uDD02': '\uE2B6',  // MJ057432
-  '\u5E7E\uDB40\uDD02': '\uE2B7',  // MJ010958
-  '\u5E95\uDB40\uDD02': '\uE2B8',  // MJ057440
-  '\u5E96\uDB40\uDD02': '\uE2B9',  // MJ010981
-  '\u5EA6\uDB40\uDD02': '\uE2BA',  // MJ057439
-  '\u5EAC\uDB40\uDD02': '\uE2BB',  // MJ011003
-  '\u5EAD\uDB40\uDD02': '\uE2BC',  // MJ011006
-  '\u5EB3\uDB40\uDD02': '\uE2BD',  // MJ057442
-  '\u5EB6\uDB40\uDD02': '\uE2BE',  // MJ057448
-  '\u5EB7\uDB40\uDD02': '\uE2BF',  // MJ011016
-  '\u5EB8\uDB40\uDD02': '\uE2C0',  // MJ059558
-  '\u5EB9\uDB40\uDD02': '\uE2C1',  // MJ011019
-  '\u5EBE\uDB40\uDD02': '\uE2C2',  // MJ011026
-  '\u5EBF\uDB40\uDD02': '\uE2C3',  // MJ011028
-  '\u5EC9\uDB40\uDD02': '\uE2C4',  // MJ011039
-  '\u5ECB\uDB40\uDD02': '\uE2C5',  // MJ011041
-  '\u5ECF\uDB40\uDD02': '\uE2C6',  // MJ011045
-  '\u5ED0\uDB40\uDD02': '\uE2C7',  // MJ011047
-  '\u5ED6\uDB40\uDD02': '\uE2C8',  // MJ011059
-  '\u5ED9\uDB40\uDD02': '\uE2C9',  // MJ011063
-  '\u5EDF\uDB40\uDD02': '\uE2CA',  // MJ011070
-  '\u5EE0\uDB40\uDD02': '\uE2CB',  // MJ011072
-  '\u5EF4\uDB40\uDD02': '\uE2CC',  // MJ011099
-  '\u5EF7\uDB40\uDD02': '\uE2CD',  // MJ011104
-  '\u5EF8\uDB40\uDD02': '\uE2CE',  // MJ011107
-  '\u5EF9\uDB40\uDD02': '\uE2CF',  // MJ011109
-  '\u5EFA\uDB40\uDD02': '\uE2D0',  // MJ011111
-  '\u5EFB\uDB40\uDD02': '\uE2D1',  // MJ011113
-  '\u5EFC\uDB40\uDD02': '\uE2D2',  // MJ011116
-  '\u5EFD\uDB40\uDD02': '\uE2D3',  // MJ011119
-  '\u5EFE\uDB40\uDD02': '\uE2D4',  // MJ011121
-  '\u5F02\uDB40\uDD02': '\uE2D5',  // MJ011126
-  '\u5F09\uDB40\uDD02': '\uE2D6',  // MJ011134
-  '\u5F0A\uDB40\uDD02': '\uE2D7',  // MJ011137
-  '\u5F0D\uDB40\uDD02': '\uE2D8',  // MJ011141
-  '\u5F0E\uDB40\uDD02': '\uE2D9',  // MJ011144
-  '\u5F13\uDB40\uDD02': '\uE2DA',  // MJ057459
-  '\u5F14\uDB40\uDD02': '\uE2DB',  // MJ057631
-  '\u5F16\uDB40\uDD02': '\uE2DC',  // MJ011154
-  '\u5F17\uDB40\uDD02': '\uE2DD',  // MJ057633
-  '\u5F21\uDB40\uDD02': '\uE2DE',  // MJ011168
-  '\u5F22\uDB40\uDD02': '\uE2DF',  // MJ011170
-  '\u5F27\uDB40\uDD02': '\uE2E0',  // MJ011177
-  '\u5F29\uDB40\uDD02': '\uE2E1',  // MJ011181
-  '\u5F2D\uDB40\uDD02': '\uE2E2',  // MJ011184
-  '\u5F31\uDB40\uDD02': '\uE2E3',  // MJ011191
-  '\u5F38\uDB40\uDD02': '\uE2E4',  // MJ011198
-  '\u5F44\uDB40\uDD02': '\uE2E5',  // MJ011209
-  '\u5F45\uDB40\uDD02': '\uE2E6',  // MJ011210
-  '\u5F4C\uDB40\uDD02': '\uE2E7',  // MJ011220
-  '\u5F50\uDB40\uDD02': '\uE2E8',  // MJ011225
-  '\u5F56\uDB40\uDD02': '\uE2E9',  // MJ011234
-  '\u5F57\uDB40\uDD02': '\uE2EA',  // MJ011237
-  '\u5F5A\uDB40\uDD02': '\uE2EB',  // MJ057480
-  '\u5F5C\uDB40\uDD02': '\uE2EC',  // MJ011244
-  '\u5F60\uDB40\uDD02': '\uE2ED',  // MJ011248
-  '\u5F62\uDB40\uDD02': '\uE2EE',  // MJ011253
-  '\u5F69\uDB40\uDD02': '\uE2EF',  // MJ011261
-  '\u5F6A\uDB40\uDD02': '\uE2F0',  // MJ011263
-  '\u5F6B\uDB40\uDD02': '\uE2F1',  // MJ011267
-  '\u5F70\uDB40\uDD02': '\uE2F2',  // MJ011273
-  '\u5F74\uDB40\uDD02': '\uE2F3',  // MJ011278
-  '\u5F80\uDB40\uDD02': '\uE2F4',  // MJ011289
-  '\u5F8C\uDB40\uDD02': '\uE2F5',  // MJ011302
-  '\u5F8F\uDB40\uDD02': '\uE2F6',  // MJ011307
-  '\u5F93\uDB40\uDD02': '\uE2F7',  // MJ057488
-  '\u5F98\uDB40\uDD02': '\uE2F8',  // MJ011315
-  '\u5F9E\uDB40\uDD02': '\uE2F9',  // MJ059595
-  '\u5FA4\uDB40\uDD02': '\uE2FA',  // MJ011330
-  '\u5FAB\uDB40\uDD02': '\uE2FB',  // MJ011337
-  '\u5FAC\uDB40\uDD02': '\uE2FC',  // MJ011340
-  '\u5FAE\uDB40\uDD02': '\uE2FD',  // MJ011343
-  '\u5FB3\uDB40\uDD02': '\uE2FE',  // MJ059596
-  '\u5FB5\uDB40\uDD02': '\uE2FF',  // MJ011354
-  '\u5FB7\uDB40\uDD02': '\uE300',  // MJ011357
-  '\u5FBD\uDB40\uDD02': '\uE301',  // MJ011362
-  '\u5FCD\uDB40\uDD02': '\uE302',  // MJ011379
-  '\u5FD8\uDB40\uDD02': '\uE303',  // MJ011393
-  '\u5FD9\uDB40\uDD02': '\uE304',  // MJ011395
-  '\u5FDE\uDB40\uDD02': '\uE305',  // MJ011401
-  '\u5FED\uDB40\uDD02': '\uE306',  // MJ011419
-  '\u5FF0\uDB40\uDD02': '\uE307',  // MJ011423
-  '\u5FFF\uDB40\uDD02': '\uE308',  // MJ011439
-  '\u6025\uDB40\uDD02': '\uE309',  // MJ011473
-  '\u6026\uDB40\uDD02': '\uE30A',  // MJ011476
-  '\u604A\uDB40\uDD02': '\uE30B',  // MJ057097
-  '\u6050\uDB40\uDD02': '\uE30C',  // MJ011515
-  '\u6054\uDB40\uDD02': '\uE30D',  // MJ011520
-  '\u605D\uDB40\uDD02': '\uE30E',  // MJ011532
-  '\u6065\uDB40\uDD02': '\uE30F',  // MJ011542
-  '\u6071\uDB40\uDD02': '\uE310',  // MJ011556
-  '\u6075\uDB40\uDD02': '\uE311',  // MJ011561
-  '\u607E\uDB40\uDD02': '\uE312',  // MJ011564
-  '\u6081\uDB40\uDD02': '\uE313',  // MJ011568
-  '\u6084\uDB40\uDD02': '\uE314',  // MJ011573
-  '\u608B\uDB40\uDD02': '\uE315',  // MJ011581
-  '\u6094\uDB40\uDD02': '\uE316',  // MJ011591
-  '\u609F\uDB40\uDD02': '\uE317',  // MJ059607
-  '\u60A4\uDB40\uDD02': '\uE318',  // MJ011613
-  '\u60A8\uDB40\uDD02': '\uE319',  // MJ011619
-  '\u60B2\uDB40\uDD02': '\uE31A',  // MJ011624
-  '\u60BE\uDB40\uDD02': '\uE31B',  // MJ011640
-  '\u60C5\uDB40\uDD02': '\uE31C',  // MJ011648
-  '\u60C6\uDB40\uDD02': '\uE31D',  // MJ011650
-  '\u60C7\uDB40\uDD02': '\uE31E',  // MJ011652
-  '\u60D3\uDB40\uDD02': '\uE31F',  // MJ011665
-  '\u60D8\uDB40\uDD02': '\uE320',  // MJ011670
-  '\u60DD\uDB40\uDD02': '\uE321',  // MJ011678
-  '\u60E0\uDB40\uDD02': '\uE322',  // MJ011682
-  '\u60E5\uDB40\uDD02': '\uE323',  // MJ011688
-  '\u60E7\uDB40\uDD02': '\uE324',  // MJ011691
-  '\u60F9\uDB40\uDD02': '\uE325',  // MJ011705
-  '\u6107\uDB40\uDD02': '\uE326',  // MJ011719
-  '\u6108\uDB40\uDD02': '\uE327',  // MJ011722
-  '\u6109\uDB40\uDD02': '\uE328',  // MJ011726
-  '\u610F\uDB40\uDD02': '\uE329',  // MJ011733
-  '\u6111\uDB40\uDD02': '\uE32A',  // MJ011737
-  '\u6112\uDB40\uDD02': '\uE32B',  // MJ011739
-  '\u6114\uDB40\uDD02': '\uE32C',  // MJ011742
-  '\u6115\uDB40\uDD02': '\uE32D',  // MJ011744
-  '\u6116\uDB40\uDD02': '\uE32E',  // MJ011746
-  '\u611B\uDB40\uDD02': '\uE32F',  // MJ011751
-  '\u613A\uDB40\uDD02': '\uE330',  // MJ011782
-  '\u613C\uDB40\uDD02': '\uE331',  // MJ011786
-  '\u613D\uDB40\uDD02': '\uE332',  // MJ011788
-  '\u6148\uDB40\uDD02': '\uE333',  // MJ011802
-  '\u614A\uDB40\uDD02': '\uE334',  // MJ011808
-  '\u614C\uDB40\uDD02': '\uE335',  // MJ011810
-  '\u614E\uDB40\uDD02': '\uE336',  // MJ011814
-  '\u6155\uDB40\uDD02': '\uE337',  // MJ011822
-  '\u615D\uDB40\uDD02': '\uE338',  // MJ011833
-  '\u615E\uDB40\uDD02': '\uE339',  // MJ011835
-  '\u6162\uDB40\uDD02': '\uE33A',  // MJ011840
-  '\u6165\uDB40\uDD02': '\uE33B',  // MJ011843
-  '\u6174\uDB40\uDD02': '\uE33C',  // MJ011870
-  '\u6176\uDB40\uDD02': '\uE33D',  // MJ011872
-  '\u617F\uDB40\uDD02': '\uE33E',  // MJ011885
-  '\u6181\uDB40\uDD02': '\uE33F',  // MJ011888
-  '\u6182\uDB40\uDD02': '\uE340',  // MJ011890
-  '\u618A\uDB40\uDD02': '\uE341',  // MJ011900
-  '\u618E\uDB40\uDD02': '\uE342',  // MJ011904
-  '\u6190\uDB40\uDD02': '\uE343',  // MJ011907
-  '\u6193\uDB40\uDD02': '\uE344',  // MJ011912
-  '\u61A4\uDB40\uDD02': '\uE345',  // MJ011930
-  '\u61A7\uDB40\uDD02': '\uE346',  // MJ011936
-  '\u61B6\uDB40\uDD02': '\uE347',  // MJ011957
-  '\u61BC\uDB40\uDD02': '\uE348',  // MJ011964
-  '\u61C2\uDB40\uDD02': '\uE349',  // MJ011972
-  '\u61CA\uDB40\uDD02': '\uE34A',  // MJ011981
-  '\u61CB\uDB40\uDD02': '\uE34B',  // MJ059634
-  '\u61CC\uDB40\uDD02': '\uE34C',  // MJ011984
-  '\u61D0\uDB40\uDD02': '\uE34D',  // MJ057525
-  '\u61D5\uDB40\uDD02': '\uE34E',  // MJ011992
-  '\u61DE\uDB40\uDD02': '\uE34F',  // MJ012002
-  '\u61E5\uDB40\uDD02': '\uE350',  // MJ012010
-  '\u61E9\uDB40\uDD02': '\uE351',  // MJ012016
-  '\u61EC\uDB40\uDD02': '\uE352',  // MJ012020
-  '\u61F5\uDB40\uDD02': '\uE353',  // MJ012031
-  '\u61F6\uDB40\uDD02': '\uE354',  // MJ012032
-  '\u61FD\uDB40\uDD02': '\uE355',  // MJ012042
-  '\u61FE\uDB40\uDD02': '\uE356',  // MJ012043
-  '\u61FF\uDB40\uDD02': '\uE357',  // MJ012046
-  '\u6207\uDB40\uDD02': '\uE358',  // MJ012055
-  '\u620E\uDB40\uDD02': '\uE359',  // MJ012062
-  '\u6210\uDB40\uDD02': '\uE35A',  // MJ012063
-  '\u6214\uDB40\uDD02': '\uE35B',  // MJ057535
-  '\u621A\uDB40\uDD02': '\uE35C',  // MJ057540
-  '\u621B\uDB40\uDD02': '\uE35D',  // MJ012074
-  '\u6220\uDB40\uDD02': '\uE35E',  // MJ012079
-  '\u6222\uDB40\uDD02': '\uE35F',  // MJ012083
-  '\u622E\uDB40\uDD02': '\uE360',  // MJ012097
-  '\u6233\uDB40\uDD02': '\uE361',  // MJ012103
-  '\u6234\uDB40\uDD02': '\uE362',  // MJ012105
-  '\u623B\uDB40\uDD02': '\uE363',  // MJ012112
-  '\u623F\uDB40\uDD02': '\uE364',  // MJ012117
-  '\u6240\uDB40\uDD02': '\uE365',  // MJ012120
-  '\u6241\uDB40\uDD02': '\uE366',  // MJ012122
-  '\u6247\uDB40\uDD02': '\uE367',  // MJ012130
-  '\u6248\uDB40\uDD02': '\uE368',  // MJ012132
-  '\u624D\uDB40\uDD02': '\uE369',  // MJ059295
-  '\u625A\uDB40\uDD02': '\uE36A',  // MJ012154
-  '\u6260\uDB40\uDD02': '\uE36B',  // MJ012162
-  '\u626E\uDB40\uDD02': '\uE36C',  // MJ012175
-  '\u6271\uDB40\uDD02': '\uE36D',  // MJ012178
-  '\u6280\uDB40\uDD02': '\uE36E',  // MJ012195
-  '\u6283\uDB40\uDD02': '\uE36F',  // MJ012199
-  '\u6295\uDB40\uDD02': '\uE370',  // MJ057553
-  '\u62B1\uDB40\uDD02': '\uE371',  // MJ012242
-  '\u62CC\uDB40\uDD02': '\uE372',  // MJ012267
-  '\u62D0\uDB40\uDD02': '\uE373',  // MJ012272
-  '\u62D2\uDB40\uDD02': '\uE374',  // MJ012277
-  '\u62F3\uDB40\uDD02': '\uE375',  // MJ012304
-  '\u62F4\uDB40\uDD02': '\uE376',  // MJ012306
-  '\u62F7\uDB40\uDD02': '\uE377',  // MJ012309
-  '\u62FC\uDB40\uDD02': '\uE378',  // MJ012316
-  '\u6308\uDB40\uDD02': '\uE379',  // MJ012329
-  '\u6327\uDB40\uDD02': '\uE37A',  // MJ012351
-  '\u633A\uDB40\uDD02': '\uE37B',  // MJ012371
-  '\u633C\uDB40\uDD02': '\uE37C',  // MJ012375
-  '\u633D\uDB40\uDD02': '\uE37D',  // MJ012377
-  '\u6344\uDB40\uDD02': '\uE37E',  // MJ012385
-  '\u634B\uDB40\uDD02': '\uE37F',  // MJ012394
-  '\u634D\uDB40\uDD02': '\uE380',  // MJ012398
-  '\u63D1\uDB40\uDD02': '\uE381',  // MJ012402
-  '\u6350\uDB40\uDD02': '\uE382',  // MJ012403
-  '\u6353\uDB40\uDD02': '\uE383',  // MJ012407
-  '\u6354\uDB40\uDD02': '\uE384',  // MJ012410
-  '\u6357\uDB40\uDD02': '\uE385',  // MJ012414
-  '\u6368\uDB40\uDD02': '\uE386',  // MJ012425
-  '\u6369\uDB40\uDD02': '\uE387',  // MJ012426
-  '\u636E\uDB40\uDD02': '\uE388',  // MJ012432
-  '\u6372\uDB40\uDD02': '\uE389',  // MJ012438
-  '\u6383\uDB40\uDD02': '\uE38A',  // MJ012456
-  '\u6392\uDB40\uDD02': '\uE38B',  // MJ012471
-  '\u6395\uDB40\uDD02': '\uE38C',  // MJ012475
-  '\u63A1\uDB40\uDD02': '\uE38D',  // MJ012489
-  '\u63A7\uDB40\uDD02': '\uE38E',  // MJ012495
-  '\u63A9\uDB40\uDD02': '\uE38F',  // MJ012499
-  '\u63BE\uDB40\uDD02': '\uE390',  // MJ012514
-  '\u63C3\uDB40\uDD02': '\uE391',  // MJ012522
-  '\u63C4\uDB40\uDD02': '\uE392',  // MJ012524
-  '\u63C5\uDB40\uDD02': '\uE393',  // MJ012527
-  '\u63CF\uDB40\uDD02': '\uE394',  // MJ012538
-  '\u63D6\uDB40\uDD02': '\uE395',  // MJ012546
-  '\u63E0\uDB40\uDD02': '\uE396',  // MJ012558
-  '\u63E5\uDB40\uDD02': '\uE397',  // MJ012564
-  '\u63F3\uDB40\uDD02': '\uE398',  // MJ012580
-  '\u63F4\uDB40\uDD02': '\uE399',  // MJ012582
-  '\u63F5\uDB40\uDD02': '\uE39A',  // MJ012584
-  '\u6406\uDB40\uDD02': '\uE39B',  // MJ012591
-  '\u640D\uDB40\uDD02': '\uE39C',  // MJ012599
-  '\u640F\uDB40\uDD02': '\uE39D',  // MJ012602
-  '\u6412\uDB40\uDD02': '\uE39E',  // MJ012607
-  '\u641C\uDB40\uDD02': '\uE39F',  // MJ012617
-  '\u6422\uDB40\uDD02': '\uE3A0',  // MJ012625
-  '\u6424\uDB40\uDD02': '\uE3A1',  // MJ012627
-  '\u6425\uDB40\uDD02': '\uE3A2',  // MJ012629
-  '\u6426\uDB40\uDD02': '\uE3A3',  // MJ012632
-  '\u6428\uDB40\uDD02': '\uE3A4',  // MJ012635
-  '\u6429\uDB40\uDD02': '\uE3A5',  // MJ012637
-  '\u642D\uDB40\uDD02': '\uE3A6',  // MJ012643
-  '\u643D\uDB40\uDD02': '\uE3A7',  // MJ012661
-  '\u6442\uDB40\uDD02': '\uE3A8',  // MJ012666
-  '\u644E\uDB40\uDD02': '\uE3A9',  // MJ012672
-  '\u6452\uDB40\uDD02': '\uE3AA',  // MJ012676
-  '\u6453\uDB40\uDD02': '\uE3AB',  // MJ012678
-  '\u6458\uDB40\uDD02': '\uE3AC',  // MJ012686
-  '\u645B\uDB40\uDD02': '\uE3AD',  // MJ057570
-  '\u6460\uDB40\uDD02': '\uE3AE',  // MJ012696
-  '\u6461\uDB40\uDD02': '\uE3AF',  // MJ012698
-  '\u6469\uDB40\uDD02': '\uE3B0',  // MJ012709
-  '\u646D\uDB40\uDD02': '\uE3B1',  // MJ012714
-  '\u6473\uDB40\uDD02': '\uE3B2',  // MJ012721
-  '\u6478\uDB40\uDD02': '\uE3B3',  // MJ012728
-  '\u6479\uDB40\uDD02': '\uE3B4',  // MJ012729
-  '\u647A\uDB40\uDD02': '\uE3B5',  // MJ012733
-  '\u6490\uDB40\uDD02': '\uE3B6',  // MJ012754
-  '\u649B\uDB40\uDD02': '\uE3B7',  // MJ012767
-  '\u649E\uDB40\uDD02': '\uE3B8',  // MJ012772
-  '\u64B0\uDB40\uDD02': '\uE3B9',  // MJ012792
-  '\u64B9\uDB40\uDD02': '\uE3BA',  // MJ012798
-  '\u64BB\uDB40\uDD02': '\uE3BB',  // MJ012799
-  '\u64BE\uDB40\uDD02': '\uE3BC',  // MJ012803
-  '\u64C4\uDB40\uDD02': '\uE3BD',  // MJ012811
-  '\u64CD\uDB40\uDD02': '\uE3BE',  // MJ059648
-  '\u64CE\uDB40\uDD02': '\uE3BF',  // MJ012822
-  '\u64D2\uDB40\uDD02': '\uE3C0',  // MJ012827
-  '\u64DA\uDB40\uDD02': '\uE3C1',  // MJ012836
-  '\u64E2\uDB40\uDD02': '\uE3C2',  // MJ012843
-  '\u64E4\uDB40\uDD02': '\uE3C3',  // MJ012846
-  '\u64EA\uDB40\uDD02': '\uE3C4',  // MJ012854
-  '\u64ED\uDB40\uDD02': '\uE3C5',  // MJ012858
-  '\u64EF\uDB40\uDD02': '\uE3C6',  // MJ012861
-  '\u64F2\uDB40\uDD02': '\uE3C7',  // MJ012864
-  '\u64F4\uDB40\uDD02': '\uE3C8',  // MJ012870
-  '\u64F6\uDB40\uDD02': '\uE3C9',  // MJ012876
-  '\u64FF\uDB40\uDD02': '\uE3CA',  // MJ012886
-  '\u650F\uDB40\uDD02': '\uE3CB',  // MJ012906
-  '\u6514\uDB40\uDD02': '\uE3CC',  // MJ012910
-  '\u651D\uDB40\uDD02': '\uE3CD',  // MJ012918
-  '\u6524\uDB40\uDD02': '\uE3CE',  // MJ012929
-  '\u652C\uDB40\uDD02': '\uE3CF',  // MJ012937
-  '\u652F\uDB40\uDD02': '\uE3D0',  // MJ012941
-  '\u6534\uDB40\uDD02': '\uE3D1',  // MJ057581
-  '\u6538\uDB40\uDD02': '\uE3D2',  // MJ012952
-  '\u653F\uDB40\uDD02': '\uE3D3',  // MJ012961
-  '\u654F\uDB40\uDD02': '\uE3D4',  // MJ012976
-  '\u6556\uDB40\uDD02': '\uE3D5',  // MJ057586
-  '\u655D\uDB40\uDD02': '\uE3D6',  // MJ012989
-  '\u655E\uDB40\uDD02': '\uE3D7',  // MJ012992
-  '\u6562\uDB40\uDD02': '\uE3D8',  // MJ012997
-  '\u6566\uDB40\uDD02': '\uE3D9',  // MJ057608
-  '\u656C\uDB40\uDD02': '\uE3DA',  // MJ013007
-  '\u6572\uDB40\uDD02': '\uE3DB',  // MJ013016
-  '\u6575\uDB40\uDD02': '\uE3DC',  // MJ013019
-  '\u6577\uDB40\uDD02': '\uE3DD',  // MJ013022
-  '\u6578\uDB40\uDD02': '\uE3DE',  // MJ059656
-  '\u657A\uDB40\uDD02': '\uE3DF',  // MJ013027
-  '\u6581\uDB40\uDD02': '\uE3E0',  // MJ013032
-  '\u6583\uDB40\uDD02': '\uE3E1',  // MJ013034
-  '\u6587\uDB40\uDD02': '\uE3E2',  // MJ013040
-  '\u6588\uDB40\uDD02': '\uE3E3',  // MJ013043
-  '\u6589\uDB40\uDD02': '\uE3E4',  // MJ013044
-  '\u658E\uDB40\uDD02': '\uE3E5',  // MJ013049
-  '\u6590\uDB40\uDD02': '\uE3E6',  // MJ013051
-  '\u659C\uDB40\uDD02': '\uE3E7',  // MJ013065
-  '\u659F\uDB40\uDD02': '\uE3E8',  // MJ013069
-  '\u65A5\uDB40\uDD02': '\uE3E9',  // MJ057624
-  '\u65A7\uDB40\uDD02': '\uE3EA',  // MJ013077
-  '\u65B2\uDB40\uDD02': '\uE3EB',  // MJ013089
-  '\u65B4\uDB40\uDD02': '\uE3EC',  // MJ013091
-  '\u65B5\uDB40\uDD02': '\uE3ED',  // MJ013093
-  '\u65B7\uDB40\uDD02': '\uE3EE',  // MJ013097
-  '\u65C1\uDB40\uDD02': '\uE3EF',  // MJ057637
-  '\u65C5\uDB40\uDD02': '\uE3F0',  // MJ013111
-  '\u65C9\uDB40\uDD02': '\uE3F1',  // MJ013116
-  '\u65D8\uDB40\uDD02': '\uE3F2',  // MJ013131
-  '\u65DE\uDB40\uDD02': '\uE3F3',  // MJ013140
-  '\u65E1\uDB40\uDD02': '\uE3F4',  // MJ013143
-  '\u65E2\uDB40\uDD02': '\uE3F5',  // MJ013146
-  '\u65E3\uDB40\uDD02': '\uE3F6',  // MJ013148
-  '\u65E5\uDB40\uDD02': '\uE3F7',  // MJ013152
-  '\u65FB\uDB40\uDD02': '\uE3F8',  // MJ013174
-  '\u6600\uDB40\uDD02': '\uE3F9',  // MJ013182
-  '\u6602\uDB40\uDD02': '\uE3FA',  // MJ013185
-  '\u6607\uDB40\uDD02': '\uE3FB',  // MJ059678
-  '\u6608\uDB40\uDD02': '\uE3FC',  // MJ013192
-  '\u660E\uDB40\uDD02': '\uE3FD',  // MJ013201
-  '\u660F\uDB40\uDD02': '\uE3FE',  // MJ057659
-  '\u661E\uDB40\uDD02': '\uE3FF',  // MJ013220
-  '\u6624\uDB40\uDD02': '\uE400',  // MJ013229
-  '\u662C\uDB40\uDD02': '\uE401',  // MJ057666
-  '\u6636\uDB40\uDD02': '\uE402',  // MJ013248
-  '\u663C\uDB40\uDD02': '\uE403',  // MJ013254
-  '\u6648\uDB40\uDD02': '\uE404',  // MJ013267
-  '\u6659\uDB40\uDD02': '\uE405',  // MJ013281
-  '\u6666\uDB40\uDD02': '\uE406',  // MJ013296
-  '\u6667\uDB40\uDD02': '\uE407',  // MJ013298
-  '\u666B\uDB40\uDD02': '\uE408',  // MJ059691
-  '\u6674\uDB40\uDD02': '\uE409',  // MJ013313
-  '\u6676\uDB40\uDD02': '\uE40A',  // MJ059704
-  '\u6677\uDB40\uDD02': '\uE40B',  // MJ013316
-  '\u6680\uDB40\uDD02': '\uE40C',  // MJ013328
-  '\u6681\uDB40\uDD02': '\uE40D',  // MJ013329
-  '\u668E\uDB40\uDD02': '\uE40E',  // MJ013342
-  '\u6690\uDB40\uDD02': '\uE40F',  // MJ013345
-  '\u6691\uDB40\uDD02': '\uE410',  // MJ013348
-  '\u6696\uDB40\uDD02': '\uE411',  // MJ013355
-  '\u6697\uDB40\uDD02': '\uE412',  // MJ013356
-  '\u669C\uDB40\uDD02': '\uE413',  // MJ013364
-  '\u66A0\uDB40\uDD02': '\uE414',  // MJ013369
-  '\u66AE\uDB40\uDD02': '\uE415',  // MJ013384
-  '\u66B1\uDB40\uDD02': '\uE416',  // MJ013389
-  '\u66B9\uDB40\uDD02': '\uE417',  // MJ013400
-  '\u66BC\uDB40\uDD02': '\uE418',  // MJ013406
-  '\u66C3\uDB40\uDD02': '\uE419',  // MJ013417
-  '\u66C4\uDB40\uDD02': '\uE41A',  // MJ013420
-  '\u66C8\uDB40\uDD02': '\uE41B',  // MJ057680
-  '\u66C9\uDB40\uDD02': '\uE41C',  // MJ059694
-  '\u66CF\uDB40\uDD02': '\uE41D',  // MJ013433
-  '\u66D6\uDB40\uDD02': '\uE41E',  // MJ013443
-  '\u66D9\uDB40\uDD02': '\uE41F',  // MJ013447
-  '\u66DA\uDB40\uDD02': '\uE420',  // MJ013450
-  '\u66DC\uDB40\uDD02': '\uE421',  // MJ013454
-  '\u66E0\uDB40\uDD02': '\uE422',  // MJ013460
-  '\u66E8\uDB40\uDD02': '\uE423',  // MJ013470
-  '\u66F4\uDB40\uDD02': '\uE424',  // MJ013482
-  '\u66F5\uDB40\uDD02': '\uE425',  // MJ013484
-  '\u66F7\uDB40\uDD02': '\uE426',  // MJ013489
-  '\u66F8\uDB40\uDD02': '\uE427',  // MJ013491
-  '\u66FB\uDB40\uDD02': '\uE428',  // MJ013496
-  '\u66FC\uDB40\uDD02': '\uE429',  // MJ013498
-  '\u66FE\uDB40\uDD02': '\uE42A',  // MJ013502
-  '\u66FF\uDB40\uDD02': '\uE42B',  // MJ057672
-  '\u6700\uDB40\uDD02': '\uE42C',  // MJ013506
-  '\u6701\uDB40\uDD02': '\uE42D',  // MJ013507
-  '\u6703\uDB40\uDD02': '\uE42E',  // MJ059330
-  '\u6708\uDB40\uDD02': '\uE42F',  // MJ013520
-  '\u6709\uDB40\uDD02': '\uE430',  // MJ013521
-  '\u670B\uDB40\uDD02': '\uE431',  // MJ013525
-  '\u670D\uDB40\uDD02': '\uE432',  // MJ013528
-  '\u670E\uDB40\uDD02': '\uE433',  // MJ013530
-  '\u6713\uDB40\uDD02': '\uE434',  // MJ013535
-  '\u6714\uDB40\uDD02': '\uE435',  // MJ013537
-  '\u6719\uDB40\uDD02': '\uE436',  // MJ013546
-  '\u671D\uDB40\uDD02': '\uE437',  // MJ013558
-  '\u671E\uDB40\uDD02': '\uE438',  // MJ013560
-  '\u671F\uDB40\uDD02': '\uE439',  // MJ013562
-  '\u6720\uDB40\uDD02': '\uE43A',  // MJ013565
-  '\u6722\uDB40\uDD02': '\uE43B',  // MJ013569
-  '\u6726\uDB40\uDD02': '\uE43C',  // MJ013573
-  '\u6727\uDB40\uDD02': '\uE43D',  // MJ045852
-  '\u67A9\uDB40\uDD02': '\uE43E',  // MJ013714
-  '\u6748\uDB40\uDD02': '\uE43F',  // MJ013605
-  '\u6753\uDB40\uDD02': '\uE440',  // MJ013617
-  '\u675C\uDB40\uDD02': '\uE441',  // MJ057711
-  '\u675E\uDB40\uDD02': '\uE442',  // MJ013631
-  '\u677E\uDB40\uDD02': '\uE443',  // MJ013667
-  '\u6781\uDB40\uDD02': '\uE444',  // MJ013671
-  '\u6785\uDB40\uDD02': '\uE445',  // MJ013678
-  '\u678C\uDB40\uDD02': '\uE446',  // MJ013688
-  '\u6792\uDB40\uDD02': '\uE447',  // MJ013694
-  '\u6795\uDB40\uDD02': '\uE448',  // MJ057718
-  '\u67A6\uDB40\uDD02': '\uE449',  // MJ013712
-  '\u67B9\uDB40\uDD02': '\uE44A',  // MJ013731
-  '\u67C4\uDB40\uDD02': '\uE44B',  // MJ013742
-  '\u67CA\uDB40\uDD02': '\uE44C',  // MJ013751
-  '\u67D4\uDB40\uDD02': '\uE44D',  // MJ013761
-  '\u67D7\uDB40\uDD02': '\uE44E',  // MJ059711
-  '\u67DC\uDB40\uDD02': '\uE44F',  // MJ013771
-  '\u67E7\uDB40\uDD02': '\uE450',  // MJ013784
-  '\u67F1\uDB40\uDD02': '\uE451',  // MJ013794
-  '\u67F3\uDB40\uDD02': '\uE452',  // MJ013798
-  '\u67FA\uDB40\uDD02': '\uE453',  // MJ013806
-  '\u67FB\uDB40\uDD02': '\uE454',  // MJ057728
-  '\u6801\uDB40\uDD02': '\uE455',  // MJ013815
-  '\u6803\uDB40\uDD02': '\uE456',  // MJ013819
-  '\u6813\uDB40\uDD02': '\uE457',  // MJ013827
-  '\u6814\uDB40\uDD02': '\uE458',  // MJ013829
-  '\u6816\uDB40\uDD02': '\uE459',  // MJ013833
-  '\u681D\uDB40\uDD02': '\uE45A',  // MJ013841
-  '\u681F\uDB40\uDD02': '\uE45B',  // MJ013843
-  '\u6821\uDB40\uDD02': '\uE45C',  // MJ013846
-  '\u6829\uDB40\uDD02': '\uE45D',  // MJ013857
-  '\u6832\uDB40\uDD02': '\uE45E',  // MJ013867
-  '\u6834\uDB40\uDD02': '\uE45F',  // MJ013870
-  '\u6838\uDB40\uDD02': '\uE460',  // MJ013875
-  '\u6840\uDB40\uDD02': '\uE461',  // MJ013883
-  '\u6845\uDB40\uDD02': '\uE462',  // MJ013891
-  '\u6852\uDB40\uDD02': '\uE463',  // MJ013904
-  '\u6874\uDB40\uDD02': '\uE464',  // MJ013938
-  '\u6875\uDB40\uDD02': '\uE465',  // MJ013940
-  '\u6883\uDB40\uDD02': '\uE466',  // MJ013958
-  '\u6885\uDB40\uDD02': '\uE467',  // MJ013961
-  '\u6886\uDB40\uDD02': '\uE468',  // MJ013963
-  '\u688F\uDB40\uDD02': '\uE469',  // MJ013974
-  '\u6897\uDB40\uDD02': '\uE46A',  // MJ013982
-  '\u689B\uDB40\uDD02': '\uE46B',  // MJ013989
-  '\u689D\uDB40\uDD02': '\uE46C',  // MJ013991
-  '\u689F\uDB40\uDD02': '\uE46D',  // MJ013994
-  '\u68A2\uDB40\uDD02': '\uE46E',  // MJ013998
-  '\u68A5\uDB40\uDD02': '\uE46F',  // MJ014002
-  '\u68AD\uDB40\uDD02': '\uE470',  // MJ014012
-  '\u68B5\uDB40\uDD02': '\uE471',  // MJ014022
-  '\u68C4\uDB40\uDD02': '\uE472',  // MJ014033
-  '\u68C8\uDB40\uDD02': '\uE473',  // MJ014037
-  '\u68CF\uDB40\uDD02': '\uE474',  // MJ014047
-  '\u68DA\uDB40\uDD02': '\uE475',  // MJ014060
-  '\u68FB\uDB40\uDD02': '\uE476',  // MJ014095
-  '\u6907\uDB40\uDD02': '\uE477',  // MJ014110
-  '\u690C\uDB40\uDD02': '\uE478',  // MJ014117
-  '\u6911\uDB40\uDD02': '\uE479',  // MJ057741
-  '\u691B\uDB40\uDD02': '\uE47A',  // MJ014136
-  '\u6926\uDB40\uDD02': '\uE47B',  // MJ014144
-  '\u6930\uDB40\uDD02': '\uE47C',  // MJ014149
-  '\u6939\uDB40\uDD02': '\uE47D',  // MJ014161
-  '\u693D\uDB40\uDD02': '\uE47E',  // MJ014165
-  '\u6946\uDB40\uDD02': '\uE47F',  // MJ014176
-  '\u6949\uDB40\uDD02': '\uE480',  // MJ014181
-  '\u6954\uDB40\uDD02': '\uE481',  // MJ014192
-  '\u6957\uDB40\uDD02': '\uE482',  // MJ014199
-  '\u695B\uDB40\uDD02': '\uE483',  // MJ014204
-  '\u695E\uDB40\uDD02': '\uE484',  // MJ014208
-  '\u6962\uDB40\uDD02': '\uE485',  // MJ014213
-  '\u696B\uDB40\uDD02': '\uE486',  // MJ014224
-  '\u696E\uDB40\uDD02': '\uE487',  // MJ014228
-  '\u698A\uDB40\uDD02': '\uE488',  // MJ014255
-  '\u6991\uDB40\uDD02': '\uE489',  // MJ014263
-  '\u6992\uDB40\uDD02': '\uE48A',  // MJ014265
-  '\u6994\uDB40\uDD02': '\uE48B',  // MJ014267
-  '\u6998\uDB40\uDD02': '\uE48C',  // MJ014274
-  '\u699C\uDB40\uDD02': '\uE48D',  // MJ014278
-  '\u69A7\uDB40\uDD02': '\uE48E',  // MJ014290
-  '\u69BA\uDB40\uDD02': '\uE48F',  // MJ014312
-  '\u69BB\uDB40\uDD02': '\uE490',  // MJ014316
-  '\u69C1\uDB40\uDD02': '\uE491',  // MJ014325
-  '\u69C7\uDB40\uDD02': '\uE492',  // MJ014334
-  '\u69CB\uDB40\uDD02': '\uE493',  // MJ014339
-  '\u69CC\uDB40\uDD02': '\uE494',  // MJ014340
-  '\u69CF\uDB40\uDD02': '\uE495',  // MJ014345
-  '\u69E2\uDB40\uDD02': '\uE496',  // MJ059729
-  '\u69E9\uDB40\uDD02': '\uE497',  // MJ014370
-  '\u69EA\uDB40\uDD02': '\uE498',  // MJ014375
-  '\u69EB\uDB40\uDD02': '\uE499',  // MJ014377
-  '\u69F1\uDB40\uDD02': '\uE49A',  // MJ014385
-  '\u69FE\uDB40\uDD02': '\uE49B',  // MJ014398
-  '\u69FF\uDB40\uDD02': '\uE49C',  // MJ014401
-  '\u6A0B\uDB40\uDD02': '\uE49D',  // MJ014416
-  '\u6A13\uDB40\uDD02': '\uE49E',  // MJ057816
-  '\u6A14\uDB40\uDD02': '\uE49F',  // MJ014427
-  '\u6A1B\uDB40\uDD02': '\uE4A0',  // MJ014435
-  '\u6A1E\uDB40\uDD02': '\uE4A1',  // MJ014439
-  '\u6A1F\uDB40\uDD02': '\uE4A2',  // MJ014441
-  '\u6A21\uDB40\uDD02': '\uE4A3',  // MJ014444
-  '\u6A23\uDB40\uDD02': '\uE4A4',  // MJ014447
-  '\u6A2A\uDB40\uDD02': '\uE4A5',  // MJ014456
-  '\u6A2E\uDB40\uDD02': '\uE4A6',  // MJ059737
-  '\u6A34\uDB40\uDD02': '\uE4A7',  // MJ014467
-  '\u6A36\uDB40\uDD02': '\uE4A8',  // MJ014470
-  '\u6A39\uDB40\uDD02': '\uE4A9',  // MJ014475
-  '\u6A3A\uDB40\uDD02': '\uE4AA',  // MJ014477
-  '\u6A3D\uDB40\uDD02': '\uE4AB',  // MJ014481
-  '\u6A44\uDB40\uDD02': '\uE4AC',  // MJ014488
-  '\u6A49\uDB40\uDD02': '\uE4AD',  // MJ014495
-  '\u6A59\uDB40\uDD02': '\uE4AE',  // MJ014512
-  '\u6A5F\uDB40\uDD02': '\uE4AF',  // MJ014520
-  '\u6A61\uDB40\uDD02': '\uE4B0',  // MJ014524
-  '\u6A66\uDB40\uDD02': '\uE4B1',  // MJ014530
-  '\u6A67\uDB40\uDD02': '\uE4B2',  // MJ014532
-  '\u6A73\uDB40\uDD02': '\uE4B3',  // MJ014545
-  '\u6A80\uDB40\uDD02': '\uE4B4',  // MJ014555
-  '\u6A89\uDB40\uDD02': '\uE4B5',  // MJ014565
-  '\u6A8D\uDB40\uDD02': '\uE4B6',  // MJ014570
-  '\u6A8E\uDB40\uDD02': '\uE4B7',  // MJ014571
-  '\u6A90\uDB40\uDD02': '\uE4B8',  // MJ014573
-  '\u6A9B\uDB40\uDD02': '\uE4B9',  // MJ014587
-  '\u6A9C\uDB40\uDD02': '\uE4BA',  // MJ014590
-  '\u6AA0\uDB40\uDD02': '\uE4BB',  // MJ014597
-  '\u6AAC\uDB40\uDD02': '\uE4BC',  // MJ014609
-  '\u6AB3\uDB40\uDD02': '\uE4BD',  // MJ014620
-  '\u6AB4\uDB40\uDD02': '\uE4BE',  // MJ014622
-  '\u6AB8\uDB40\uDD02': '\uE4BF',  // MJ014627
-  '\u6AC2\uDB40\uDD02': '\uE4C0',  // MJ014639
-  '\u6AD4\uDB40\uDD02': '\uE4C1',  // MJ014659
-  '\u6ADC\uDB40\uDD02': '\uE4C2',  // MJ014674
-  '\u6ADD\uDB40\uDD02': '\uE4C3',  // MJ014676
-  '\u6ADE\uDB40\uDD02': '\uE4C4',  // MJ014680
-  '\u6AE4\uDB40\uDD02': '\uE4C5',  // MJ014687
-  '\u6AF3\uDB40\uDD02': '\uE4C6',  // MJ014702
-  '\u6B02\uDB40\uDD02': '\uE4C7',  // MJ014714
-  '\u6B04\uDB40\uDD02': '\uE4C8',  // MJ014716
-  '\u6B07\uDB40\uDD02': '\uE4C9',  // MJ014720
-  '\u6B0A\uDB40\uDD02': '\uE4CA',  // MJ014724
-  '\u6B17\uDB40\uDD02': '\uE4CB',  // MJ014735
-  '\u6B1D\uDB40\uDD02': '\uE4CC',  // MJ014742
-  '\u6B1F\uDB40\uDD02': '\uE4CD',  // MJ014746
-  '\u6B24\uDB40\uDD02': '\uE4CE',  // MJ014751
-  '\u6B2C\uDB40\uDD02': '\uE4CF',  // MJ014761
-  '\u6B3F\uDB40\uDD02': '\uE4D0',  // MJ059754
-  '\u6B46\uDB40\uDD02': '\uE4D1',  // MJ014788
-  '\u6B47\uDB40\uDD02': '\uE4D2',  // MJ014789
-  '\u6B49\uDB40\uDD02': '\uE4D3',  // MJ014793
-  '\u6B4E\uDB40\uDD02': '\uE4D4',  // MJ014798
-  '\u6B50\uDB40\uDD02': '\uE4D5',  // MJ014802
-  '\u6B54\uDB40\uDD02': '\uE4D6',  // MJ014806
-  '\u6B59\uDB40\uDD02': '\uE4D7',  // MJ014814
-  '\u6B61\uDB40\uDD02': '\uE4D8',  // MJ014822
-  '\u6B62\uDB40\uDD02': '\uE4D9',  // MJ014824
-  '\u6B6F\uDB40\uDD02': '\uE4DA',  // MJ059281
-  '\u6B70\uDB40\uDD02': '\uE4DB',  // MJ014839
-  '\u6B72\uDB40\uDD02': '\uE4DC',  // MJ014843
-  '\u6B78\uDB40\uDD02': '\uE4DD',  // MJ014850
-  '\u6B8D\uDB40\uDD02': '\uE4DE',  // MJ014870
-  '\u6B9F\uDB40\uDD02': '\uE4DF',  // MJ057909
-  '\u6BA9\uDB40\uDD02': '\uE4E0',  // MJ014895
-  '\u6BAF\uDB40\uDD02': '\uE4E1',  // MJ014903
-  '\u6BB0\uDB40\uDD02': '\uE4E2',  // MJ014905
-  '\u6BB3\uDB40\uDD02': '\uE4E3',  // MJ014909
-  '\u6BB8\uDB40\uDD02': '\uE4E4',  // MJ057918
-  '\u6BBA\uDB40\uDD02': '\uE4E5',  // MJ014916
-  '\u6BBB\uDB40\uDD02': '\uE4E6',  // MJ014917
-  '\u6BBC\uDB40\uDD02': '\uE4E7',  // MJ014920
-  '\u6BC5\uDB40\uDD02': '\uE4E8',  // MJ060199
-  '\u6BC6\uDB40\uDD02': '\uE4E9',  // MJ014930
-  '\u6BD2\uDB40\uDD02': '\uE4EA',  // MJ057930
-  '\u6BD3\uDB40\uDD02': '\uE4EB',  // MJ014945
-  '\u6C0E\uDB40\uDD02': '\uE4EC',  // MJ015003
-  '\u6C10\uDB40\uDD02': '\uE4ED',  // MJ057935
-  '\u6C13\uDB40\uDD02': '\uE4EE',  // MJ015008
-  '\u6C14\uDB40\uDD02': '\uE4EF',  // MJ056866
-  '\u6C1B\uDB40\uDD02': '\uE4F0',  // MJ015016
-  '\u6C42\uDB40\uDD02': '\uE4F1',  // MJ059770
-  '\u6C4D\uDB40\uDD02': '\uE4F2',  // MJ015060
-  '\u6C4E\uDB40\uDD02': '\uE4F3',  // MJ015062
-  '\u6C52\uDB40\uDD02': '\uE4F4',  // MJ015067
-  '\u6C5B\uDB40\uDD02': '\uE4F5',  // MJ015077
-  '\u6C67\uDB40\uDD02': '\uE4F6',  // MJ015090
-  '\u6C6D\uDB40\uDD02': '\uE4F7',  // MJ015099
-  '\u6C72\uDB40\uDD02': '\uE4F8',  // MJ015105
-  '\u6C74\uDB40\uDD02': '\uE4F9',  // MJ015109
-  '\u6C76\uDB40\uDD02': '\uE4FA',  // MJ015112
-  '\u6C7E\uDB40\uDD02': '\uE4FB',  // MJ015121
-  '\u6C88\uDB40\uDD02': '\uE4FC',  // MJ057943
-  '\u6C97\uDB40\uDD02': '\uE4FD',  // MJ015149
-  '\u6CA1\uDB40\uDD02': '\uE4FE',  // MJ015161
-  '\u6CD2\uDB40\uDD02': '\uE4FF',  // MJ015210
-  '\u6CD9\uDB40\uDD02': '\uE500',  // MJ015218
-  '\u6CE1\uDB40\uDD02': '\uE501',  // MJ015227
-  '\u6CE7\uDB40\uDD02': '\uE502',  // MJ015234
-  '\u6CF0\uDB40\uDD02': '\uE503',  // MJ015244
-  '\u6CFB\uDB40\uDD02': '\uE504',  // MJ015251
-  '\u6D25\uDB40\uDD02': '\uE505',  // MJ059778
-  '\u6D29\uDB40\uDD02': '\uE506',  // MJ057950
-  '\u6D2F\uDB40\uDD02': '\uE507',  // MJ015307
-  '\u6D34\uDB40\uDD02': '\uE508',  // MJ015312
-  '\u6D41\uDB40\uDD02': '\uE509',  // MJ015329
-  '\u6D69\uDB40\uDD02': '\uE50A',  // MJ015356
-  '\u6D6E\uDB40\uDD02': '\uE50B',  // MJ015362
-  '\u6D77\uDB40\uDD02': '\uE50C',  // MJ015371
-  '\u6D78\uDB40\uDD02': '\uE50D',  // MJ015373
-  '\u6D88\uDB40\uDD02': '\uE50E',  // MJ015391
-  '\u6D8E\uDB40\uDD02': '\uE50F',  // MJ015398
-  '\u6DAC\uDB40\uDD02': '\uE510',  // MJ015416
-  '\u6DB5\uDB40\uDD02': '\uE511',  // MJ015426
-  '\u6DBF\uDB40\uDD02': '\uE512',  // MJ015438
-  '\u6DC3\uDB40\uDD02': '\uE513',  // MJ015444
-  '\u6DCA\uDB40\uDD02': '\uE514',  // MJ015452
-  '\u6DCC\uDB40\uDD02': '\uE515',  // MJ015455
-  '\u6DCF\uDB40\uDD02': '\uE516',  // MJ015460
-  '\u6DDE\uDB40\uDD02': '\uE517',  // MJ015478
-  '\u6DE8\uDB40\uDD02': '\uE518',  // MJ015489
-  '\u6DEB\uDB40\uDD02': '\uE519',  // MJ015493
-  '\u6DF5\uDB40\uDD02': '\uE51A',  // MJ059791
-  '\u6DFB\uDB40\uDD02': '\uE51B',  // MJ015511
-  '\u6E1A\uDB40\uDD02': '\uE51C',  // MJ015538
-  '\u6E1D\uDB40\uDD02': '\uE51D',  // MJ015542
-  '\u6E20\uDB40\uDD02': '\uE51E',  // MJ015546
-  '\u6E27\uDB40\uDD02': '\uE51F',  // MJ015555
-  '\u6E2E\uDB40\uDD02': '\uE520',  // MJ015563
-  '\u6E2F\uDB40\uDD02': '\uE521',  // MJ015565
-  '\u6E36\uDB40\uDD02': '\uE522',  // MJ015576
-  '\u6E4E\uDB40\uDD02': '\uE523',  // MJ057956
-  '\u6E52\uDB40\uDD02': '\uE524',  // MJ015606
-  '\u6E5B\uDB40\uDD02': '\uE525',  // MJ015616
-  '\u6E67\uDB40\uDD02': '\uE526',  // MJ015631
-  '\u6E6E\uDB40\uDD02': '\uE527',  // MJ015639
-  '\u6E72\uDB40\uDD02': '\uE528',  // MJ015646
-  '\u6E7E\uDB40\uDD02': '\uE529',  // MJ015660
-  '\u6E80\uDB40\uDD02': '\uE52A',  // MJ015664
-  '\u6E8F\uDB40\uDD02': '\uE52B',  // MJ015671
-  '\u6E90\uDB40\uDD02': '\uE52C',  // MJ059789
-  '\u6E93\uDB40\uDD02': '\uE52D',  // MJ015676
-  '\u6E9D\uDB40\uDD02': '\uE52E',  // MJ015687
-  '\u6EA5\uDB40\uDD02': '\uE52F',  // MJ015698
-  '\u6EAA\uDB40\uDD02': '\uE530',  // MJ015704
-  '\u6EB2\uDB40\uDD02': '\uE531',  // MJ015712
-  '\u6EBA\uDB40\uDD02': '\uE532',  // MJ015724
-  '\u6EBF\uDB40\uDD02': '\uE533',  // MJ015730
-  '\u6EC2\uDB40\uDD02': '\uE534',  // MJ057962
-  '\u6EC7\uDB40\uDD02': '\uE535',  // MJ015739
-  '\u6ED4\uDB40\uDD02': '\uE536',  // MJ015756
-  '\u6ED5\uDB40\uDD02': '\uE537',  // MJ015758
-  '\u6EDB\uDB40\uDD02': '\uE538',  // MJ015766
-  '\u6EEC\uDB40\uDD02': '\uE539',  // MJ015775
-  '\u6EF4\uDB40\uDD02': '\uE53A',  // MJ015784
-  '\u6EFE\uDB40\uDD02': '\uE53B',  // MJ015794
-  '\u6EFF\uDB40\uDD02': '\uE53C',  // MJ059813
-  '\u6F01\uDB40\uDD02': '\uE53D',  // MJ015799
-  '\u6F13\uDB40\uDD02': '\uE53E',  // MJ057964
-  '\u6F1A\uDB40\uDD02': '\uE53F',  // MJ015832
-  '\u6F20\uDB40\uDD02': '\uE540',  // MJ015839
-  '\u6F22\uDB40\uDD02': '\uE541',  // MJ015841
-  '\u6F23\uDB40\uDD02': '\uE542',  // MJ015844
-  '\u6F2B\uDB40\uDD02': '\uE543',  // MJ015854
-  '\u6F2D\uDB40\uDD02': '\uE544',  // MJ015858
-  '\u6F33\uDB40\uDD02': '\uE545',  // MJ015865
-  '\u6F3B\uDB40\uDD02': '\uE546',  // MJ015874
-  '\u6F3E\uDB40\uDD02': '\uE547',  // MJ015879
-  '\u6F54\uDB40\uDD02': '\uE548',  // MJ015897
-  '\u6F64\uDB40\uDD02': '\uE549',  // MJ015922
-  '\u6F6D\uDB40\uDD02': '\uE54A',  // MJ015934
-  '\u6F6E\uDB40\uDD02': '\uE54B',  // MJ015937
-  '\u6F6F\uDB40\uDD02': '\uE54C',  // MJ015939
-  '\u6F74\uDB40\uDD02': '\uE54D',  // MJ015944
-  '\u6F78\uDB40\uDD02': '\uE54E',  // MJ015950
-  '\u6F7C\uDB40\uDD02': '\uE54F',  // MJ015955
-  '\u6F7E\uDB40\uDD02': '\uE550',  // MJ015959
-  '\u6F80\uDB40\uDD02': '\uE551',  // MJ015964
-  '\u6F82\uDB40\uDD02': '\uE552',  // MJ015968
-  '\u6F98\uDB40\uDD02': '\uE553',  // MJ015992
-  '\u6F9A\uDB40\uDD02': '\uE554',  // MJ060383
-  '\u6FA0\uDB40\uDD02': '\uE555',  // MJ015998
-  '\u6FA4\uDB40\uDD02': '\uE556',  // MJ016004
-  '\u6FAB\uDB40\uDD02': '\uE557',  // MJ016014
-  '\u6FAF\uDB40\uDD02': '\uE558',  // MJ016019
-  '\u6FB3\uDB40\uDD02': '\uE559',  // MJ016024
-  '\u6FB7\uDB40\uDD02': '\uE55A',  // MJ016029
-  '\u6FBE\uDB40\uDD02': '\uE55B',  // MJ016036
-  '\u6FC2\uDB40\uDD02': '\uE55C',  // MJ016042
-  '\u6FC6\uDB40\uDD02': '\uE55D',  // MJ016048
-  '\u6FC8\uDB40\uDD02': '\uE55E',  // MJ016051
-  '\u6FD8\uDB40\uDD02': '\uE55F',  // MJ016065
-  '\u6FDB\uDB40\uDD02': '\uE560',  // MJ016069
-  '\u6FE0\uDB40\uDD02': '\uE561',  // MJ016076
-  '\u6FE8\uDB40\uDD02': '\uE562',  // MJ016085
-  '\u6FE9\uDB40\uDD02': '\uE563',  // MJ016088
-  '\u6FEF\uDB40\uDD02': '\uE564',  // MJ016098
-  '\u6FF1\uDB40\uDD02': '\uE565',  // MJ016103
-  '\u6FF5\uDB40\uDD02': '\uE566',  // MJ059833
-  '\u6FF9\uDB40\uDD02': '\uE567',  // MJ016109
-  '\u7001\uDB40\uDD02': '\uE568',  // MJ016120
-  '\u7007\uDB40\uDD02': '\uE569',  // MJ016128
-  '\u7015\uDB40\uDD02': '\uE56A',  // MJ016144
-  '\u701A\uDB40\uDD02': '\uE56B',  // MJ016151
-  '\u701B\uDB40\uDD02': '\uE56C',  // MJ016152
-  '\u701E\uDB40\uDD02': '\uE56D',  // MJ016160
-  '\u701F\uDB40\uDD02': '\uE56E',  // MJ016165
-  '\u7026\uDB40\uDD02': '\uE56F',  // MJ016175
-  '\u7027\uDB40\uDD02': '\uE570',  // MJ016177
-  '\u7037\uDB40\uDD02': '\uE571',  // MJ057978
-  '\u703E\uDB40\uDD02': '\uE572',  // MJ016208
-  '\u7044\uDB40\uDD02': '\uE573',  // MJ016216
-  '\u7047\uDB40\uDD02': '\uE574',  // MJ016220
-  '\u704A\uDB40\uDD02': '\uE575',  // MJ016223
-  '\u704C\uDB40\uDD02': '\uE576',  // MJ016227
-  '\u7055\uDB40\uDD02': '\uE577',  // MJ057980
-  '\u7058\uDB40\uDD02': '\uE578',  // MJ016237
-  '\u706E\uDB40\uDD02': '\uE579',  // MJ016264
-  '\u7070\uDB40\uDD02': '\uE57A',  // MJ016267
-  '\u7078\uDB40\uDD02': '\uE57B',  // MJ016277
-  '\u707C\uDB40\uDD02': '\uE57C',  // MJ016283
-  '\u707D\uDB40\uDD02': '\uE57D',  // MJ016285
-  '\u7081\uDB40\uDD02': '\uE57E',  // MJ016287
-  '\u7089\uDB40\uDD02': '\uE57F',  // MJ016296
-  '\u70AC\uDB40\uDD02': '\uE580',  // MJ016332
-  '\u70AD\uDB40\uDD02': '\uE581',  // MJ016333
-  '\u70AE\uDB40\uDD02': '\uE582',  // MJ016336
-  '\u70B3\uDB40\uDD02': '\uE583',  // MJ016342
-  '\u70B7\uDB40\uDD02': '\uE584',  // MJ016347
-  '\u70E4\uDB40\uDD02': '\uE585',  // MJ016386
-  '\u7108\uDB40\uDD02': '\uE586',  // MJ016414
-  '\u710F\uDB40\uDD02': '\uE587',  // MJ059859
-  '\u712B\uDB40\uDD02': '\uE588',  // MJ016446
-  '\u7136\uDB40\uDD02': '\uE589',  // MJ057997
-  '\u7141\uDB40\uDD02': '\uE58A',  // MJ016466
-  '\u7149\uDB40\uDD02': '\uE58B',  // MJ016474
-  '\u714E\uDB40\uDD02': '\uE58C',  // MJ016481
-  '\u7152\uDB40\uDD02': '\uE58D',  // MJ016487
-  '\u7156\uDB40\uDD02': '\uE58E',  // MJ016493
-  '\u7159\uDB40\uDD02': '\uE58F',  // MJ016497
-  '\u7162\uDB40\uDD02': '\uE590',  // MJ016507
-  '\u716E\uDB40\uDD02': '\uE591',  // MJ016520
-  '\u7188\uDB40\uDD02': '\uE592',  // MJ016546
-  '\u7194\uDB40\uDD02': '\uE593',  // MJ016561
-  '\u7196\uDB40\uDD02': '\uE594',  // MJ057995
-  '\u71A2\uDB40\uDD02': '\uE595',  // MJ016576
-  '\u71B3\uDB40\uDD02': '\uE596',  // MJ016596
-  '\u71BE\uDB40\uDD02': '\uE597',  // MJ016606
-  '\u71BF\uDB40\uDD02': '\uE598',  // MJ016608
-  '\u71C1\uDB40\uDD02': '\uE599',  // MJ016610
-  '\u71CC\uDB40\uDD02': '\uE59A',  // MJ058010
-  '\u71D0\uDB40\uDD02': '\uE59B',  // MJ016631
-  '\u71D3\uDB40\uDD02': '\uE59C',  // MJ057831
-  '\u71D5\uDB40\uDD02': '\uE59D',  // MJ058005
-  '\u71E0\uDB40\uDD02': '\uE59E',  // MJ016647
-  '\u71E7\uDB40\uDD02': '\uE59F',  // MJ016656
-  '\u71F5\uDB40\uDD02': '\uE5A0',  // MJ016672
-  '\u71FB\uDB40\uDD02': '\uE5A1',  // MJ016678
-  '\u71FF\uDB40\uDD02': '\uE5A2',  // MJ016683
-  '\u7207\uDB40\uDD02': '\uE5A3',  // MJ016692
-  '\u7209\uDB40\uDD02': '\uE5A4',  // MJ016695
-  '\u7217\uDB40\uDD02': '\uE5A5',  // MJ016709
-  '\u721B\uDB40\uDD02': '\uE5A6',  // MJ016713
-  '\u721F\uDB40\uDD02': '\uE5A7',  // MJ016717
-  '\u7224\uDB40\uDD02': '\uE5A8',  // MJ016724
-  '\u7228\uDB40\uDD02': '\uE5A9',  // MJ016728
-  '\u722B\uDB40\uDD02': '\uE5AA',  // MJ030270
-  '\u722F\uDB40\uDD02': '\uE5AB',  // MJ058016
-  '\u7230\uDB40\uDD02': '\uE5AC',  // MJ016741
-  '\u7232\uDB40\uDD02': '\uE5AD',  // MJ016744
-  '\u7236\uDB40\uDD02': '\uE5AE',  // MJ016749
-  '\u7238\uDB40\uDD02': '\uE5AF',  // MJ016752
-  '\u7239\uDB40\uDD02': '\uE5B0',  // MJ016754
-  '\u723A\uDB40\uDD02': '\uE5B1',  // MJ016755
-  '\u723B\uDB40\uDD02': '\uE5B2',  // MJ016757
-  '\u723E\uDB40\uDD02': '\uE5B3',  // MJ016762
-  '\u7240\uDB40\uDD02': '\uE5B4',  // MJ016767
-  '\u7246\uDB40\uDD02': '\uE5B5',  // MJ016774
-  '\u7247\uDB40\uDD02': '\uE5B6',  // MJ016776
-  '\u724C\uDB40\uDD02': '\uE5B7',  // MJ016784
-  '\u7250\uDB40\uDD02': '\uE5B8',  // MJ016787
-  '\u7253\uDB40\uDD02': '\uE5B9',  // MJ016792
-  '\u7255\uDB40\uDD02': '\uE5BA',  // MJ016795
-  '\u7259\uDB40\uDD02': '\uE5BB',  // MJ016802
-  '\u725A\uDB40\uDD02': '\uE5BC',  // MJ016804
-  '\u727D\uDB40\uDD02': '\uE5BD',  // MJ016838
-  '\u7280\uDB40\uDD02': '\uE5BE',  // MJ016842
-  '\u7282\uDB40\uDD02': '\uE5BF',  // MJ059884
-  '\u72AE\uDB40\uDD02': '\uE5C0',  // MJ016886
-  '\u72AF\uDB40\uDD02': '\uE5C1',  // MJ016890
-  '\u72D0\uDB40\uDD02': '\uE5C2',  // MJ016923
-  '\u72E1\uDB40\uDD02': '\uE5C3',  // MJ016940
-  '\u72F7\uDB40\uDD02': '\uE5C4',  // MJ058029
-  '\u731C\uDB40\uDD02': '\uE5C5',  // MJ016995
-  '\u732A\uDB40\uDD02': '\uE5C6',  // MJ017008
-  '\u732B\uDB40\uDD02': '\uE5C7',  // MJ017010
-  '\u734D\uDB40\uDD02': '\uE5C8',  // MJ017050
-  '\u734F\uDB40\uDD02': '\uE5C9',  // MJ017053
-  '\u7350\uDB40\uDD02': '\uE5CA',  // MJ017055
-  '\u7352\uDB40\uDD02': '\uE5CB',  // MJ017058
-  '\u735E\uDB40\uDD02': '\uE5CC',  // MJ017070
-  '\u7363\uDB40\uDD02': '\uE5CD',  // MJ017075
-  '\u7366\uDB40\uDD02': '\uE5CE',  // MJ017079
-  '\u7370\uDB40\uDD02': '\uE5CF',  // MJ017089
-  '\u7372\uDB40\uDD02': '\uE5D0',  // MJ017092
-  '\u7378\uDB40\uDD02': '\uE5D1',  // MJ040909
-  '\u737A\uDB40\uDD02': '\uE5D2',  // MJ017101
-  '\u7381\uDB40\uDD02': '\uE5D3',  // MJ017109
-  '\u7387\uDB40\uDD02': '\uE5D4',  // MJ017116
-  '\u7389\uDB40\uDD02': '\uE5D5',  // MJ017121
-  '\u7393\uDB40\uDD02': '\uE5D6',  // MJ017129
-  '\u739F\uDB40\uDD02': '\uE5D7',  // MJ017140
-  '\u73AA\uDB40\uDD02': '\uE5D8',  // MJ059894
-  '\u73BA\uDB40\uDD02': '\uE5D9',  // MJ017171
-  '\u73CE\uDB40\uDD02': '\uE5DA',  // MJ017193
-  '\u73E5\uDB40\uDD02': '\uE5DB',  // MJ017217
-  '\u73ED\uDB40\uDD02': '\uE5DC',  // MJ017227
-  '\u73F5\uDB40\uDD02': '\uE5DD',  // MJ017236
-  '\u73F9\uDB40\uDD02': '\uE5DE',  // MJ017241
-  '\u73FD\uDB40\uDD02': '\uE5DF',  // MJ017247
-  '\u740A\uDB40\uDD02': '\uE5E0',  // MJ017261
-  '\u7422\uDB40\uDD02': '\uE5E1',  // MJ017282
-  '\u742A\uDB40\uDD02': '\uE5E2',  // MJ059898
-  '\u7432\uDB40\uDD02': '\uE5E3',  // MJ017303
-  '\u7434\uDB40\uDD02': '\uE5E4',  // MJ017307
-  '\u7441\uDB40\uDD02': '\uE5E5',  // MJ017322
-  '\u7447\uDB40\uDD02': '\uE5E6',  // MJ017328
-  '\u744B\uDB40\uDD02': '\uE5E7',  // MJ017333
-  '\u7451\uDB40\uDD02': '\uE5E8',  // MJ017342
-  '\u7459\uDB40\uDD02': '\uE5E9',  // MJ059905
-  '\u745B\uDB40\uDD02': '\uE5EA',  // MJ017353
-  '\u745C\uDB40\uDD02': '\uE5EB',  // MJ017355
-  '\u745F\uDB40\uDD02': '\uE5EC',  // MJ017359
-  '\u7462\uDB40\uDD02': '\uE5ED',  // MJ017363
-  '\u7463\uDB40\uDD02': '\uE5EE',  // MJ017366
-  '\u746E\uDB40\uDD02': '\uE5EF',  // MJ017380
-  '\u746F\uDB40\uDD02': '\uE5F0',  // MJ017382
-  '\u7471\uDB40\uDD02': '\uE5F1',  // MJ017385
-  '\u747E\uDB40\uDD02': '\uE5F2',  // MJ017401
-  '\u7481\uDB40\uDD02': '\uE5F3',  // MJ017405
-  '\u7483\uDB40\uDD02': '\uE5F4',  // MJ017409
-  '\u7485\uDB40\uDD02': '\uE5F5',  // MJ017412
-  '\u7488\uDB40\uDD02': '\uE5F6',  // MJ068064
-  '\u7489\uDB40\uDD02': '\uE5F7',  // MJ017416
-  '\u748B\uDB40\uDD02': '\uE5F8',  // MJ017421
-  '\u7498\uDB40\uDD02': '\uE5F9',  // MJ017432
-  '\u74A1\uDB40\uDD02': '\uE5FA',  // MJ017444
-  '\u74A3\uDB40\uDD02': '\uE5FB',  // MJ017448
-  '\u74A5\uDB40\uDD02': '\uE5FC',  // MJ017450
-  '\u74A6\uDB40\uDD02': '\uE5FD',  // MJ017451
-  '\u74A9\uDB40\uDD02': '\uE5FE',  // MJ017456
-  '\u74B0\uDB40\uDD02': '\uE5FF',  // MJ017465
-  '\u74B2\uDB40\uDD02': '\uE600',  // MJ017467
-  '\u74CA\uDB40\uDD02': '\uE601',  // MJ017495
-  '\u74CB\uDB40\uDD02': '\uE602',  // MJ017500
-  '\u74CF\uDB40\uDD02': '\uE603',  // MJ017505
-  '\u74D8\uDB40\uDD02': '\uE604',  // MJ017514
-  '\u74DA\uDB40\uDD02': '\uE605',  // MJ017517
-  '\u74DC\uDB40\uDD02': '\uE606',  // MJ017521
-  '\u74DE\uDB40\uDD02': '\uE607',  // MJ017523
-  '\u74DF\uDB40\uDD02': '\uE608',  // MJ017525
-  '\u74E0\uDB40\uDD02': '\uE609',  // MJ017529
-  '\u74E2\uDB40\uDD02': '\uE60A',  // MJ017532
-  '\u74E3\uDB40\uDD02': '\uE60B',  // MJ017534
-  '\u74E4\uDB40\uDD02': '\uE60C',  // MJ017537
-  '\u74EE\uDB40\uDD02': '\uE60D',  // MJ017549
-  '\u74EF\uDB40\uDD02': '\uE60E',  // MJ017550
-  '\u74F0\uDB40\uDD02': '\uE60F',  // MJ017553
-  '\u74F4\uDB40\uDD02': '\uE610',  // MJ017558
-  '\u7501\uDB40\uDD02': '\uE611',  // MJ017573
-  '\u7504\uDB40\uDD02': '\uE612',  // MJ017577
-  '\u7506\uDB40\uDD02': '\uE613',  // MJ017582
-  '\u750C\uDB40\uDD02': '\uE614',  // MJ017589
-  '\u750D\uDB40\uDD02': '\uE615',  // MJ017591
-  '\u750E\uDB40\uDD02': '\uE616',  // MJ017596
-  '\u751A\uDB40\uDD02': '\uE617',  // MJ058077
-  '\u7526\uDB40\uDD02': '\uE618',  // MJ017625
-  '\u7527\uDB40\uDD02': '\uE619',  // MJ017628
-  '\u752C\uDB40\uDD02': '\uE61A',  // MJ058080
-  '\u7537\uDB40\uDD02': '\uE61B',  // MJ058085
-  '\u7539\uDB40\uDD02': '\uE61C',  // MJ056877
-  '\u753B\uDB40\uDD02': '\uE61D',  // MJ017646
-  '\u753E\uDB40\uDD02': '\uE61E',  // MJ017652
-  '\u7543\uDB40\uDD02': '\uE61F',  // MJ017658
-  '\u7547\uDB40\uDD02': '\uE620',  // MJ017662
-  '\u7554\uDB40\uDD02': '\uE621',  // MJ017676
-  '\u7559\uDB40\uDD02': '\uE622',  // MJ017682
-  '\u7561\uDB40\uDD02': '\uE623',  // MJ017692
-  '\u7570\uDB40\uDD02': '\uE624',  // MJ017707
-  '\u75B1\uDB40\uDD02': '\uE625',  // MJ017766
-  '\u75BC\uDB40\uDD02': '\uE626',  // MJ017777
-  '\u75CA\uDB40\uDD02': '\uE627',  // MJ017791
-  '\u75CE\uDB40\uDD02': '\uE628',  // MJ017796
-  '\u75DC\uDB40\uDD02': '\uE629',  // MJ017811
-  '\u7600\uDB40\uDD02': '\uE62A',  // MJ017845
-  '\u7603\uDB40\uDD02': '\uE62B',  // MJ017850
-  '\u7608\uDB40\uDD02': '\uE62C',  // MJ017853
-  '\u7609\uDB40\uDD02': '\uE62D',  // MJ017856
-  '\u7616\uDB40\uDD02': '\uE62E',  // MJ017870
-  '\u761B\uDB40\uDD02': '\uE62F',  // MJ017875
-  '\u761F\uDB40\uDD02': '\uE630',  // MJ017879
-  '\u7622\uDB40\uDD02': '\uE631',  // MJ017884
-  '\u7626\uDB40\uDD02': '\uE632',  // MJ017888
-  '\u7627\uDB40\uDD02': '\uE633',  // MJ017891
-  '\u7629\uDB40\uDD02': '\uE634',  // MJ017894
-  '\u7634\uDB40\uDD02': '\uE635',  // MJ017904
-  '\u763C\uDB40\uDD02': '\uE636',  // MJ017913
-  '\u7641\uDB40\uDD02': '\uE637',  // MJ017916
-  '\u7647\uDB40\uDD02': '\uE638',  // MJ017924
-  '\u7652\uDB40\uDD02': '\uE639',  // MJ017935
-  '\u7658\uDB40\uDD02': '\uE63A',  // MJ017944
-  '\u7662\uDB40\uDD02': '\uE63B',  // MJ017954
-  '\u7665\uDB40\uDD02': '\uE63C',  // MJ017957
-  '\u7669\uDB40\uDD02': '\uE63D',  // MJ017961
-  '\u7671\uDB40\uDD02': '\uE63E',  // MJ017970
-  '\u7672\uDB40\uDD02': '\uE63F',  // MJ017971
-  '\u7680\uDB40\uDD02': '\uE640',  // MJ017991
-  '\u7682\uDB40\uDD02': '\uE641',  // MJ017990
-  '\u7684\uDB40\uDD02': '\uE642',  // MJ017993
-  '\u768D\uDB40\uDD02': '\uE643',  // MJ018006
-  '\u768E\uDB40\uDD02': '\uE644',  // MJ018008
-  '\u7693\uDB40\uDD02': '\uE645',  // MJ018013
-  '\u769E\uDB40\uDD02': '\uE646',  // MJ018027
-  '\u76A3\uDB40\uDD02': '\uE647',  // MJ018033
-  '\u76A7\uDB40\uDD02': '\uE648',  // MJ018038
-  '\u76B0\uDB40\uDD02': '\uE649',  // MJ018049
-  '\u76B4\uDB40\uDD02': '\uE64A',  // MJ018052
-  '\u76B6\uDB40\uDD02': '\uE64B',  // MJ018056
-  '\u76B7\uDB40\uDD02': '\uE64C',  // MJ018058
-  '\u76C6\uDB40\uDD02': '\uE64D',  // MJ018072
-  '\u76C8\uDB40\uDD02': '\uE64E',  // MJ058144
-  '\u76CA\uDB40\uDD02': '\uE64F',  // MJ018079
-  '\u76D4\uDB40\uDD02': '\uE650',  // MJ018086
-  '\u76DB\uDB40\uDD02': '\uE651',  // MJ018093
-  '\u76DF\uDB40\uDD02': '\uE652',  // MJ018098
-  '\u76E1\uDB40\uDD02': '\uE653',  // MJ058149
-  '\u76E3\uDB40\uDD02': '\uE654',  // MJ018104
-  '\u76F2\uDB40\uDD02': '\uE655',  // MJ018121
-  '\u76F4\uDB40\uDD02': '\uE656',  // MJ018123
-  '\u76FB\uDB40\uDD02': '\uE657',  // MJ018133
-  '\u7704\uDB40\uDD02': '\uE658',  // MJ018143
-  '\u7714\uDB40\uDD02': '\uE659',  // MJ018160
-  '\u771E\uDB40\uDD02': '\uE65A',  // MJ018170
-  '\u771F\uDB40\uDD02': '\uE65B',  // MJ018173
-  '\u7737\uDB40\uDD02': '\uE65C',  // MJ018201
-  '\u773E\uDB40\uDD02': '\uE65D',  // MJ058166
-  '\u7740\uDB40\uDD02': '\uE65E',  // MJ018212
-  '\u774A\uDB40\uDD02': '\uE65F',  // MJ018223
-  '\u775B\uDB40\uDD02': '\uE660',  // MJ018241
-  '\u776A\uDB40\uDD02': '\uE661',  // MJ058176
-  '\u7770\uDB40\uDD02': '\uE662',  // MJ018264
-  '\u7779\uDB40\uDD02': '\uE663',  // MJ018274
-  '\u7784\uDB40\uDD02': '\uE664',  // MJ018286
-  '\u778B\uDB40\uDD02': '\uE665',  // MJ018294
-  '\u778E\uDB40\uDD02': '\uE666',  // MJ018298
-  '\u7795\uDB40\uDD02': '\uE667',  // MJ018305
-  '\u77A2\uDB40\uDD02': '\uE668',  // MJ018319
-  '\u77A5\uDB40\uDD02': '\uE669',  // MJ018322
-  '\u77AC\uDB40\uDD02': '\uE66A',  // MJ018331
-  '\u77B1\uDB40\uDD02': '\uE66B',  // MJ018338
-  '\u77B3\uDB40\uDD02': '\uE66C',  // MJ018341
-  '\u77B5\uDB40\uDD02': '\uE66D',  // MJ018343
-  '\u77C7\uDB40\uDD02': '\uE66E',  // MJ018363
-  '\u77D2\uDB40\uDD02': '\uE66F',  // MJ018375
-  '\u77D7\uDB40\uDD02': '\uE670',  // MJ018383
-  '\u77E9\uDB40\uDD02': '\uE671',  // MJ018401
-  '\u77F1\uDB40\uDD02': '\uE672',  // MJ018410
-  '\u7809\uDB40\uDD02': '\uE673',  // MJ018432
-  '\u7811\uDB40\uDD02': '\uE674',  // MJ018441
-  '\u7832\uDB40\uDD02': '\uE675',  // MJ018471
-  '\u784E\uDB40\uDD02': '\uE676',  // MJ018494
-  '\u784F\uDB40\uDD02': '\uE677',  // MJ018496
-  '\u785D\uDB40\uDD02': '\uE678',  // MJ018503
-  '\u786B\uDB40\uDD02': '\uE679',  // MJ018518
-  '\u786C\uDB40\uDD02': '\uE67A',  // MJ018520
-  '\u786E\uDB40\uDD02': '\uE67B',  // MJ018524
-  '\u7874\uDB40\uDD02': '\uE67C',  // MJ018530
-  '\u787A\uDB40\uDD02': '\uE67D',  // MJ018534
-  '\u787C\uDB40\uDD02': '\uE67E',  // MJ018538
-  '\u788C\uDB40\uDD02': '\uE67F',  // MJ018556
-  '\u7891\uDB40\uDD02': '\uE680',  // MJ018561
-  '\u78A3\uDB40\uDD02': '\uE681',  // MJ018578
-  '\u78A4\uDB40\uDD02': '\uE682',  // MJ018580
-  '\u78B0\uDB40\uDD02': '\uE683',  // MJ018592
-  '\u78BA\uDB40\uDD02': '\uE684',  // MJ018599
-  '\u78C1\uDB40\uDD02': '\uE685',  // MJ018608
-  '\u78C5\uDB40\uDD02': '\uE686',  // MJ018615
-  '\u78CC\uDB40\uDD02': '\uE687',  // MJ018623
-  '\u78D3\uDB40\uDD02': '\uE688',  // MJ018632
-  '\u78D4\uDB40\uDD02': '\uE689',  // MJ018635
-  '\u78E8\uDB40\uDD02': '\uE68A',  // MJ018655
-  '\u78EF\uDB40\uDD02': '\uE68B',  // MJ018661
-  '\u78F7\uDB40\uDD02': '\uE68C',  // MJ018671
-  '\u78F9\uDB40\uDD02': '\uE68D',  // MJ018674
-  '\u7907\uDB40\uDD02': '\uE68E',  // MJ018686
-  '\u791A\uDB40\uDD02': '\uE68F',  // MJ018705
-  '\u791E\uDB40\uDD02': '\uE690',  // MJ018710
-  '\u7920\uDB40\uDD02': '\uE691',  // MJ018713
-  '\u7926\uDB40\uDD02': '\uE692',  // MJ018718
-  '\u792A\uDB40\uDD02': '\uE693',  // MJ018723
-  '\u792E\uDB40\uDD02': '\uE694',  // MJ018729
-  '\u7931\uDB40\uDD02': '\uE695',  // MJ018733
-  '\u7934\uDB40\uDD02': '\uE696',  // MJ018738
-  '\u793C\uDB40\uDD02': '\uE697',  // MJ018750
-  '\u793D\uDB40\uDD02': '\uE698',  // MJ018751
-  '\u793E\uDB40\uDD02': '\uE699',  // MJ018753
-  '\u793F\uDB40\uDD02': '\uE69A',  // MJ018754
-  '\u7940\uDB40\uDD02': '\uE69B',  // MJ018759
-  '\u7941\uDB40\uDD02': '\uE69C',  // MJ018762
-  '\u7945\uDB40\uDD02': '\uE69D',  // MJ018766
-  '\u7946\uDB40\uDD02': '\uE69E',  // MJ018768
-  '\u7947\uDB40\uDD02': '\uE69F',  // MJ018770
-  '\u7948\uDB40\uDD02': '\uE6A0',  // MJ018772
-  '\u7949\uDB40\uDD02': '\uE6A1',  // MJ018773
-  '\u794A\uDB40\uDD02': '\uE6A2',  // MJ018774
-  '\u794B\uDB40\uDD02': '\uE6A3',  // MJ018776
-  '\u794F\uDB40\uDD02': '\uE6A4',  // MJ018780
-  '\u7950\uDB40\uDD02': '\uE6A5',  // MJ018782
-  '\u9FC6\uDB40\uDD02': '\uE6A6',  // MJ030182
-  '\u7954\uDB40\uDD02': '\uE6A7',  // MJ018790
-  '\u7955\uDB40\uDD02': '\uE6A8',  // MJ018793
-  '\u7956\uDB40\uDD02': '\uE6A9',  // MJ018794
-  '\u7957\uDB40\uDD02': '\uE6AA',  // MJ018795
-  '\u7958\uDB40\uDD02': '\uE6AB',  // MJ018797
-  '\u795A\uDB40\uDD02': '\uE6AC',  // MJ018803
-  '\u795B\uDB40\uDD02': '\uE6AD',  // MJ018806
-  '\u795C\uDB40\uDD02': '\uE6AE',  // MJ018808
-  '\u795D\uDB40\uDD02': '\uE6AF',  // MJ018810
-  '\u795E\uDB40\uDD02': '\uE6B0',  // MJ018811
-  '\u7960\uDB40\uDD02': '\uE6B1',  // MJ018813
-  '\u7962\uDB40\uDD02': '\uE6B2',  // MJ018817
-  '\u7965\uDB40\uDD02': '\uE6B3',  // MJ018825
-  '\u7967\uDB40\uDD02': '\uE6B4',  // MJ018828
-  '\u796B\uDB40\uDD02': '\uE6B5',  // MJ018833
-  '\u7971\uDB40\uDD02': '\uE6B6',  // MJ018847
-  '\u7972\uDB40\uDD02': '\uE6B7',  // MJ018848
-  '\u797A\uDB40\uDD02': '\uE6B8',  // MJ018857
-  '\u797B\uDB40\uDD02': '\uE6B9',  // MJ018859
-  '\u797C\uDB40\uDD02': '\uE6BA',  // MJ018861
-  '\u797E\uDB40\uDD02': '\uE6BB',  // MJ018864
-  '\u797F\uDB40\uDD02': '\uE6BC',  // MJ018868
-  '\u7980\uDB40\uDD02': '\uE6BD',  // MJ018870
-  '\u7984\uDB40\uDD02': '\uE6BE',  // MJ018877
-  '\u7985\uDB40\uDD02': '\uE6BF',  // MJ018880
-  '\u798A\uDB40\uDD02': '\uE6C0',  // MJ018888
-  '\u798B\uDB40\uDD02': '\uE6C1',  // MJ018890
-  '\u798D\uDB40\uDD02': '\uE6C2',  // MJ018894
-  '\u798E\uDB40\uDD02': '\uE6C3',  // MJ018895
-  '\u798F\uDB40\uDD02': '\uE6C4',  // MJ018896
-  '\u7991\uDB40\uDD02': '\uE6C5',  // MJ018900
-  '\u7993\uDB40\uDD02': '\uE6C6',  // MJ018905
-  '\u7994\uDB40\uDD02': '\uE6C7',  // MJ018907
-  '\u7995\uDB40\uDD02': '\uE6C8',  // MJ018910
-  '\u7996\uDB40\uDD02': '\uE6C9',  // MJ018914
-  '\u7998\uDB40\uDD02': '\uE6CA',  // MJ018918
-  '\u799D\uDB40\uDD02': '\uE6CB',  // MJ018927
-  '\u79A1\uDB40\uDD02': '\uE6CC',  // MJ018937
-  '\u79A6\uDB40\uDD02': '\uE6CD',  // MJ058214
-  '\u79A7\uDB40\uDD02': '\uE6CE',  // MJ018945
-  '\u79A8\uDB40\uDD02': '\uE6CF',  // MJ018948
-  '\u79A9\uDB40\uDD02': '\uE6D0',  // MJ018951
-  '\u79AA\uDB40\uDD02': '\uE6D1',  // MJ018955
-  '\u79AB\uDB40\uDD02': '\uE6D2',  // MJ018956
-  '\u79AD\uDB40\uDD02': '\uE6D3',  // MJ018963
-  '\u79AE\uDB40\uDD02': '\uE6D4',  // MJ018965
-  '\u79B0\uDB40\uDD02': '\uE6D5',  // MJ018968
-  '\u79B1\uDB40\uDD02': '\uE6D6',  // MJ018972
-  '\u79B3\uDB40\uDD02': '\uE6D7',  // MJ018974
-  '\u79B4\uDB40\uDD02': '\uE6D8',  // MJ018976
-  '\u79B8\uDB40\uDD02': '\uE6D9',  // MJ018982
-  '\u79BB\uDB40\uDD02': '\uE6DA',  // MJ018986
-  '\u79BD\uDB40\uDD02': '\uE6DB',  // MJ018989
-  '\u79E4\uDB40\uDD02': '\uE6DC',  // MJ019032
-  '\u79F0\uDB40\uDD02': '\uE6DD',  // MJ019046
-  '\u7A05\uDB40\uDD02': '\uE6DE',  // MJ058222
-  '\u7A09\uDB40\uDD02': '\uE6DF',  // MJ019072
-  '\u7A0B\uDB40\uDD02': '\uE6E0',  // MJ019075
-  '\u7A0D\uDB40\uDD02': '\uE6E1',  // MJ019078
-  '\u7A17\uDB40\uDD02': '\uE6E2',  // MJ019089
-  '\u7A1C\uDB40\uDD02': '\uE6E3',  // MJ019094
-  '\u7A20\uDB40\uDD02': '\uE6E4',  // MJ019100
-  '\u7A27\uDB40\uDD02': '\uE6E5',  // MJ019106
-  '\u7A31\uDB40\uDD02': '\uE6E6',  // MJ019117
-  '\u7A35\uDB40\uDD02': '\uE6E7',  // MJ019123
-  '\u7A3B\uDB40\uDD02': '\uE6E8',  // MJ019131
-  '\u7A3C\uDB40\uDD02': '\uE6E9',  // MJ019134
-  '\u7A3D\uDB40\uDD02': '\uE6EA',  // MJ058230
-  '\u7A3F\uDB40\uDD02': '\uE6EB',  // MJ019139
-  '\u7A40\uDB40\uDD02': '\uE6EC',  // MJ019140
-  '\u7A42\uDB40\uDD02': '\uE6ED',  // MJ059993
-  '\u7A49\uDB40\uDD02': '\uE6EE',  // MJ019150
-  '\u7A4F\uDB40\uDD02': '\uE6EF',  // MJ019159
-  '\u7A50\uDB40\uDD02': '\uE6F0',  // MJ059994
-  '\u7A57\uDB40\uDD02': '\uE6F1',  // MJ019168
-  '\u7A5C\uDB40\uDD02': '\uE6F2',  // MJ019176
-  '\u7A5F\uDB40\uDD02': '\uE6F3',  // MJ019178
-  '\u7A61\uDB40\uDD02': '\uE6F4',  // MJ058239
-  '\u7A62\uDB40\uDD02': '\uE6F5',  // MJ019184
-  '\u7A69\uDB40\uDD02': '\uE6F6',  // MJ019192
-  '\u7A6B\uDB40\uDD02': '\uE6F7',  // MJ019195
-  '\u7A70\uDB40\uDD02': '\uE6F8',  // MJ060001
-  '\u7A7A\uDB40\uDD02': '\uE6F9',  // MJ019210
-  '\u7A7F\uDB40\uDD02': '\uE6FA',  // MJ019217
-  '\u7A81\uDB40\uDD02': '\uE6FB',  // MJ019221
-  '\u7A8A\uDB40\uDD02': '\uE6FC',  // MJ019230
-  '\u7A95\uDB40\uDD02': '\uE6FD',  // MJ019240
-  '\u7A96\uDB40\uDD02': '\uE6FE',  // MJ019243
-  '\u7A97\uDB40\uDD02': '\uE6FF',  // MJ019244
-  '\u7AAC\uDB40\uDD02': '\uE700',  // MJ019269
-  '\u7AAE\uDB40\uDD02': '\uE701',  // MJ019271
-  '\u7AB3\uDB40\uDD02': '\uE702',  // MJ019278
-  '\u7ABB\uDB40\uDD02': '\uE703',  // MJ019289
-  '\u7ABF\uDB40\uDD02': '\uE704',  // MJ019294
-  '\u7AC4\uDB40\uDD02': '\uE705',  // MJ019300
-  '\u7AC8\uDB40\uDD02': '\uE706',  // MJ019304
-  '\u7AD5\uDB40\uDD02': '\uE707',  // MJ019321
-  '\u7ADF\uDB40\uDD02': '\uE708',  // MJ019331
-  '\u7AE0\uDB40\uDD02': '\uE709',  // MJ019333
-  '\u7AE3\uDB40\uDD02': '\uE70A',  // MJ019336
-  '\u7AE5\uDB40\uDD02': '\uE70B',  // MJ019340
-  '\u7AEB\uDB40\uDD02': '\uE70C',  // MJ019347
-  '\u7AED\uDB40\uDD02': '\uE70D',  // MJ019350
-  '\u7AF1\uDB40\uDD02': '\uE70E',  // MJ019356
-  '\u7B11\uDB40\uDD02': '\uE70F',  // MJ060016
-  '\u7B4C\uDB40\uDD02': '\uE710',  // MJ019451
-  '\u7B51\uDB40\uDD02': '\uE711',  // MJ019457
-  '\u7B6C\uDB40\uDD02': '\uE712',  // MJ019483
-  '\u7B6D\uDB40\uDD02': '\uE713',  // MJ019485
-  '\u7B72\uDB40\uDD02': '\uE714',  // MJ019491
-  '\u7B75\uDB40\uDD02': '\uE715',  // MJ019496
-  '\u7B8F\uDB40\uDD02': '\uE716',  // MJ019519
-  '\u7B90\uDB40\uDD02': '\uE717',  // MJ019521
-  '\u7B92\uDB40\uDD02': '\uE718',  // MJ019524
-  '\u7B99\uDB40\uDD02': '\uE719',  // MJ019532
-  '\u7B9B\uDB40\uDD02': '\uE71A',  // MJ019534
-  '\u7B9C\uDB40\uDD02': '\uE71B',  // MJ019537
-  '\u7B9E\uDB40\uDD02': '\uE71C',  // MJ019540
-  '\u7BA0\uDB40\uDD02': '\uE71D',  // MJ019546
-  '\u7BAC\uDB40\uDD02': '\uE71E',  // MJ019554
-  '\u7BAD\uDB40\uDD02': '\uE71F',  // MJ019556
-  '\u7BB8\uDB40\uDD02': '\uE720',  // MJ019567
-  '\u7BC4\uDB40\uDD02': '\uE721',  // MJ019583
-  '\u7BC6\uDB40\uDD02': '\uE722',  // MJ019587
-  '\u7BC7\uDB40\uDD02': '\uE723',  // MJ019590
-  '\u7BC9\uDB40\uDD02': '\uE724',  // MJ019592
-  '\u7BDD\uDB40\uDD02': '\uE725',  // MJ019611
-  '\u7BE0\uDB40\uDD02': '\uE726',  // MJ019615
-  '\u7BE6\uDB40\uDD02': '\uE727',  // MJ060027
-  '\u7BF3\uDB40\uDD02': '\uE728',  // MJ019634
-  '\u7BF4\uDB40\uDD02': '\uE729',  // MJ019636
-  '\u7BF7\uDB40\uDD02': '\uE72A',  // MJ019642
-  '\u7BFE\uDB40\uDD02': '\uE72B',  // MJ019650
-  '\u7C09\uDB40\uDD02': '\uE72C',  // MJ019661
-  '\u7C13\uDB40\uDD02': '\uE72D',  // MJ019675
-  '\u7C1F\uDB40\uDD02': '\uE72E',  // MJ019685
-  '\u7C27\uDB40\uDD02': '\uE72F',  // MJ019695
-  '\u7C2A\uDB40\uDD02': '\uE730',  // MJ019699
-  '\u7C34\uDB40\uDD02': '\uE731',  // MJ019708
-  '\u7C36\uDB40\uDD02': '\uE732',  // MJ019710
-  '\u7C3F\uDB40\uDD02': '\uE733',  // MJ019725
-  '\u7C46\uDB40\uDD02': '\uE734',  // MJ019731
-  '\u7C4D\uDB40\uDD02': '\uE735',  // MJ019739
-  '\u7C4F\uDB40\uDD02': '\uE736',  // MJ060030
-  '\u7C51\uDB40\uDD02': '\uE737',  // MJ019745
-  '\u7C58\uDB40\uDD02': '\uE738',  // MJ019753
-  '\u7C5C\uDB40\uDD02': '\uE739',  // MJ019760
-  '\u7C5F\uDB40\uDD02': '\uE73A',  // MJ019764
-  '\u7C60\uDB40\uDD02': '\uE73B',  // MJ019767
-  '\u7C67\uDB40\uDD02': '\uE73C',  // MJ019775
-  '\u7C69\uDB40\uDD02': '\uE73D',  // MJ019778
-  '\u7C6C\uDB40\uDD02': '\uE73E',  // MJ019785
-  '\u7C6F\uDB40\uDD02': '\uE73F',  // MJ019789
-  '\u7C7B\uDB40\uDD02': '\uE740',  // MJ019802
-  '\u7C82\uDB40\uDD02': '\uE741',  // MJ019811
-  '\u7C89\uDB40\uDD02': '\uE742',  // MJ019819
-  '\u7C90\uDB40\uDD02': '\uE743',  // MJ019827
-  '\u7C94\uDB40\uDD02': '\uE744',  // MJ019833
-  '\u7CA4\uDB40\uDD02': '\uE745',  // MJ058289
-  '\u7CA6\uDB40\uDD02': '\uE746',  // MJ019851
-  '\u7CAE\uDB40\uDD02': '\uE747',  // MJ019857
-  '\u7CB3\uDB40\uDD02': '\uE748',  // MJ019865
-  '\u7CBE\uDB40\uDD02': '\uE749',  // MJ019875
-  '\u7CC0\uDB40\uDD02': '\uE74A',  // MJ019878
-  '\u7CC2\uDB40\uDD02': '\uE74B',  // MJ019881
-  '\u7CD6\uDB40\uDD02': '\uE74C',  // MJ019904
-  '\u7CD8\uDB40\uDD02': '\uE74D',  // MJ019907
-  '\u7CD9\uDB40\uDD02': '\uE74E',  // MJ019908
-  '\u7CDA\uDB40\uDD02': '\uE74F',  // MJ019911
-  '\u7CDC\uDB40\uDD02': '\uE750',  // MJ019915
-  '\u7CE2\uDB40\uDD02': '\uE751',  // MJ019923
-  '\u7CF2\uDB40\uDD02': '\uE752',  // MJ019937
-  '\u7CF4\uDB40\uDD02': '\uE753',  // MJ019941
-  '\u7CF5\uDB40\uDD02': '\uE754',  // MJ019943
-  '\u7CF6\uDB40\uDD02': '\uE755',  // MJ019945
-  '\u7CFE\uDB40\uDD02': '\uE756',  // MJ019952
-  '\u7D00\uDB40\uDD02': '\uE757',  // MJ019956
-  '\u7D04\uDB40\uDD02': '\uE758',  // MJ019965
-  '\u7D08\uDB40\uDD02': '\uE759',  // MJ019972
-  '\u7D0A\uDB40\uDD02': '\uE75A',  // MJ019976
-  '\u7D0B\uDB40\uDD02': '\uE75B',  // MJ019977
-  '\u7D0D\uDB40\uDD02': '\uE75C',  // MJ019981
-  '\u7D14\uDB40\uDD02': '\uE75D',  // MJ019991
-  '\u7D1A\uDB40\uDD02': '\uE75E',  // MJ020000
-  '\u7D1B\uDB40\uDD02': '\uE75F',  // MJ020002
-  '\u7D2B\uDB40\uDD02': '\uE760',  // MJ020019
-  '\u7D42\uDB40\uDD02': '\uE761',  // MJ020047
-  '\u7D46\uDB40\uDD02': '\uE762',  // MJ020052
-  '\u7D5A\uDB40\uDD02': '\uE763',  // MJ060044
-  '\u7D5C\uDB40\uDD02': '\uE764',  // MJ020080
-  '\u7D5D\uDB40\uDD02': '\uE765',  // MJ058304
-  '\u7D5E\uDB40\uDD02': '\uE766',  // MJ020085
-  '\u7D63\uDB40\uDD02': '\uE767',  // MJ020091
-  '\u7D71\uDB40\uDD02': '\uE768',  // MJ020107
-  '\u7D73\uDB40\uDD02': '\uE769',  // MJ020110
-  '\u7D79\uDB40\uDD02': '\uE76A',  // MJ020117
-  '\u7D81\uDB40\uDD02': '\uE76B',  // MJ020128
-  '\u7D86\uDB40\uDD02': '\uE76C',  // MJ020135
-  '\u7D8F\uDB40\uDD02': '\uE76D',  // MJ020145
-  '\u7D93\uDB40\uDD02': '\uE76E',  // MJ020151
-  '\u7D9B\uDB40\uDD02': '\uE76F',  // MJ020163
-  '\u7D9E\uDB40\uDD02': '\uE770',  // MJ060054
-  '\u7D9F\uDB40\uDD02': '\uE771',  // MJ020168
-  '\u7DA0\uDB40\uDD02': '\uE772',  // MJ020171
-  '\u7DA2\uDB40\uDD02': '\uE773',  // MJ020174
-  '\u7DA3\uDB40\uDD02': '\uE774',  // MJ020176
-  '\u7DAA\uDB40\uDD02': '\uE775',  // MJ020184
-  '\u7DAE\uDB40\uDD02': '\uE776',  // MJ020190
-  '\u7DAF\uDB40\uDD02': '\uE777',  // MJ058312
-  '\u7DB1\uDB40\uDD02': '\uE778',  // MJ058319
-  '\u7DB5\uDB40\uDD02': '\uE779',  // MJ020200
-  '\u7DB9\uDB40\uDD02': '\uE77A',  // MJ020205
-  '\u7DBE\uDB40\uDD02': '\uE77B',  // MJ020211
-  '\u7DC7\uDB40\uDD02': '\uE77C',  // MJ020224
-  '\u7DCB\uDB40\uDD02': '\uE77D',  // MJ020228
-  '\u7DCF\uDB40\uDD02': '\uE77E',  // MJ020233
-  '\u7DDD\uDB40\uDD02': '\uE77F',  // MJ020246
-  '\u7DE0\uDB40\uDD02': '\uE780',  // MJ020251
-  '\u7DE2\uDB40\uDD02': '\uE781',  // MJ020254
-  '\u7DE3\uDB40\uDD02': '\uE782',  // MJ020256
-  '\u7DE8\uDB40\uDD02': '\uE783',  // MJ020262
-  '\u7DE9\uDB40\uDD02': '\uE784',  // MJ020264
-  '\u7DEF\uDB40\uDD02': '\uE785',  // MJ020270
-  '\u7DF4\uDB40\uDD02': '\uE786',  // MJ020277
-  '\u7E01\uDB40\uDD02': '\uE787',  // MJ020290
-  '\u7E09\uDB40\uDD02': '\uE788',  // MJ020297
-  '\u7E0A\uDB40\uDD02': '\uE789',  // MJ020299
-  '\u7E0B\uDB40\uDD02': '\uE78A',  // MJ020301
-  '\u7E1B\uDB40\uDD02': '\uE78B',  // MJ020320
-  '\u7E1D\uDB40\uDD02': '\uE78C',  // MJ020323
-  '\u7E1F\uDB40\uDD02': '\uE78D',  // MJ020327
-  '\u7E27\uDB40\uDD02': '\uE78E',  // MJ020338
-  '\u7E2B\uDB40\uDD02': '\uE78F',  // MJ020344
-  '\u7E2C\uDB40\uDD02': '\uE790',  // MJ020347
-  '\u7E2D\uDB40\uDD02': '\uE791',  // MJ020349
-  '\u7E36\uDB40\uDD02': '\uE792',  // MJ020361
-  '\u7E37\uDB40\uDD02': '\uE793',  // MJ058326
-  '\u7E3A\uDB40\uDD02': '\uE794',  // MJ020365
-  '\u7E3B\uDB40\uDD02': '\uE795',  // MJ020368
-  '\u7E3D\uDB40\uDD02': '\uE796',  // MJ020371
-  '\u7E41\uDB40\uDD02': '\uE797',  // MJ020376
-  '\u7E43\uDB40\uDD02': '\uE798',  // MJ020380
-  '\u7E44\uDB40\uDD02': '\uE799',  // MJ020382
-  '\u7E45\uDB40\uDD02': '\uE79A',  // MJ020384
-  '\u7E46\uDB40\uDD02': '\uE79B',  // MJ020386
-  '\u7E52\uDB40\uDD02': '\uE79C',  // MJ020399
-  '\u7E54\uDB40\uDD02': '\uE79D',  // MJ020402
-  '\u7E69\uDB40\uDD02': '\uE79E',  // MJ020425
-  '\u7E6A\uDB40\uDD02': '\uE79F',  // MJ020428
-  '\u7E6B\uDB40\uDD02': '\uE7A0',  // MJ058327
-  '\u7E6D\uDB40\uDD02': '\uE7A1',  // MJ020431
-  '\u7E78\uDB40\uDD02': '\uE7A2',  // MJ020445
-  '\u7E79\uDB40\uDD02': '\uE7A3',  // MJ020448
-  '\u7E7C\uDB40\uDD02': '\uE7A4',  // MJ020452
-  '\u7E7D\uDB40\uDD02': '\uE7A5',  // MJ020455
-  '\u7E7E\uDB40\uDD02': '\uE7A6',  // MJ020456
-  '\u7E7F\uDB40\uDD02': '\uE7A7',  // MJ060057
-  '\u7E8A\uDB40\uDD02': '\uE7A8',  // MJ020470
-  '\u7E92\uDB40\uDD02': '\uE7A9',  // MJ020480
-  '\u7F3A\uDB40\uDD02': '\uE7AA',  // MJ058335
-  '\u7F3C\uDB40\uDD02': '\uE7AB',  // MJ020505
-  '\u7F3E\uDB40\uDD02': '\uE7AC',  // MJ020507
-  '\u7F50\uDB40\uDD02': '\uE7AD',  // MJ020525
-  '\u7F54\uDB40\uDD02': '\uE7AE',  // MJ020531
-  '\u7F5B\uDB40\uDD02': '\uE7AF',  // MJ020539
-  '\u7F6A\uDB40\uDD02': '\uE7B0',  // MJ020555
-  '\u7F72\uDB40\uDD02': '\uE7B1',  // MJ020564
-  '\u7F7F\uDB40\uDD02': '\uE7B2',  // MJ020579
-  '\u7F83\uDB40\uDD02': '\uE7B3',  // MJ020583
-  '\u7F8F\uDB40\uDD02': '\uE7B4',  // MJ020596
-  '\u7F95\uDB40\uDD02': '\uE7B5',  // MJ020606
-  '\u7F9E\uDB40\uDD02': '\uE7B6',  // MJ020615
-  '\u7FA1\uDB40\uDD02': '\uE7B7',  // MJ020618
-  '\u7FAD\uDB40\uDD02': '\uE7B8',  // MJ020633
-  '\u7FAE\uDB40\uDD02': '\uE7B9',  // MJ020634
-  '\u7FAF\uDB40\uDD02': '\uE7BA',  // MJ020638
-  '\u7FB8\uDB40\uDD02': '\uE7BB',  // MJ020648
-  '\u7FBD\uDB40\uDD02': '\uE7BC',  // MJ020654
-  '\u7FC5\uDB40\uDD02': '\uE7BD',  // MJ020665
-  '\u7FC6\uDB40\uDD02': '\uE7BE',  // MJ020667
-  '\u7FCA\uDB40\uDD02': '\uE7BF',  // MJ020673
-  '\u7FCC\uDB40\uDD02': '\uE7C0',  // MJ020676
-  '\u7FCF\uDB40\uDD02': '\uE7C1',  // MJ058355
-  '\u7FD2\uDB40\uDD02': '\uE7C2',  // MJ020683
-  '\u7FD4\uDB40\uDD02': '\uE7C3',  // MJ020686
-  '\u7FD5\uDB40\uDD02': '\uE7C4',  // MJ020688
-  '\u7FDF\uDB40\uDD02': '\uE7C5',  // MJ058358
-  '\u7FE0\uDB40\uDD02': '\uE7C6',  // MJ020697
-  '\u7FE6\uDB40\uDD02': '\uE7C7',  // MJ020709
-  '\u7FEB\uDB40\uDD02': '\uE7C8',  // MJ020717
-  '\u7FF0\uDB40\uDD02': '\uE7C9',  // MJ020724
-  '\u7FF3\uDB40\uDD02': '\uE7CA',  // MJ020731
-  '\u7FF9\uDB40\uDD02': '\uE7CB',  // MJ020737
-  '\u7FFB\uDB40\uDD02': '\uE7CC',  // MJ020740
-  '\u7FFE\uDB40\uDD02': '\uE7CD',  // MJ020747
-  '\u8000\uDB40\uDD02': '\uE7CE',  // MJ020750
-  '\u8003\uDB40\uDD02': '\uE7CF',  // MJ020753
-  '\u8005\uDB40\uDD02': '\uE7D0',  // MJ020756
-  '\u8012\uDB40\uDD02': '\uE7D1',  // MJ020769
-  '\u8015\uDB40\uDD02': '\uE7D2',  // MJ020773
-  '\u8017\uDB40\uDD02': '\uE7D3',  // MJ020777
-  '\u8018\uDB40\uDD02': '\uE7D4',  // MJ020779
-  '\u8019\uDB40\uDD02': '\uE7D5',  // MJ020781
-  '\u801C\uDB40\uDD02': '\uE7D6',  // MJ020785
-  '\u8021\uDB40\uDD02': '\uE7D7',  // MJ020792
-  '\u8028\uDB40\uDD02': '\uE7D8',  // MJ020798
-  '\u8036\uDB40\uDD02': '\uE7D9',  // MJ020816
-  '\u8037\uDB40\uDD02': '\uE7DA',  // MJ020819
-  '\u803D\uDB40\uDD02': '\uE7DB',  // MJ058365
-  '\u8056\uDB40\uDD02': '\uE7DC',  // MJ020846
-  '\u805F\uDB40\uDD02': '\uE7DD',  // MJ020856
-  '\u8060\uDB40\uDD02': '\uE7DE',  // MJ020859
-  '\u8070\uDB40\uDD02': '\uE7DF',  // MJ020871
-  '\u8072\uDB40\uDD02': '\uE7E0',  // MJ020877
-  '\u8073\uDB40\uDD02': '\uE7E1',  // MJ020878
-  '\u8074\uDB40\uDD02': '\uE7E2',  // MJ020880
-  '\u8076\uDB40\uDD02': '\uE7E3',  // MJ020883
-  '\u8077\uDB40\uDD02': '\uE7E4',  // MJ020885
-  '\u8079\uDB40\uDD02': '\uE7E5',  // MJ020890
-  '\u807D\uDB40\uDD02': '\uE7E6',  // MJ020896
-  '\u807E\uDB40\uDD02': '\uE7E7',  // MJ020897
-  '\u8085\uDB40\uDD02': '\uE7E8',  // MJ058373
-  '\u8087\uDB40\uDD02': '\uE7E9',  // MJ020908
-  '\u808E\uDB40\uDD02': '\uE7EA',  // MJ020918
-  '\u8093\uDB40\uDD02': '\uE7EB',  // MJ020924
-  '\u8096\uDB40\uDD02': '\uE7EC',  // MJ020928
-  '\u809E\uDB40\uDD02': '\uE7ED',  // MJ020936
-  '\u80A9\uDB40\uDD02': '\uE7EE',  // MJ020947
-  '\u80AD\uDB40\uDD02': '\uE7EF',  // MJ020954
-  '\u80B2\uDB40\uDD02': '\uE7F0',  // MJ020959
-  '\u80B4\uDB40\uDD02': '\uE7F1',  // MJ058380
-  '\u80BA\uDB40\uDD02': '\uE7F2',  // MJ020969
-  '\u80CD\uDB40\uDD02': '\uE7F3',  // MJ020982
-  '\u80D6\uDB40\uDD02': '\uE7F4',  // MJ020993
-  '\u80DE\uDB40\uDD02': '\uE7F5',  // MJ021003
-  '\u80EE\uDB40\uDD02': '\uE7F6',  // MJ021014
-  '\u80F2\uDB40\uDD02': '\uE7F7',  // MJ021019
-  '\u8106\uDB40\uDD02': '\uE7F8',  // MJ021039
-  '\u8129\uDB40\uDD02': '\uE7F9',  // MJ021073
-  '\u812B\uDB40\uDD02': '\uE7FA',  // MJ058383
-  '\u8153\uDB40\uDD02': '\uE7FB',  // MJ021119
-  '\u8154\uDB40\uDD02': '\uE7FC',  // MJ021121
-  '\u8160\uDB40\uDD02': '\uE7FD',  // MJ021133
-  '\u8166\uDB40\uDD02': '\uE7FE',  // MJ058390
-  '\u8170\uDB40\uDD02': '\uE7FF',  // MJ021151
-  '\u8171\uDB40\uDD02': '\uE800',  // MJ021153
-  '\u8173\uDB40\uDD02': '\uE801',  // MJ021157
-  '\u8174\uDB40\uDD02': '\uE802',  // MJ021159
-  '\u8179\uDB40\uDD02': '\uE803',  // MJ021165
-  '\u817F\uDB40\uDD02': '\uE804',  // MJ021168
-  '\u8180\uDB40\uDD02': '\uE805',  // MJ021171
-  '\u8184\uDB40\uDD02': '\uE806',  // MJ021177
-  '\u8188\uDB40\uDD02': '\uE807',  // MJ058398
-  '\u818A\uDB40\uDD02': '\uE808',  // MJ021185
-  '\u818B\uDB40\uDD02': '\uE809',  // MJ021187
-  '\u819C\uDB40\uDD02': '\uE80A',  // MJ021204
-  '\u819E\uDB40\uDD02': '\uE80B',  // MJ021207
-  '\u81A0\uDB40\uDD02': '\uE80C',  // MJ021210
-  '\u81A4\uDB40\uDD02': '\uE80D',  // MJ021215
-  '\u81B5\uDB40\uDD02': '\uE80E',  // MJ021232
-  '\u81B8\uDB40\uDD02': '\uE80F',  // MJ021236
-  '\u81C6\uDB40\uDD02': '\uE810',  // MJ021254
-  '\u81C8\uDB40\uDD02': '\uE811',  // MJ021257
-  '\u81D7\uDB40\uDD02': '\uE812',  // MJ021274
-  '\u81DF\uDB40\uDD02': '\uE813',  // MJ021283
-  '\u81E7\uDB40\uDD02': '\uE814',  // MJ021292
-  '\u81E8\uDB40\uDD02': '\uE815',  // MJ058409
-  '\u81ED\uDB40\uDD02': '\uE816',  // MJ021299
-  '\u81F1\uDB40\uDD02': '\uE817',  // MJ058139
-  '\u81F4\uDB40\uDD02': '\uE818',  // MJ021306
-  '\u81F9\uDB40\uDD02': '\uE819',  // MJ021313
-  '\u81FD\uDB40\uDD02': '\uE81A',  // MJ021318
-  '\u81FE\uDB40\uDD02': '\uE81B',  // MJ021319
-  '\u81FF\uDB40\uDD02': '\uE81C',  // MJ021322
-  '\u8200\uDB40\uDD02': '\uE81D',  // MJ021323
-  '\u8201\uDB40\uDD02': '\uE81E',  // MJ021328
-  '\u8202\uDB40\uDD02': '\uE81F',  // MJ021330
-  '\u8204\uDB40\uDD02': '\uE820',  // MJ021333
-  '\uD86D\uDFCB\uDB40\uDD02': '\uE821',  // MJ021335
-  '\u8208\uDB40\uDD02': '\uE822',  // MJ058419
-  '\u820A\uDB40\uDD02': '\uE823',  // MJ021341
-  '\u820B\uDB40\uDD02': '\uE824',  // MJ058420
-  '\u820C\uDB40\uDD02': '\uE825',  // MJ021343
-  '\u8212\uDB40\uDD02': '\uE826',  // MJ021353
-  '\u8218\uDB40\uDD02': '\uE827',  // MJ021362
-  '\u821B\uDB40\uDD02': '\uE828',  // MJ021365
-  '\u821C\uDB40\uDD02': '\uE829',  // MJ021371
-  '\u821D\uDB40\uDD02': '\uE82A',  // MJ021372
-  '\u821E\uDB40\uDD02': '\uE82B',  // MJ021374
-  '\u821F\uDB40\uDD02': '\uE82C',  // MJ021376
-  '\u8229\uDB40\uDD02': '\uE82D',  // MJ021385
-  '\u822E\uDB40\uDD02': '\uE82E',  // MJ021390
-  '\u8238\uDB40\uDD02': '\uE82F',  // MJ021399
-  '\u8240\uDB40\uDD02': '\uE830',  // MJ021407
-  '\u8247\uDB40\uDD02': '\uE831',  // MJ021415
-  '\u8257\uDB40\uDD02': '\uE832',  // MJ021431
-  '\u8258\uDB40\uDD02': '\uE833',  // MJ021434
-  '\u825D\uDB40\uDD02': '\uE834',  // MJ021441
-  '\u825F\uDB40\uDD02': '\uE835',  // MJ021444
-  '\u8267\uDB40\uDD02': '\uE836',  // MJ021455
-  '\u8268\uDB40\uDD02': '\uE837',  // MJ021457
-  '\u826D\uDB40\uDD02': '\uE838',  // MJ021464
-  '\u826E\uDB40\uDD02': '\uE839',  // MJ021466
-  '\u8271\uDB40\uDD02': '\uE83A',  // MJ021469
-  '\u827B\uDB40\uDD02': '\uE83B',  // MJ021484
-  '\u827D\uDB40\uDD02': '\uE83C',  // MJ021488
-  '\u827E\uDB40\uDD02': '\uE83D',  // MJ021490
-  '\u827F\uDB40\uDD02': '\uE83E',  // MJ021493
-  '\u8280\uDB40\uDD02': '\uE83F',  // MJ021495
-  '\u8281\uDB40\uDD02': '\uE840',  // MJ021497
-  '\u8283\uDB40\uDD02': '\uE841',  // MJ021499
-  '\u8284\uDB40\uDD02': '\uE842',  // MJ021502
-  '\u8287\uDB40\uDD02': '\uE843',  // MJ021506
-  '\u8289\uDB40\uDD02': '\uE844',  // MJ021508
-  '\u828A\uDB40\uDD02': '\uE845',  // MJ021510
-  '\u828B\uDB40\uDD02': '\uE846',  // MJ021512
-  '\u828D\uDB40\uDD02': '\uE847',  // MJ021515
-  '\u828E\uDB40\uDD02': '\uE848',  // MJ021519
-  '\u8291\uDB40\uDD02': '\uE849',  // MJ021524
-  '\u8292\uDB40\uDD02': '\uE84A',  // MJ021525
-  '\u8293\uDB40\uDD02': '\uE84B',  // MJ021529
-  '\u8294\uDB40\uDD02': '\uE84C',  // MJ021531
-  '\u8296\uDB40\uDD02': '\uE84D',  // MJ021534
-  '\u8298\uDB40\uDD02': '\uE84E',  // MJ021536
-  '\u8299\uDB40\uDD02': '\uE84F',  // MJ021538
-  '\u829A\uDB40\uDD02': '\uE850',  // MJ021539
-  '\u829B\uDB40\uDD02': '\uE851',  // MJ021542
-  '\u829D\uDB40\uDD02': '\uE852',  // MJ021545
-  '\u829F\uDB40\uDD02': '\uE853',  // MJ021548
-  '\u82A0\uDB40\uDD02': '\uE854',  // MJ021549
-  '\u82A1\uDB40\uDD02': '\uE855',  // MJ021552
-  '\u82A3\uDB40\uDD02': '\uE856',  // MJ021556
-  '\u82A4\uDB40\uDD02': '\uE857',  // MJ021558
-  '\u82A5\uDB40\uDD02': '\uE858',  // MJ021560
-  '\u82A6\uDB40\uDD02': '\uE859',  // MJ021561
-  '\u82A7\uDB40\uDD02': '\uE85A',  // MJ021570
-  '\u82A8\uDB40\uDD02': '\uE85B',  // MJ021571
-  '\u82A9\uDB40\uDD02': '\uE85C',  // MJ021574
-  '\u82AA\uDB40\uDD02': '\uE85D',  // MJ021576
-  '\u82AB\uDB40\uDD02': '\uE85E',  // MJ021578
-  '\u82AC\uDB40\uDD02': '\uE85F',  // MJ021580
-  '\u82AD\uDB40\uDD02': '\uE860',  // MJ021583
-  '\u82AE\uDB40\uDD02': '\uE861',  // MJ021586
-  '\u82AF\uDB40\uDD02': '\uE862',  // MJ021588
-  '\u82B0\uDB40\uDD02': '\uE863',  // MJ021589
-  '\u82B1\uDB40\uDD02': '\uE864',  // MJ021591
-  '\u82B2\uDB40\uDD02': '\uE865',  // MJ021596
-  '\u82B3\uDB40\uDD02': '\uE866',  // MJ021599
-  '\u82B4\uDB40\uDD02': '\uE867',  // MJ021601
-  '\u82B7\uDB40\uDD02': '\uE868',  // MJ021605
-  '\u82B8\uDB40\uDD02': '\uE869',  // MJ021607
-  '\u82B9\uDB40\uDD02': '\uE86A',  // MJ021609
-  '\u82BA\uDB40\uDD02': '\uE86B',  // MJ021611
-  '\u82BC\uDB40\uDD02': '\uE86C',  // MJ021614
-  '\u82BE\uDB40\uDD02': '\uE86D',  // MJ021619
-  '\u82BF\uDB40\uDD02': '\uE86E',  // MJ021621
-  '\u82C5\uDB40\uDD02': '\uE86F',  // MJ021627
-  '\u82C6\uDB40\uDD02': '\uE870',  // MJ021630
-  '\u82D0\uDB40\uDD02': '\uE871',  // MJ021633
-  '\u82D1\uDB40\uDD02': '\uE872',  // MJ021635
-  '\u82D2\uDB40\uDD02': '\uE873',  // MJ021637
-  '\u82D3\uDB40\uDD02': '\uE874',  // MJ021641
-  '\u82D4\uDB40\uDD02': '\uE875',  // MJ021643
-  '\u82D5\uDB40\uDD02': '\uE876',  // MJ021645
-  '\u82D7\uDB40\uDD02': '\uE877',  // MJ021649
-  '\u82D9\uDB40\uDD02': '\uE878',  // MJ021652
-  '\u82DA\uDB40\uDD02': '\uE879',  // MJ021654
-  '\u82DB\uDB40\uDD02': '\uE87A',  // MJ021656
-  '\u82DC\uDB40\uDD02': '\uE87B',  // MJ021658
-  '\u82DE\uDB40\uDD02': '\uE87C',  // MJ021661
-  '\u82DF\uDB40\uDD02': '\uE87D',  // MJ021664
-  '\u82E0\uDB40\uDD02': '\uE87E',  // MJ021667
-  '\u82E1\uDB40\uDD02': '\uE87F',  // MJ021669
-  '\u82E2\uDB40\uDD02': '\uE880',  // MJ021671
-  '\u82E3\uDB40\uDD02': '\uE881',  // MJ021672
-  '\u82E4\uDB40\uDD02': '\uE882',  // MJ021676
-  '\u82E5\uDB40\uDD02': '\uE883',  // MJ021680
-  '\u82E6\uDB40\uDD02': '\uE884',  // MJ021682
-  '\u82E7\uDB40\uDD02': '\uE885',  // MJ021684
-  '\u82E8\uDB40\uDD02': '\uE886',  // MJ021686
-  '\u82EA\uDB40\uDD02': '\uE887',  // MJ021689
-  '\u82EB\uDB40\uDD02': '\uE888',  // MJ021691
-  '\u82ED\uDB40\uDD02': '\uE889',  // MJ021694
-  '\u82EF\uDB40\uDD02': '\uE88A',  // MJ021697
-  '\u82F1\uDB40\uDD02': '\uE88B',  // MJ021702
-  '\u82F3\uDB40\uDD02': '\uE88C',  // MJ021707
-  '\u82F4\uDB40\uDD02': '\uE88D',  // MJ021710
-  '\u82F6\uDB40\uDD02': '\uE88E',  // MJ021713
-  '\u82F7\uDB40\uDD02': '\uE88F',  // MJ021715
-  '\u82F9\uDB40\uDD02': '\uE890',  // MJ021719
-  '\u82FA\uDB40\uDD02': '\uE891',  // MJ021721
-  '\u82FB\uDB40\uDD02': '\uE892',  // MJ021723
-  '\u82FD\uDB40\uDD02': '\uE893',  // MJ021728
-  '\u82FE\uDB40\uDD02': '\uE894',  // MJ021730
-  '\u8300\uDB40\uDD02': '\uE895',  // MJ021733
-  '\u8301\uDB40\uDD02': '\uE896',  // MJ021735
-  '\u8302\uDB40\uDD02': '\uE897',  // MJ021738
-  '\u8303\uDB40\uDD02': '\uE898',  // MJ021741
-  '\u8304\uDB40\uDD02': '\uE899',  // MJ021744
-  '\u8305\uDB40\uDD02': '\uE89A',  // MJ021746
-  '\u8306\uDB40\uDD02': '\uE89B',  // MJ021748
-  '\u8307\uDB40\uDD02': '\uE89C',  // MJ021749
-  '\u8308\uDB40\uDD02': '\uE89D',  // MJ021751
-  '\u8309\uDB40\uDD02': '\uE89E',  // MJ021754
-  '\u830A\uDB40\uDD02': '\uE89F',  // MJ021755
-  '\u830B\uDB40\uDD02': '\uE8A0',  // MJ021758
-  '\u830C\uDB40\uDD02': '\uE8A1',  // MJ021760
-  '\u8316\uDB40\uDD02': '\uE8A2',  // MJ021765
-  '\u8317\uDB40\uDD02': '\uE8A3',  // MJ021767
-  '\u8318\uDB40\uDD02': '\uE8A4',  // MJ021769
-  '\u831B\uDB40\uDD02': '\uE8A5',  // MJ021773
-  '\u831C\uDB40\uDD02': '\uE8A6',  // MJ021775
-  '\u831D\uDB40\uDD02': '\uE8A7',  // MJ021777
-  '\u831E\uDB40\uDD02': '\uE8A8',  // MJ021779
-  '\u831F\uDB40\uDD02': '\uE8A9',  // MJ021781
-  '\u8321\uDB40\uDD02': '\uE8AA',  // MJ021784
-  '\u8322\uDB40\uDD02': '\uE8AB',  // MJ021786
-  '\u8323\uDB40\uDD02': '\uE8AC',  // MJ021788
-  '\u8328\uDB40\uDD02': '\uE8AD',  // MJ021800
-  '\u832B\uDB40\uDD02': '\uE8AE',  // MJ021809
-  '\u832C\uDB40\uDD02': '\uE8AF',  // MJ021812
-  '\u832D\uDB40\uDD02': '\uE8B0',  // MJ021813
-  '\u832E\uDB40\uDD02': '\uE8B1',  // MJ021816
-  '\u832F\uDB40\uDD02': '\uE8B2',  // MJ021818
-  '\u8330\uDB40\uDD02': '\uE8B3',  // MJ021823
-  '\u8331\uDB40\uDD02': '\uE8B4',  // MJ021825
-  '\u8332\uDB40\uDD02': '\uE8B5',  // MJ021827
-  '\u8333\uDB40\uDD02': '\uE8B6',  // MJ021829
-  '\u8334\uDB40\uDD02': '\uE8B7',  // MJ021831
-  '\u8335\uDB40\uDD02': '\uE8B8',  // MJ021833
-  '\u8336\uDB40\uDD02': '\uE8B9',  // MJ021835
-  '\u8337\uDB40\uDD02': '\uE8BA',  // MJ021837
-  '\u8338\uDB40\uDD02': '\uE8BB',  // MJ021839
-  '\u8339\uDB40\uDD02': '\uE8BC',  // MJ021842
-  '\u833A\uDB40\uDD02': '\uE8BD',  // MJ021844
-  '\u833C\uDB40\uDD02': '\uE8BE',  // MJ021847
-  '\u833D\uDB40\uDD02': '\uE8BF',  // MJ021849
-  '\u8340\uDB40\uDD02': '\uE8C0',  // MJ021853
-  '\u8342\uDB40\uDD02': '\uE8C1',  // MJ021856
-  '\u8343\uDB40\uDD02': '\uE8C2',  // MJ021858
-  '\u8344\uDB40\uDD02': '\uE8C3',  // MJ021864
-  '\u8345\uDB40\uDD02': '\uE8C4',  // MJ021866
-  '\u8346\uDB40\uDD02': '\uE8C5',  // MJ021870
-  '\u8347\uDB40\uDD02': '\uE8C6',  // MJ021873
-  '\u8349\uDB40\uDD02': '\uE8C7',  // MJ021876
-  '\u834A\uDB40\uDD02': '\uE8C8',  // MJ021880
-  '\u834D\uDB40\uDD02': '\uE8C9',  // MJ021886
-  '\u834E\uDB40\uDD02': '\uE8CA',  // MJ021888
-  '\u834F\uDB40\uDD02': '\uE8CB',  // MJ021890
-  '\u8350\uDB40\uDD02': '\uE8CC',  // MJ021893
-  '\u8351\uDB40\uDD02': '\uE8CD',  // MJ021895
-  '\u8352\uDB40\uDD02': '\uE8CE',  // MJ021897
-  '\u8353\uDB40\uDD02': '\uE8CF',  // MJ021900
-  '\u8354\uDB40\uDD02': '\uE8D0',  // MJ021905
-  '\u8355\uDB40\uDD02': '\uE8D1',  // MJ021907
-  '\u8356\uDB40\uDD02': '\uE8D2',  // MJ021909
-  '\u8357\uDB40\uDD02': '\uE8D3',  // MJ021911
-  '\u8362\uDB40\uDD02': '\uE8D4',  // MJ021915
-  '\u8370\uDB40\uDD02': '\uE8D5',  // MJ021921
-  '\u8373\uDB40\uDD02': '\uE8D6',  // MJ021927
-  '\u8375\uDB40\uDD02': '\uE8D7',  // MJ021929
-  '\u8377\uDB40\uDD02': '\uE8D8',  // MJ021935
-  '\u8378\uDB40\uDD02': '\uE8D9',  // MJ021937
-  '\u837B\uDB40\uDD02': '\uE8DA',  // MJ021942
-  '\u837C\uDB40\uDD02': '\uE8DB',  // MJ021944
-  '\u837D\uDB40\uDD02': '\uE8DC',  // MJ021946
-  '\u837F\uDB40\uDD02': '\uE8DD',  // MJ021951
-  '\u8380\uDB40\uDD02': '\uE8DE',  // MJ021955
-  '\u8382\uDB40\uDD02': '\uE8DF',  // MJ021958
-  '\u8384\uDB40\uDD02': '\uE8E0',  // MJ021961
-  '\u8385\uDB40\uDD02': '\uE8E1',  // MJ021963
-  '\u8386\uDB40\uDD02': '\uE8E2',  // MJ021965
-  '\u8387\uDB40\uDD02': '\uE8E3',  // MJ021967
-  '\u8389\uDB40\uDD02': '\uE8E4',  // MJ021970
-  '\u838A\uDB40\uDD02': '\uE8E5',  // MJ021971
-  '\u838D\uDB40\uDD02': '\uE8E6',  // MJ021977
-  '\u838E\uDB40\uDD02': '\uE8E7',  // MJ021979
-  '\u8392\uDB40\uDD02': '\uE8E8',  // MJ021985
-  '\u8393\uDB40\uDD02': '\uE8E9',  // MJ021987
-  '\u8394\uDB40\uDD02': '\uE8EA',  // MJ021990
-  '\u8395\uDB40\uDD02': '\uE8EB',  // MJ021992
-  '\u8396\uDB40\uDD02': '\uE8EC',  // MJ021995
-  '\u8398\uDB40\uDD02': '\uE8ED',  // MJ021998
-  '\u8399\uDB40\uDD02': '\uE8EE',  // MJ022000
-  '\u839A\uDB40\uDD02': '\uE8EF',  // MJ022003
-  '\u839B\uDB40\uDD02': '\uE8F0',  // MJ022006
-  '\u839C\uDB40\uDD02': '\uE8F1',  // MJ022008
-  '\u839D\uDB40\uDD02': '\uE8F2',  // MJ022010
-  '\u839E\uDB40\uDD02': '\uE8F3',  // MJ022012
-  '\u839F\uDB40\uDD02': '\uE8F4',  // MJ022014
-  '\u83A0\uDB40\uDD02': '\uE8F5',  // MJ022016
-  '\u83A2\uDB40\uDD02': '\uE8F6',  // MJ022019
-  '\u83A6\uDB40\uDD02': '\uE8F7',  // MJ022025
-  '\u83A7\uDB40\uDD02': '\uE8F8',  // MJ022027
-  '\u83A8\uDB40\uDD02': '\uE8F9',  // MJ022029
-  '\u83A9\uDB40\uDD02': '\uE8FA',  // MJ022031
-  '\u83AA\uDB40\uDD02': '\uE8FB',  // MJ022033
-  '\u83AB\uDB40\uDD02': '\uE8FC',  // MJ022035
-  '\u83AC\uDB40\uDD02': '\uE8FD',  // MJ022037
-  '\u83AD\uDB40\uDD02': '\uE8FE',  // MJ022040
-  '\u83B5\uDB40\uDD02': '\uE8FF',  // MJ022048
-  '\u83BD\uDB40\uDD02': '\uE900',  // MJ022050
-  '\u83BE\uDB40\uDD02': '\uE901',  // MJ022056
-  '\u83BF\uDB40\uDD02': '\uE902',  // MJ022058
-  '\u83C0\uDB40\uDD02': '\uE903',  // MJ022060
-  '\u83C1\uDB40\uDD02': '\uE904',  // MJ022064
-  '\u83C5\uDB40\uDD02': '\uE905',  // MJ022071
-  '\u83C6\uDB40\uDD02': '\uE906',  // MJ022073
-  '\u83C7\uDB40\uDD02': '\uE907',  // MJ022076
-  '\u83C9\uDB40\uDD02': '\uE908',  // MJ022079
-  '\u83CA\uDB40\uDD02': '\uE909',  // MJ022081
-  '\u83CC\uDB40\uDD02': '\uE90A',  // MJ022084
-  '\u83CE\uDB40\uDD02': '\uE90B',  // MJ022087
-  '\u83CF\uDB40\uDD02': '\uE90C',  // MJ022089
-  '\u83D1\uDB40\uDD02': '\uE90D',  // MJ022092
-  '\u83D3\uDB40\uDD02': '\uE90E',  // MJ022095
-  '\u83D4\uDB40\uDD02': '\uE90F',  // MJ022098
-  '\u83D6\uDB40\uDD02': '\uE910',  // MJ022101
-  '\u83D8\uDB40\uDD02': '\uE911',  // MJ022104
-  '\u83DC\uDB40\uDD02': '\uE912',  // MJ022109
-  '\u83DD\uDB40\uDD02': '\uE913',  // MJ022114
-  '\uD86D\uDFCF\uDB40\uDD02': '\uE914',  // MJ022123
-  '\u83E0\uDB40\uDD02': '\uE915',  // MJ022127
-  '\u83E1\uDB40\uDD02': '\uE916',  // MJ022129
-  '\u83E5\uDB40\uDD02': '\uE917',  // MJ022134
-  '\u83E8\uDB40\uDD02': '\uE918',  // MJ022138
-  '\u83E9\uDB40\uDD02': '\uE919',  // MJ022140
-  '\u83EA\uDB40\uDD02': '\uE91A',  // MJ022142
-  '\u83EB\uDB40\uDD02': '\uE91B',  // MJ022144
-  '\u83EF\uDB40\uDD02': '\uE91C',  // MJ022152
-  '\u83F0\uDB40\uDD02': '\uE91D',  // MJ022156
-  '\u83F1\uDB40\uDD02': '\uE91E',  // MJ022160
-  '\u83F4\uDB40\uDD02': '\uE91F',  // MJ022167
-  '\u83F6\uDB40\uDD02': '\uE920',  // MJ022170
-  '\u83F7\uDB40\uDD02': '\uE921',  // MJ022172
-  '\u83F8\uDB40\uDD02': '\uE922',  // MJ022174
-  '\u83F9\uDB40\uDD02': '\uE923',  // MJ022178
-  '\u83FB\uDB40\uDD02': '\uE924',  // MJ022181
-  '\u83FC\uDB40\uDD02': '\uE925',  // MJ022183
-  '\u83FD\uDB40\uDD02': '\uE926',  // MJ022185
-  '\u8401\uDB40\uDD02': '\uE927',  // MJ022192
-  '\u8403\uDB40\uDD02': '\uE928',  // MJ022196
-  '\u8404\uDB40\uDD02': '\uE929',  // MJ022199
-  '\u8406\uDB40\uDD02': '\uE92A',  // MJ022202
-  '\u8407\uDB40\uDD02': '\uE92B',  // MJ022204
-  '\u840A\uDB40\uDD02': '\uE92C',  // MJ022208
-  '\u840B\uDB40\uDD02': '\uE92D',  // MJ022210
-  '\u840C\uDB40\uDD02': '\uE92E',  // MJ022212
-  '\u840D\uDB40\uDD02': '\uE92F',  // MJ022215
-  '\u840E\uDB40\uDD02': '\uE930',  // MJ022218
-  '\u840F\uDB40\uDD02': '\uE931',  // MJ022219
-  '\u8411\uDB40\uDD02': '\uE932',  // MJ022223
-  '\u8413\uDB40\uDD02': '\uE933',  // MJ022227
-  '\u8415\uDB40\uDD02': '\uE934',  // MJ022231
-  '\u8419\uDB40\uDD02': '\uE935',  // MJ022235
-  '\u8420\uDB40\uDD02': '\uE936',  // MJ022239
-  '\u8422\uDB40\uDD02': '\uE937',  // MJ022243
-  '\u8429\uDB40\uDD02': '\uE938',  // MJ022249
-  '\u842A\uDB40\uDD02': '\uE939',  // MJ022251
-  '\u842C\uDB40\uDD02': '\uE93A',  // MJ022257
-  '\u842F\uDB40\uDD02': '\uE93B',  // MJ022261
-  '\u8431\uDB40\uDD02': '\uE93C',  // MJ022264
-  '\u8435\uDB40\uDD02': '\uE93D',  // MJ022269
-  '\u8438\uDB40\uDD02': '\uE93E',  // MJ022274
-  '\u8439\uDB40\uDD02': '\uE93F',  // MJ022276
-  '\u843C\uDB40\uDD02': '\uE940',  // MJ022281
-  '\u843D\uDB40\uDD02': '\uE941',  // MJ022283
-  '\u8445\uDB40\uDD02': '\uE942',  // MJ022294
-  '\u8446\uDB40\uDD02': '\uE943',  // MJ022296
-  '\u8447\uDB40\uDD02': '\uE944',  // MJ022298
-  '\u8448\uDB40\uDD02': '\uE945',  // MJ022300
-  '\u8449\uDB40\uDD02': '\uE946',  // MJ022303
-  '\u844A\uDB40\uDD02': '\uE947',  // MJ022306
-  '\u844D\uDB40\uDD02': '\uE948',  // MJ022310
-  '\u844E\uDB40\uDD02': '\uE949',  // MJ022312
-  '\u844F\uDB40\uDD02': '\uE94A',  // MJ022314
-  '\u8451\uDB40\uDD02': '\uE94B',  // MJ022317
-  '\u8452\uDB40\uDD02': '\uE94C',  // MJ022319
-  '\u8456\uDB40\uDD02': '\uE94D',  // MJ022325
-  '\u8457\uDB40\uDD02': '\uE94E',  // MJ022326
-  '\u8458\uDB40\uDD02': '\uE94F',  // MJ022329
-  '\u8459\uDB40\uDD02': '\uE950',  // MJ022331
-  '\u845A\uDB40\uDD02': '\uE951',  // MJ022333
-  '\u845B\uDB40\uDD02': '\uE952',  // MJ022335
-  '\u845C\uDB40\uDD02': '\uE953',  // MJ022342
-  '\u845F\uDB40\uDD02': '\uE954',  // MJ022348
-  '\u8460\uDB40\uDD02': '\uE955',  // MJ022350
-  '\u8461\uDB40\uDD02': '\uE956',  // MJ022352
-  '\u8462\uDB40\uDD02': '\uE957',  // MJ022355
-  '\u8463\uDB40\uDD02': '\uE958',  // MJ022357
-  '\u8464\uDB40\uDD02': '\uE959',  // MJ022360
-  '\u8465\uDB40\uDD02': '\uE95A',  // MJ022362
-  '\u8466\uDB40\uDD02': '\uE95B',  // MJ022365
-  '\u8467\uDB40\uDD02': '\uE95C',  // MJ022370
-  '\u8469\uDB40\uDD02': '\uE95D',  // MJ022373
-  '\u846A\uDB40\uDD02': '\uE95E',  // MJ022375
-  '\u846B\uDB40\uDD02': '\uE95F',  // MJ022377
-  '\u846C\uDB40\uDD02': '\uE960',  // MJ022379
-  '\u846D\uDB40\uDD02': '\uE961',  // MJ022381
-  '\u846E\uDB40\uDD02': '\uE962',  // MJ022383
-  '\u846F\uDB40\uDD02': '\uE963',  // MJ022385
-  '\u8470\uDB40\uDD02': '\uE964',  // MJ022387
-  '\u8471\uDB40\uDD02': '\uE965',  // MJ022389
-  '\u8473\uDB40\uDD02': '\uE966',  // MJ022392
-  '\u8474\uDB40\uDD02': '\uE967',  // MJ022394
-  '\u8475\uDB40\uDD02': '\uE968',  // MJ022396
-  '\u8476\uDB40\uDD02': '\uE969',  // MJ022398
-  '\u8477\uDB40\uDD02': '\uE96A',  // MJ022400
-  '\u8478\uDB40\uDD02': '\uE96B',  // MJ022402
-  '\u8479\uDB40\uDD02': '\uE96C',  // MJ022404
-  '\u847A\uDB40\uDD02': '\uE96D',  // MJ022405
-  '\u847C\uDB40\uDD02': '\uE96E',  // MJ022411
-  '\u847D\uDB40\uDD02': '\uE96F',  // MJ022415
-  '\u8481\uDB40\uDD02': '\uE970',  // MJ022423
-  '\u8482\uDB40\uDD02': '\uE971',  // MJ022426
-  '\u8484\uDB40\uDD02': '\uE972',  // MJ022429
-  '\u8485\uDB40\uDD02': '\uE973',  // MJ022431
-  '\u848B\uDB40\uDD02': '\uE974',  // MJ022434
-  '\u8490\uDB40\uDD02': '\uE975',  // MJ022438
-  '\u8492\uDB40\uDD02': '\uE976',  // MJ022441
-  '\u8493\uDB40\uDD02': '\uE977',  // MJ022443
-  '\u8494\uDB40\uDD02': '\uE978',  // MJ022445
-  '\u8495\uDB40\uDD02': '\uE979',  // MJ022447
-  '\u8497\uDB40\uDD02': '\uE97A',  // MJ022450
-  '\u8499\uDB40\uDD02': '\uE97B',  // MJ022453
-  '\u849C\uDB40\uDD02': '\uE97C',  // MJ022460
-  '\u849E\uDB40\uDD02': '\uE97D',  // MJ022464
-  '\u849F\uDB40\uDD02': '\uE97E',  // MJ022466
-  '\u84A1\uDB40\uDD02': '\uE97F',  // MJ022470
-  '\u84A6\uDB40\uDD02': '\uE980',  // MJ022477
-  '\u84A8\uDB40\uDD02': '\uE981',  // MJ022482
-  '\u84A9\uDB40\uDD02': '\uE982',  // MJ022485
-  '\u84AA\uDB40\uDD02': '\uE983',  // MJ022487
-  '\u84AD\uDB40\uDD02': '\uE984',  // MJ022491
-  '\u84AF\uDB40\uDD02': '\uE985',  // MJ022494
-  '\u84B1\uDB40\uDD02': '\uE986',  // MJ022497
-  '\u84B2\uDB40\uDD02': '\uE987',  // MJ022499
-  '\u84B4\uDB40\uDD02': '\uE988',  // MJ022502
-  '\u84B8\uDB40\uDD02': '\uE989',  // MJ022507
-  '\u84B9\uDB40\uDD02': '\uE98A',  // MJ022510
-  '\u84BA\uDB40\uDD02': '\uE98B',  // MJ022512
-  '\u84BB\uDB40\uDD02': '\uE98C',  // MJ022514
-  '\u84BC\uDB40\uDD02': '\uE98D',  // MJ022517
-  '\u84BD\uDB40\uDD02': '\uE98E',  // MJ022519
-  '\u84BE\uDB40\uDD02': '\uE98F',  // MJ022521
-  '\u84BF\uDB40\uDD02': '\uE990',  // MJ022523
-  '\u84C0\uDB40\uDD02': '\uE991',  // MJ022526
-  '\u84C1\uDB40\uDD02': '\uE992',  // MJ022528
-  '\u84C2\uDB40\uDD02': '\uE993',  // MJ022530
-  '\u84C4\uDB40\uDD02': '\uE994',  // MJ022533
-  '\u84C6\uDB40\uDD02': '\uE995',  // MJ022537
-  '\u84C7\uDB40\uDD02': '\uE996',  // MJ022539
-  '\u84C8\uDB40\uDD02': '\uE997',  // MJ022541
-  '\u84C9\uDB40\uDD02': '\uE998',  // MJ022544
-  '\u84CA\uDB40\uDD02': '\uE999',  // MJ022546
-  '\u84CB\uDB40\uDD02': '\uE99A',  // MJ022550
-  '\u84CC\uDB40\uDD02': '\uE99B',  // MJ022552
-  '\u84CD\uDB40\uDD02': '\uE99C',  // MJ022554
-  '\u84CE\uDB40\uDD02': '\uE99D',  // MJ022556
-  '\u84CF\uDB40\uDD02': '\uE99E',  // MJ022560
-  '\u84D0\uDB40\uDD02': '\uE99F',  // MJ022563
-  '\u84D1\uDB40\uDD02': '\uE9A0',  // MJ022565
-  '\u84D3\uDB40\uDD02': '\uE9A1',  // MJ022569
-  '\u84D6\uDB40\uDD02': '\uE9A2',  // MJ022573
-  '\u84D9\uDB40\uDD02': '\uE9A3',  // MJ022577
-  '\u84DA\uDB40\uDD02': '\uE9A4',  // MJ022580
-  '\u84DC\uDB40\uDD02': '\uE9A5',  // MJ022581
-  '\u84E7\uDB40\uDD02': '\uE9A6',  // MJ022589
-  '\u84EA\uDB40\uDD02': '\uE9A7',  // MJ022593
-  '\u84EC\uDB40\uDD02': '\uE9A8',  // MJ022597
-  '\u84EE\uDB40\uDD02': '\uE9A9',  // MJ022603
-  '\u84EF\uDB40\uDD02': '\uE9AA',  // MJ022610
-  '\u84F0\uDB40\uDD02': '\uE9AB',  // MJ022611
-  '\u84F1\uDB40\uDD02': '\uE9AC',  // MJ022615
-  '\u84F2\uDB40\uDD02': '\uE9AD',  // MJ022617
-  '\u84F4\uDB40\uDD02': '\uE9AE',  // MJ022619
-  '\u84F7\uDB40\uDD02': '\uE9AF',  // MJ022625
-  '\u84FB\uDB40\uDD02': '\uE9B0',  // MJ022630
-  '\u84FC\uDB40\uDD02': '\uE9B1',  // MJ022632
-  '\u84FD\uDB40\uDD02': '\uE9B2',  // MJ022636
-  '\u84FF\uDB40\uDD02': '\uE9B3',  // MJ022639
-  '\u8500\uDB40\uDD02': '\uE9B4',  // MJ022641
-  '\u8502\uDB40\uDD02': '\uE9B5',  // MJ022645
-  '\u8503\uDB40\uDD02': '\uE9B6',  // MJ022647
-  '\u8506\uDB40\uDD02': '\uE9B7',  // MJ022651
-  '\u8507\uDB40\uDD02': '\uE9B8',  // MJ022653
-  '\u850C\uDB40\uDD02': '\uE9B9',  // MJ022660
-  '\u850E\uDB40\uDD02': '\uE9BA',  // MJ022663
-  '\u8510\uDB40\uDD02': '\uE9BB',  // MJ022666
-  '\u8511\uDB40\uDD02': '\uE9BC',  // MJ022667
-  '\u8513\uDB40\uDD02': '\uE9BD',  // MJ022674
-  '\u8514\uDB40\uDD02': '\uE9BE',  // MJ022678
-  '\u8515\uDB40\uDD02': '\uE9BF',  // MJ022680
-  '\u8517\uDB40\uDD02': '\uE9C0',  // MJ022682
-  '\u8518\uDB40\uDD02': '\uE9C1',  // MJ022687
-  '\u851A\uDB40\uDD02': '\uE9C2',  // MJ022690
-  '\u851B\uDB40\uDD02': '\uE9C3',  // MJ022692
-  '\u851C\uDB40\uDD02': '\uE9C4',  // MJ022694
-  '\u851E\uDB40\uDD02': '\uE9C5',  // MJ022697
-  '\u851F\uDB40\uDD02': '\uE9C6',  // MJ022699
-  '\u8521\uDB40\uDD02': '\uE9C7',  // MJ022702
-  '\u8522\uDB40\uDD02': '\uE9C8',  // MJ022704
-  '\u8523\uDB40\uDD02': '\uE9C9',  // MJ022707
-  '\u8524\uDB40\uDD02': '\uE9CA',  // MJ022709
-  '\u8525\uDB40\uDD02': '\uE9CB',  // MJ022710
-  '\u8526\uDB40\uDD02': '\uE9CC',  // MJ022714
-  '\u8527\uDB40\uDD02': '\uE9CD',  // MJ022716
-  '\u852A\uDB40\uDD02': '\uE9CE',  // MJ022720
-  '\u852B\uDB40\uDD02': '\uE9CF',  // MJ022722
-  '\u852C\uDB40\uDD02': '\uE9D0',  // MJ022724
-  '\u852D\uDB40\uDD02': '\uE9D1',  // MJ022726
-  '\u852F\uDB40\uDD02': '\uE9D2',  // MJ022729
-  '\u8532\uDB40\uDD02': '\uE9D3',  // MJ022733
-  '\u8533\uDB40\uDD02': '\uE9D4',  // MJ022735
-  '\u8534\uDB40\uDD02': '\uE9D5',  // MJ022739
-  '\u8536\uDB40\uDD02': '\uE9D6',  // MJ022743
-  '\u853E\uDB40\uDD02': '\uE9D7',  // MJ022747
-  '\u853F\uDB40\uDD02': '\uE9D8',  // MJ022751
-  '\u8540\uDB40\uDD02': '\uE9D9',  // MJ022753
-  '\u8541\uDB40\uDD02': '\uE9DA',  // MJ022755
-  '\u8543\uDB40\uDD02': '\uE9DB',  // MJ022760
-  '\u8546\uDB40\uDD02': '\uE9DC',  // MJ022765
-  '\u8548\uDB40\uDD02': '\uE9DD',  // MJ022768
-  '\u8549\uDB40\uDD02': '\uE9DE',  // MJ022771
-  '\u854A\uDB40\uDD02': '\uE9DF',  // MJ022773
-  '\u854B\uDB40\uDD02': '\uE9E0',  // MJ022775
-  '\u854E\uDB40\uDD02': '\uE9E1',  // MJ022779
-  '\u854F\uDB40\uDD02': '\uE9E2',  // MJ022781
-  '\u8550\uDB40\uDD02': '\uE9E3',  // MJ022783
-  '\u8551\uDB40\uDD02': '\uE9E4',  // MJ022784
-  '\u8552\uDB40\uDD02': '\uE9E5',  // MJ022787
-  '\u8553\uDB40\uDD02': '\uE9E6',  // MJ022789
-  '\u8555\uDB40\uDD02': '\uE9E7',  // MJ022791
-  '\u8556\uDB40\uDD02': '\uE9E8',  // MJ022797
-  '\u8557\uDB40\uDD02': '\uE9E9',  // MJ022799
-  '\u8558\uDB40\uDD02': '\uE9EA',  // MJ022802
-  '\u8559\uDB40\uDD02': '\uE9EB',  // MJ022805
-  '\u855A\uDB40\uDD02': '\uE9EC',  // MJ022808
-  '\u855C\uDB40\uDD02': '\uE9ED',  // MJ022811
-  '\u855D\uDB40\uDD02': '\uE9EE',  // MJ022814
-  '\u855E\uDB40\uDD02': '\uE9EF',  // MJ022816
-  '\u855F\uDB40\uDD02': '\uE9F0',  // MJ022818
-  '\u8560\uDB40\uDD02': '\uE9F1',  // MJ022820
-  '\u8561\uDB40\uDD02': '\uE9F2',  // MJ022822
-  '\u8562\uDB40\uDD02': '\uE9F3',  // MJ022824
-  '\u8563\uDB40\uDD02': '\uE9F4',  // MJ022825
-  '\u8564\uDB40\uDD02': '\uE9F5',  // MJ022831
-  '\u8568\uDB40\uDD02': '\uE9F6',  // MJ022837
-  '\u8569\uDB40\uDD02': '\uE9F7',  // MJ022839
-  '\u856A\uDB40\uDD02': '\uE9F8',  // MJ022841
-  '\u856B\uDB40\uDD02': '\uE9F9',  // MJ022843
-  '\u856D\uDB40\uDD02': '\uE9FA',  // MJ022848
-  '\u856F\uDB40\uDD02': '\uE9FB',  // MJ022851
-  '\u8577\uDB40\uDD02': '\uE9FC',  // MJ022860
-  '\u8578\uDB40\uDD02': '\uE9FD',  // MJ022863
-  '\u8579\uDB40\uDD02': '\uE9FE',  // MJ022865
-  '\u857A\uDB40\uDD02': '\uE9FF',  // MJ022867
-  '\u857B\uDB40\uDD02': '\uEA00',  // MJ022869
-  '\u857D\uDB40\uDD02': '\uEA01',  // MJ022872
-  '\u857E\uDB40\uDD02': '\uEA02',  // MJ022874
-  '\u857F\uDB40\uDD02': '\uEA03',  // MJ022876
-  '\u8580\uDB40\uDD02': '\uEA04',  // MJ022878
-  '\u8581\uDB40\uDD02': '\uEA05',  // MJ022879
-  '\u8584\uDB40\uDD02': '\uEA06',  // MJ022886
-  '\u8585\uDB40\uDD02': '\uEA07',  // MJ022890
-  '\u8586\uDB40\uDD02': '\uEA08',  // MJ022894
-  '\u8587\uDB40\uDD02': '\uEA09',  // MJ022896
-  '\u8588\uDB40\uDD02': '\uEA0A',  // MJ022901
-  '\u8589\uDB40\uDD02': '\uEA0B',  // MJ022903
-  '\u858A\uDB40\uDD02': '\uEA0C',  // MJ022904
-  '\u858B\uDB40\uDD02': '\uEA0D',  // MJ022908
-  '\u858C\uDB40\uDD02': '\uEA0E',  // MJ022911
-  '\u858F\uDB40\uDD02': '\uEA0F',  // MJ022918
-  '\u8590\uDB40\uDD02': '\uEA10',  // MJ022920
-  '\u8591\uDB40\uDD02': '\uEA11',  // MJ022922
-  '\u8593\uDB40\uDD02': '\uEA12',  // MJ022925
-  '\u8594\uDB40\uDD02': '\uEA13',  // MJ022927
-  '\u8597\uDB40\uDD02': '\uEA14',  // MJ022933
-  '\u8598\uDB40\uDD02': '\uEA15',  // MJ022936
-  '\u8599\uDB40\uDD02': '\uEA16',  // MJ022938
-  '\u859B\uDB40\uDD02': '\uEA17',  // MJ022941
-  '\u859C\uDB40\uDD02': '\uEA18',  // MJ022943
-  '\u859D\uDB40\uDD02': '\uEA19',  // MJ022945
-  '\u859F\uDB40\uDD02': '\uEA1A',  // MJ022948
-  '\u85A0\uDB40\uDD02': '\uEA1B',  // MJ022950
-  '\u85A2\uDB40\uDD02': '\uEA1C',  // MJ022953
-  '\u85A4\uDB40\uDD02': '\uEA1D',  // MJ022956
-  '\u85A5\uDB40\uDD02': '\uEA1E',  // MJ022958
-  '\u85A6\uDB40\uDD02': '\uEA1F',  // MJ022960
-  '\u85A7\uDB40\uDD02': '\uEA20',  // MJ022962
-  '\u85A8\uDB40\uDD02': '\uEA21',  // MJ022964
-  '\u85A9\uDB40\uDD02': '\uEA22',  // MJ022965
-  '\u85AA\uDB40\uDD02': '\uEA23',  // MJ022970
-  '\u85AB\uDB40\uDD02': '\uEA24',  // MJ022973
-  '\u85AD\uDB40\uDD02': '\uEA25',  // MJ022978
-  '\u85AF\uDB40\uDD02': '\uEA26',  // MJ022983
-  '\u85B0\uDB40\uDD02': '\uEA27',  // MJ022987
-  '\u85B4\uDB40\uDD02': '\uEA28',  // MJ022995
-  '\u85B6\uDB40\uDD02': '\uEA29',  // MJ022999
-  '\u85B7\uDB40\uDD02': '\uEA2A',  // MJ023001
-  '\u85B8\uDB40\uDD02': '\uEA2B',  // MJ023003
-  '\u85B9\uDB40\uDD02': '\uEA2C',  // MJ023005
-  '\u85BA\uDB40\uDD02': '\uEA2D',  // MJ023007
-  '\u85BC\uDB40\uDD02': '\uEA2E',  // MJ023010
-  '\u85BD\uDB40\uDD02': '\uEA2F',  // MJ023012
-  '\u85BE\uDB40\uDD02': '\uEA30',  // MJ023014
-  '\u85BF\uDB40\uDD02': '\uEA31',  // MJ023016
-  '\u85C1\uDB40\uDD02': '\uEA32',  // MJ023019
-  '\u85C2\uDB40\uDD02': '\uEA33',  // MJ023023
-  '\u85C7\uDB40\uDD02': '\uEA34',  // MJ023029
-  '\u85C9\uDB40\uDD02': '\uEA35',  // MJ023032
-  '\u85CA\uDB40\uDD02': '\uEA36',  // MJ023035
-  '\u85CB\uDB40\uDD02': '\uEA37',  // MJ023037
-  '\u85CD\uDB40\uDD02': '\uEA38',  // MJ023041
-  '\u85CE\uDB40\uDD02': '\uEA39',  // MJ023043
-  '\u85CF\uDB40\uDD02': '\uEA3A',  // MJ023044
-  '\u85D0\uDB40\uDD02': '\uEA3B',  // MJ023050
-  '\u85D5\uDB40\uDD02': '\uEA3C',  // MJ023053
-  '\u85D8\uDB40\uDD02': '\uEA3D',  // MJ023059
-  '\u85D9\uDB40\uDD02': '\uEA3E',  // MJ023061
-  '\u85DA\uDB40\uDD02': '\uEA3F',  // MJ023064
-  '\u85DC\uDB40\uDD02': '\uEA40',  // MJ023067
-  '\u85DD\uDB40\uDD02': '\uEA41',  // MJ023069
-  '\u85DF\uDB40\uDD02': '\uEA42',  // MJ023071
-  '\u85E0\uDB40\uDD02': '\uEA43',  // MJ023073
-  '\u85E1\uDB40\uDD02': '\uEA44',  // MJ023076
-  '\u85E4\uDB40\uDD02': '\uEA45',  // MJ023079
-  '\u85E5\uDB40\uDD02': '\uEA46',  // MJ023087
-  '\u85E6\uDB40\uDD02': '\uEA47',  // MJ023090
-  '\u85E8\uDB40\uDD02': '\uEA48',  // MJ023095
-  '\u85E9\uDB40\uDD02': '\uEA49',  // MJ023097
-  '\u85EA\uDB40\uDD02': '\uEA4A',  // MJ023099
-  '\u85ED\uDB40\uDD02': '\uEA4B',  // MJ023105
-  '\u85F3\uDB40\uDD02': '\uEA4C',  // MJ023112
-  '\u85F4\uDB40\uDD02': '\uEA4D',  // MJ058559
-  '\u85F6\uDB40\uDD02': '\uEA4E',  // MJ023115
-  '\u85F7\uDB40\uDD02': '\uEA4F',  // MJ023116
-  '\u85F9\uDB40\uDD02': '\uEA50',  // MJ023121
-  '\u85FA\uDB40\uDD02': '\uEA51',  // MJ023124
-  '\u85FB\uDB40\uDD02': '\uEA52',  // MJ023126
-  '\u85FC\uDB40\uDD02': '\uEA53',  // MJ023128
-  '\u85FE\uDB40\uDD02': '\uEA54',  // MJ023133
-  '\u85FF\uDB40\uDD02': '\uEA55',  // MJ023136
-  '\u8600\uDB40\uDD02': '\uEA56',  // MJ023138
-  '\u8602\uDB40\uDD02': '\uEA57',  // MJ023141
-  '\u8604\uDB40\uDD02': '\uEA58',  // MJ023144
-  '\u8605\uDB40\uDD02': '\uEA59',  // MJ023146
-  '\u8606\uDB40\uDD02': '\uEA5A',  // MJ023148
-  '\u8607\uDB40\uDD02': '\uEA5B',  // MJ023151
-  '\u860A\uDB40\uDD02': '\uEA5C',  // MJ023156
-  '\u860B\uDB40\uDD02': '\uEA5D',  // MJ023158
-  '\u860D\uDB40\uDD02': '\uEA5E',  // MJ023161
-  '\u860E\uDB40\uDD02': '\uEA5F',  // MJ023166
-  '\u8610\uDB40\uDD02': '\uEA60',  // MJ023169
-  '\u8611\uDB40\uDD02': '\uEA61',  // MJ023171
-  '\u8613\uDB40\uDD02': '\uEA62',  // MJ023175
-  '\u8616\uDB40\uDD02': '\uEA63',  // MJ023179
-  '\u8617\uDB40\uDD02': '\uEA64',  // MJ023181
-  '\u8618\uDB40\uDD02': '\uEA65',  // MJ023182
-  '\u8619\uDB40\uDD02': '\uEA66',  // MJ023186
-  '\u861A\uDB40\uDD02': '\uEA67',  // MJ023190
-  '\u861B\uDB40\uDD02': '\uEA68',  // MJ023192
-  '\u861E\uDB40\uDD02': '\uEA69',  // MJ023195
-  '\u8621\uDB40\uDD02': '\uEA6A',  // MJ023199
-  '\u8622\uDB40\uDD02': '\uEA6B',  // MJ023202
-  '\u8624\uDB40\uDD02': '\uEA6C',  // MJ023206
-  '\u8627\uDB40\uDD02': '\uEA6D',  // MJ023211
-  '\u8629\uDB40\uDD02': '\uEA6E',  // MJ023215
-  '\u862D\uDB40\uDD02': '\uEA6F',  // MJ023221
-  '\u862F\uDB40\uDD02': '\uEA70',  // MJ023227
-  '\u8630\uDB40\uDD02': '\uEA71',  // MJ023230
-  '\u8636\uDB40\uDD02': '\uEA72',  // MJ023238
-  '\u8638\uDB40\uDD02': '\uEA73',  // MJ023240
-  '\u8639\uDB40\uDD02': '\uEA74',  // MJ023242
-  '\u863A\uDB40\uDD02': '\uEA75',  // MJ023244
-  '\u863C\uDB40\uDD02': '\uEA76',  // MJ023247
-  '\u863D\uDB40\uDD02': '\uEA77',  // MJ023249
-  '\u863F\uDB40\uDD02': '\uEA78',  // MJ023252
-  '\u8640\uDB40\uDD02': '\uEA79',  // MJ023254
-  '\u8641\uDB40\uDD02': '\uEA7A',  // MJ023257
-  '\u8642\uDB40\uDD02': '\uEA7B',  // MJ023260
-  '\u8646\uDB40\uDD02': '\uEA7C',  // MJ023264
-  '\u864E\uDB40\uDD02': '\uEA7D',  // MJ023272
-  '\u8650\uDB40\uDD02': '\uEA7E',  // MJ023279
-  '\u8653\uDB40\uDD02': '\uEA7F',  // MJ023284
-  '\u8654\uDB40\uDD02': '\uEA80',  // MJ023285
-  '\u865C\uDB40\uDD02': '\uEA81',  // MJ023294
-  '\u865E\uDB40\uDD02': '\uEA82',  // MJ023297
-  '\u8667\uDB40\uDD02': '\uEA83',  // MJ023309
-  '\u867B\uDB40\uDD02': '\uEA84',  // MJ023330
-  '\u8688\uDB40\uDD02': '\uEA85',  // MJ023337
-  '\u8689\uDB40\uDD02': '\uEA86',  // MJ023340
-  '\u868A\uDB40\uDD02': '\uEA87',  // MJ023341
-  '\u868B\uDB40\uDD02': '\uEA88',  // MJ023344
-  '\u868C\uDB40\uDD02': '\uEA89',  // MJ023346
-  '\u869C\uDB40\uDD02': '\uEA8A',  // MJ023362
-  '\u86A3\uDB40\uDD02': '\uEA8B',  // MJ023371
-  '\u86A4\uDB40\uDD02': '\uEA8C',  // MJ058609
-  '\u86A9\uDB40\uDD02': '\uEA8D',  // MJ058606
-  '\u86AB\uDB40\uDD02': '\uEA8E',  // MJ023381
-  '\u86DF\uDB40\uDD02': '\uEA8F',  // MJ023432
-  '\u86E7\uDB40\uDD02': '\uEA90',  // MJ023442
-  '\u86E9\uDB40\uDD02': '\uEA91',  // MJ023445
-  '\u86F8\uDB40\uDD02': '\uEA92',  // MJ023459
-  '\u86FB\uDB40\uDD02': '\uEA93',  // MJ023463
-  '\u8703\uDB40\uDD02': '\uEA94',  // MJ023471
-  '\u8708\uDB40\uDD02': '\uEA95',  // MJ023478
-  '\u8709\uDB40\uDD02': '\uEA96',  // MJ023480
-  '\u870E\uDB40\uDD02': '\uEA97',  // MJ058615
-  '\u8711\uDB40\uDD02': '\uEA98',  // MJ023489
-  '\u8712\uDB40\uDD02': '\uEA99',  // MJ023491
-  '\u871A\uDB40\uDD02': '\uEA9A',  // MJ023498
-  '\u8729\uDB40\uDD02': '\uEA9B',  // MJ023515
-  '\u8737\uDB40\uDD02': '\uEA9C',  // MJ023529
-  '\u8739\uDB40\uDD02': '\uEA9D',  // MJ023534
-  '\u873B\uDB40\uDD02': '\uEA9E',  // MJ023536
-  '\u8745\uDB40\uDD02': '\uEA9F',  // MJ023548
-  '\u874D\uDB40\uDD02': '\uEAA0',  // MJ023555
-  '\u874E\uDB40\uDD02': '\uEAA1',  // MJ023557
-  '\u8753\uDB40\uDD02': '\uEAA2',  // MJ023564
-  '\u8755\uDB40\uDD02': '\uEAA3',  // MJ023566
-  '\u8758\uDB40\uDD02': '\uEAA4',  // MJ023571
-  '\u8759\uDB40\uDD02': '\uEAA5',  // MJ023573
-  '\u875D\uDB40\uDD02': '\uEAA6',  // MJ023578
-  '\u8771\uDB40\uDD02': '\uEAA7',  // MJ023600
-  '\u8773\uDB40\uDD02': '\uEAA8',  // MJ023604
-  '\u8782\uDB40\uDD02': '\uEAA9',  // MJ023618
-  '\u87A3\uDB40\uDD02': '\uEAAA',  // MJ023656
-  '\u87AD\uDB40\uDD02': '\uEAAB',  // MJ058654
-  '\u87BD\uDB40\uDD02': '\uEAAC',  // MJ023680
-  '\u87C0\uDB40\uDD02': '\uEAAD',  // MJ023685
-  '\u87C4\uDB40\uDD02': '\uEAAE',  // MJ023690
-  '\u87C6\uDB40\uDD02': '\uEAAF',  // MJ023693
-  '\u87C7\uDB40\uDD02': '\uEAB0',  // MJ023695
-  '\u87D9\uDB40\uDD02': '\uEAB1',  // MJ023715
-  '\u87E3\uDB40\uDD02': '\uEAB2',  // MJ023726
-  '\u87EB\uDB40\uDD02': '\uEAB3',  // MJ023735
-  '\u87F6\uDB40\uDD02': '\uEAB4',  // MJ023747
-  '\u8801\uDB40\uDD02': '\uEAB5',  // MJ023759
-  '\u8803\uDB40\uDD02': '\uEAB6',  // MJ023762
-  '\u8806\uDB40\uDD02': '\uEAB7',  // MJ023769
-  '\u8807\uDB40\uDD02': '\uEAB8',  // MJ023771
-  '\u880D\uDB40\uDD02': '\uEAB9',  // MJ023779
-  '\u880E\uDB40\uDD02': '\uEABA',  // MJ023780
-  '\u8813\uDB40\uDD02': '\uEABB',  // MJ023789
-  '\u8816\uDB40\uDD02': '\uEABC',  // MJ023793
-  '\u881A\uDB40\uDD02': '\uEABD',  // MJ023798
-  '\u881B\uDB40\uDD02': '\uEABE',  // MJ023799
-  '\u881F\uDB40\uDD02': '\uEABF',  // MJ058666
-  '\u8821\uDB40\uDD02': '\uEAC0',  // MJ023808
-  '\u8823\uDB40\uDD02': '\uEAC1',  // MJ023812
-  '\u8828\uDB40\uDD02': '\uEAC2',  // MJ023817
-  '\u882D\uDB40\uDD02': '\uEAC3',  // MJ023824
-  '\u8841\uDB40\uDD02': '\uEAC4',  // MJ023847
-  '\u8846\uDB40\uDD02': '\uEAC5',  // MJ023854
-  '\u884A\uDB40\uDD02': '\uEAC6',  // MJ023859
-  '\u884B\uDB40\uDD02': '\uEAC7',  // MJ023861
-  '\u8853\uDB40\uDD02': '\uEAC8',  // MJ023871
-  '\u885B\uDB40\uDD02': '\uEAC9',  // MJ023879
-  '\u8863\uDB40\uDD02': '\uEACA',  // MJ023889
-  '\u886E\uDB40\uDD02': '\uEACB',  // MJ023899
-  '\u8870\uDB40\uDD02': '\uEACC',  // MJ023901
-  '\u8871\uDB40\uDD02': '\uEACD',  // MJ023902
-  '\u8872\uDB40\uDD02': '\uEACE',  // MJ023905
-  '\u888D\uDB40\uDD02': '\uEACF',  // MJ023930
-  '\u889A\uDB40\uDD02': '\uEAD0',  // MJ023944
-  '\u889E\uDB40\uDD02': '\uEAD1',  // MJ023948
-  '\u88A2\uDB40\uDD02': '\uEAD2',  // MJ023954
-  '\u88B4\uDB40\uDD02': '\uEAD3',  // MJ058694
-  '\u88D2\uDB40\uDD02': '\uEAD4',  // MJ023998
-  '\u88F4\uDB40\uDD02': '\uEAD5',  // MJ024029
-  '\u8907\uDB40\uDD02': '\uEAD6',  // MJ024051
-  '\u890A\uDB40\uDD02': '\uEAD7',  // MJ024056
-  '\u8910\uDB40\uDD02': '\uEAD8',  // MJ024062
-  '\u8912\uDB40\uDD02': '\uEAD9',  // MJ024065
-  '\u8918\uDB40\uDD02': '\uEADA',  // MJ024071
-  '\u891C\uDB40\uDD02': '\uEADB',  // MJ024076
-  '\u891E\uDB40\uDD02': '\uEADC',  // MJ024079
-  '\u8927\uDB40\uDD02': '\uEADD',  // MJ024090
-  '\u892A\uDB40\uDD02': '\uEADE',  // MJ024093
-  '\u892B\uDB40\uDD02': '\uEADF',  // MJ024095
-  '\u8935\uDB40\uDD02': '\uEAE0',  // MJ024106
-  '\u8936\uDB40\uDD02': '\uEAE1',  // MJ024110
-  '\u893B\uDB40\uDD02': '\uEAE2',  // MJ024115
-  '\u8941\uDB40\uDD02': '\uEAE3',  // MJ024123
-  '\u8943\uDB40\uDD02': '\uEAE4',  // MJ024127
-  '\u8944\uDB40\uDD02': '\uEAE5',  // MJ059302
-  '\u8956\uDB40\uDD02': '\uEAE6',  // MJ024145
-  '\u895A\uDB40\uDD02': '\uEAE7',  // MJ024150
-  '\u896A\uDB40\uDD02': '\uEAE8',  // MJ024165
-  '\u896F\uDB40\uDD02': '\uEAE9',  // MJ024173
-  '\u8972\uDB40\uDD02': '\uEAEA',  // MJ024179
-  '\u8974\uDB40\uDD02': '\uEAEB',  // MJ024182
-  '\u897A\uDB40\uDD02': '\uEAEC',  // MJ024189
-  '\u897C\uDB40\uDD02': '\uEAED',  // MJ024192
-  '\u897D\uDB40\uDD02': '\uEAEE',  // MJ024194
-  '\u897F\uDB40\uDD02': '\uEAEF',  // MJ024197
-  '\u8981\uDB40\uDD02': '\uEAF0',  // MJ024201
-  '\u8983\uDB40\uDD02': '\uEAF1',  // MJ024204
-  '\u8986\uDB40\uDD02': '\uEAF2',  // MJ024207
-  '\u8987\uDB40\uDD02': '\uEAF3',  // MJ024210
-  '\u8988\uDB40\uDD02': '\uEAF4',  // MJ024212
-  '\u8989\uDB40\uDD02': '\uEAF5',  // MJ024214
-  '\u898A\uDB40\uDD02': '\uEAF6',  // MJ024216
-  '\u898D\uDB40\uDD02': '\uEAF7',  // MJ024220
-  '\u8990\uDB40\uDD02': '\uEAF8',  // MJ024224
-  '\u8996\uDB40\uDD02': '\uEAF9',  // MJ024230
-  '\u89A6\uDB40\uDD02': '\uEAFA',  // MJ024247
-  '\u89A9\uDB40\uDD02': '\uEAFB',  // MJ024251
-  '\u89AF\uDB40\uDD02': '\uEAFC',  // MJ024258
-  '\u89B2\uDB40\uDD02': '\uEAFD',  // MJ024262
-  '\u89B6\uDB40\uDD02': '\uEAFE',  // MJ024267
-  '\u89BD\uDB40\uDD02': '\uEAFF',  // MJ024275
-  '\u89C0\uDB40\uDD02': '\uEB00',  // MJ024279
-  '\u89D2\uDB40\uDD02': '\uEB01',  // MJ024281
-  '\u89DA\uDB40\uDD02': '\uEB02',  // MJ024292
-  '\u89E7\uDB40\uDD02': '\uEB03',  // MJ058736
-  '\u89F4\uDB40\uDD02': '\uEB04',  // MJ024320
-  '\u8A12\uDB40\uDD02': '\uEB05',  // MJ024349
-  '\u8A18\uDB40\uDD02': '\uEB06',  // MJ024358
-  '\u8A1B\uDB40\uDD02': '\uEB07',  // MJ024361
-  '\u8A1F\uDB40\uDD02': '\uEB08',  // MJ024368
-  '\u8A25\uDB40\uDD02': '\uEB09',  // MJ024376
-  '\u8A3B\uDB40\uDD02': '\uEB0A',  // MJ024399
-  '\u8A4E\uDB40\uDD02': '\uEB0B',  // MJ024422
-  '\u8A55\uDB40\uDD02': '\uEB0C',  // MJ024430
-  '\u8A60\uDB40\uDD02': '\uEB0D',  // MJ024441
-  '\u8A64\uDB40\uDD02': '\uEB0E',  // MJ024447
-  '\u8A6D\uDB40\uDD02': '\uEB0F',  // MJ024457
-  '\u8A6E\uDB40\uDD02': '\uEB10',  // MJ024458
-  '\u8A72\uDB40\uDD02': '\uEB11',  // MJ024464
-  '\u8A7C\uDB40\uDD02': '\uEB12',  // MJ024475
-  '\u8A84\uDB40\uDD02': '\uEB13',  // MJ024484
-  '\u8A86\uDB40\uDD02': '\uEB14',  // MJ024487
-  '\u8A8D\uDB40\uDD02': '\uEB15',  // MJ024494
-  '\u8A9A\uDB40\uDD02': '\uEB16',  // MJ024511
-  '\u8AA0\uDB40\uDD02': '\uEB17',  // MJ024517
-  '\u8AA4\uDB40\uDD02': '\uEB18',  // MJ024523
-  '\u8AA5\uDB40\uDD02': '\uEB19',  // MJ024527
-  '\u8AA8\uDB40\uDD02': '\uEB1A',  // MJ024531
-  '\u8AAA\uDB40\uDD02': '\uEB1B',  // MJ058743
-  '\u8AAE\uDB40\uDD02': '\uEB1C',  // MJ024538
-  '\u8AB7\uDB40\uDD02': '\uEB1D',  // MJ024548
-  '\u8AB9\uDB40\uDD02': '\uEB1E',  // MJ024550
-  '\u8ABE\uDB40\uDD02': '\uEB1F',  // MJ024557
-  '\u8ABF\uDB40\uDD02': '\uEB20',  // MJ024559
-  '\u8AC4\uDB40\uDD02': '\uEB21',  // MJ068089
-  '\u8ACB\uDB40\uDD02': '\uEB22',  // MJ024572
-  '\u8ACD\uDB40\uDD02': '\uEB23',  // MJ024575
-  '\u8ADB\uDB40\uDD02': '\uEB24',  // MJ024593
-  '\u8ADE\uDB40\uDD02': '\uEB25',  // MJ024599
-  '\u8AE1\uDB40\uDD02': '\uEB26',  // MJ024604
-  '\u8AE4\uDB40\uDD02': '\uEB27',  // MJ024608
-  '\u8AE6\uDB40\uDD02': '\uEB28',  // MJ024611
-  '\u8AED\uDB40\uDD02': '\uEB29',  // MJ024620
-  '\u8AF1\uDB40\uDD02': '\uEB2A',  // MJ024626
-  '\u8AF3\uDB40\uDD02': '\uEB2B',  // MJ024632
-  '\u8AF6\uDB40\uDD02': '\uEB2C',  // MJ024636
-  '\u8AF8\uDB40\uDD02': '\uEB2D',  // MJ024638
-  '\u8AFA\uDB40\uDD02': '\uEB2E',  // MJ024641
-  '\u8AFC\uDB40\uDD02': '\uEB2F',  // MJ024644
-  '\u8AFE\uDB40\uDD02': '\uEB30',  // MJ024647
-  '\u8AFF\uDB40\uDD02': '\uEB31',  // MJ024649
-  '\u8B01\uDB40\uDD02': '\uEB32',  // MJ024651
-  '\u8B04\uDB40\uDD02': '\uEB33',  // MJ024654
-  '\u8B0A\uDB40\uDD02': '\uEB34',  // MJ024662
-  '\u8B0B\uDB40\uDD02': '\uEB35',  // MJ024665
-  '\u8B0E\uDB40\uDD02': '\uEB36',  // MJ024669
-  '\u8B14\uDB40\uDD02': '\uEB37',  // MJ024680
-  '\u8B17\uDB40\uDD02': '\uEB38',  // MJ024684
-  '\u8B19\uDB40\uDD02': '\uEB39',  // MJ024687
-  '\u8B1A\uDB40\uDD02': '\uEB3A',  // MJ024692
-  '\u8B1B\uDB40\uDD02': '\uEB3B',  // MJ024694
-  '\u8B1D\uDB40\uDD02': '\uEB3C',  // MJ024696
-  '\u8B28\uDB40\uDD02': '\uEB3D',  // MJ024709
-  '\u8B2B\uDB40\uDD02': '\uEB3E',  // MJ024713
-  '\u8B2C\uDB40\uDD02': '\uEB3F',  // MJ024715
-  '\u8B33\uDB40\uDD02': '\uEB40',  // MJ024723
-  '\u8B37\uDB40\uDD02': '\uEB41',  // MJ024728
-  '\u8B39\uDB40\uDD02': '\uEB42',  // MJ024730
-  '\u8B3E\uDB40\uDD02': '\uEB43',  // MJ024737
-  '\u8B41\uDB40\uDD02': '\uEB44',  // MJ024740
-  '\u8B44\uDB40\uDD02': '\uEB45',  // MJ024746
-  '\u8B45\uDB40\uDD02': '\uEB46',  // MJ024751
-  '\u8B4C\uDB40\uDD02': '\uEB47',  // MJ024760
-  '\u8B4F\uDB40\uDD02': '\uEB48',  // MJ024763
-  '\u8B53\uDB40\uDD02': '\uEB49',  // MJ024770
-  '\u8B58\uDB40\uDD02': '\uEB4A',  // MJ024777
-  '\u8B5A\uDB40\uDD02': '\uEB4B',  // MJ024780
-  '\u8B5C\uDB40\uDD02': '\uEB4C',  // MJ024782
-  '\u8B66\uDB40\uDD02': '\uEB4D',  // MJ024796
-  '\u8B69\uDB40\uDD02': '\uEB4E',  // MJ024800
-  '\u8B6A\uDB40\uDD02': '\uEB4F',  // MJ024803
-  '\u8B6D\uDB40\uDD02': '\uEB50',  // MJ058766
-  '\u8B71\uDB40\uDD02': '\uEB51',  // MJ024812
-  '\u8B74\uDB40\uDD02': '\uEB52',  // MJ024815
-  '\u8B77\uDB40\uDD02': '\uEB53',  // MJ024820
-  '\u8B81\uDB40\uDD02': '\uEB54',  // MJ024832
-  '\u8B8A\uDB40\uDD02': '\uEB55',  // MJ024840
-  '\u8B8B\uDB40\uDD02': '\uEB56',  // MJ024843
-  '\u8B8C\uDB40\uDD02': '\uEB57',  // MJ024845
-  '\u8B99\uDB40\uDD02': '\uEB58',  // MJ024859
-  '\u8C3A\uDB40\uDD02': '\uEB59',  // MJ024869
-  '\u8C3E\uDB40\uDD02': '\uEB5A',  // MJ024877
-  '\u8C3F\uDB40\uDD02': '\uEB5B',  // MJ024879
-  '\u8C41\uDB40\uDD02': '\uEB5C',  // MJ024881
-  '\u8C45\uDB40\uDD02': '\uEB5D',  // MJ024889
-  '\u8C53\uDB40\uDD02': '\uEB5E',  // MJ024903
-  '\u8C55\uDB40\uDD02': '\uEB5F',  // MJ024905
-  '\u8C57\uDB40\uDD02': '\uEB60',  // MJ024910
-  '\u8C59\uDB40\uDD02': '\uEB61',  // MJ024913
-  '\u8C5A\uDB40\uDD02': '\uEB62',  // MJ024915
-  '\u8C61\uDB40\uDD02': '\uEB63',  // MJ024923
-  '\u8C62\uDB40\uDD02': '\uEB64',  // MJ024927
-  '\u8C66\uDB40\uDD02': '\uEB65',  // MJ024932
-  '\u8C6A\uDB40\uDD02': '\uEB66',  // MJ024936
-  '\u8C6B\uDB40\uDD02': '\uEB67',  // MJ024940
-  '\u8C6C\uDB40\uDD02': '\uEB68',  // MJ024942
-  '\u8C76\uDB40\uDD02': '\uEB69',  // MJ024952
-  '\u8C79\uDB40\uDD02': '\uEB6A',  // MJ024956
-  '\u8C93\uDB40\uDD02': '\uEB6B',  // MJ024983
-  '\u8C98\uDB40\uDD02': '\uEB6C',  // MJ024989
-  '\u8C9B\uDB40\uDD02': '\uEB6D',  // MJ024992
-  '\u8CA7\uDB40\uDD02': '\uEB6E',  // MJ025007
-  '\u8CA8\uDB40\uDD02': '\uEB6F',  // MJ025009
-  '\u8CAB\uDB40\uDD02': '\uEB70',  // MJ025013
-  '\u8CBF\uDB40\uDD02': '\uEB71',  // MJ058784
-  '\u8CC1\uDB40\uDD02': '\uEB72',  // MJ025038
-  '\u8CC5\uDB40\uDD02': '\uEB73',  // MJ025043
-  '\u8CCB\uDB40\uDD02': '\uEB74',  // MJ025053
-  '\u8CD3\uDB40\uDD02': '\uEB75',  // MJ025062
-  '\u8CED\uDB40\uDD02': '\uEB76',  // MJ025087
-  '\u8CF2\uDB40\uDD02': '\uEB77',  // MJ025094
-  '\u8CFA\uDB40\uDD02': '\uEB78',  // MJ025103
-  '\u8CFB\uDB40\uDD02': '\uEB79',  // MJ025105
-  '\u8D05\uDB40\uDD02': '\uEB7A',  // MJ025118
-  '\u8D08\uDB40\uDD02': '\uEB7B',  // MJ025122
-  '\u8D09\uDB40\uDD02': '\uEB7C',  // MJ025124
-  '\u8D0A\uDB40\uDD02': '\uEB7D',  // MJ025126
-  '\u8D0E\uDB40\uDD02': '\uEB7E',  // MJ025130
-  '\u8D0F\uDB40\uDD02': '\uEB7F',  // MJ025132
-  '\u8D10\uDB40\uDD02': '\uEB80',  // MJ025136
-  '\u8D13\uDB40\uDD02': '\uEB81',  // MJ025141
-  '\u8D1B\uDB40\uDD02': '\uEB82',  // MJ025150
-  '\u8D1C\uDB40\uDD02': '\uEB83',  // MJ025153
-  '\u8D6D\uDB40\uDD02': '\uEB84',  // MJ025166
-  '\u8D73\uDB40\uDD02': '\uEB85',  // MJ025174
-  '\u8D77\uDB40\uDD02': '\uEB86',  // MJ025178
-  '\u8D82\uDB40\uDD02': '\uEB87',  // MJ025191
-  '\u8D99\uDB40\uDD02': '\uEB88',  // MJ025213
-  '\u8DAF\uDB40\uDD02': '\uEB89',  // MJ025238
-  '\u8DB9\uDB40\uDD02': '\uEB8A',  // MJ025246
-  '\u8DBC\uDB40\uDD02': '\uEB8B',  // MJ025249
-  '\u8DC7\uDB40\uDD02': '\uEB8C',  // MJ025261
-  '\u8DCB\uDB40\uDD02': '\uEB8D',  // MJ025266
-  '\u8DDA\uDB40\uDD02': '\uEB8E',  // MJ025283
-  '\u8DDD\uDB40\uDD02': '\uEB8F',  // MJ025289
-  '\u8DE4\uDB40\uDD02': '\uEB90',  // MJ025296
-  '\u8DE8\uDB40\uDD02': '\uEB91',  // MJ025301
-  '\u8DEB\uDB40\uDD02': '\uEB92',  // MJ025305
-  '\u8DF0\uDB40\uDD02': '\uEB93',  // MJ025311
-  '\u8DF3\uDB40\uDD02': '\uEB94',  // MJ025314
-  '\u8E09\uDB40\uDD02': '\uEB95',  // MJ025331
-  '\u8E30\uDB40\uDD02': '\uEB96',  // MJ025365
-  '\u8E38\uDB40\uDD02': '\uEB97',  // MJ025374
-  '\u8E44\uDB40\uDD02': '\uEB98',  // MJ025388
-  '\u8E48\uDB40\uDD02': '\uEB99',  // MJ025394
-  '\u8E4A\uDB40\uDD02': '\uEB9A',  // MJ025396
-  '\u8E4B\uDB40\uDD02': '\uEB9B',  // MJ025399
-  '\u8E55\uDB40\uDD02': '\uEB9C',  // MJ025408
-  '\u8E5E\uDB40\uDD02': '\uEB9D',  // MJ025418
-  '\u8E62\uDB40\uDD02': '\uEB9E',  // MJ025423
-  '\u8E6E\uDB40\uDD02': '\uEB9F',  // MJ025435
-  '\u8E71\uDB40\uDD02': '\uEBA0',  // MJ025440
-  '\u8E72\uDB40\uDD02': '\uEBA1',  // MJ025442
-  '\u8E77\uDB40\uDD02': '\uEBA2',  // MJ025449
-  '\u8E87\uDB40\uDD02': '\uEBA3',  // MJ025462
-  '\u8E89\uDB40\uDD02': '\uEBA4',  // MJ025466
-  '\u8E8D\uDB40\uDD02': '\uEBA5',  // MJ025471
-  '\u8E91\uDB40\uDD02': '\uEBA6',  // MJ025474
-  '\u8E9A\uDB40\uDD02': '\uEBA7',  // MJ058819
-  '\u8EA1\uDB40\uDD02': '\uEBA8',  // MJ025492
-  '\u8EAA\uDB40\uDD02': '\uEBA9',  // MJ025504
-  '\u8EAC\uDB40\uDD02': '\uEBAA',  // MJ025507
-  '\u8EAF\uDB40\uDD02': '\uEBAB',  // MJ025511
-  '\u8EB0\uDB40\uDD02': '\uEBAC',  // MJ025513
-  '\u8EBE\uDB40\uDD02': '\uEBAD',  // MJ025529
-  '\u8EC0\uDB40\uDD02': '\uEBAE',  // MJ025532
-  '\u8EC4\uDB40\uDD02': '\uEBAF',  // MJ025537
-  '\u8EC5\uDB40\uDD02': '\uEBB0',  // MJ025539
-  '\u8EC6\uDB40\uDD02': '\uEBB1',  // MJ025541
-  '\u8EC8\uDB40\uDD02': '\uEBB2',  // MJ025544
-  '\u8ED4\uDB40\uDD02': '\uEBB3',  // MJ025557
-  '\u8EF1\uDB40\uDD02': '\uEBB4',  // MJ025586
-  '\u8F03\uDB40\uDD02': '\uEBB5',  // MJ025605
-  '\u8F13\uDB40\uDD02': '\uEBB6',  // MJ025623
-  '\u8F1D\uDB40\uDD02': '\uEBB7',  // MJ025636
-  '\u8F1E\uDB40\uDD02': '\uEBB8',  // MJ025638
-  '\u8F29\uDB40\uDD02': '\uEBB9',  // MJ025650
-  '\u8F38\uDB40\uDD02': '\uEBBA',  // MJ025669
-  '\u8F4C\uDB40\uDD02': '\uEBBB',  // MJ025693
-  '\u8F52\uDB40\uDD02': '\uEBBC',  // MJ025700
-  '\u8F54\uDB40\uDD02': '\uEBBD',  // MJ025702
-  '\u8F55\uDB40\uDD02': '\uEBBE',  // MJ025705
-  '\u8F65\uDB40\uDD02': '\uEBBF',  // MJ025723
-  '\u8F9B\uDB40\uDD02': '\uEBC0',  // MJ025726
-  '\u8FA5\uDB40\uDD02': '\uEBC1',  // MJ058832
-  '\u8FA8\uDB40\uDD02': '\uEBC2',  // MJ059380
-  '\u8FAD\uDB40\uDD02': '\uEBC3',  // MJ025743
-  '\u8FB1\uDB40\uDD02': '\uEBC4',  // MJ057352
-  '\u8FB6\uDB40\uDD02': '\uEBC5',  // MJ030302
-  '\u8FB7\uDB40\uDD02': '\uEBC6',  // MJ025754
-  '\u8FBA\uDB40\uDD02': '\uEBC7',  // MJ025759
-  '\u8FBB\uDB40\uDD02': '\uEBC8',  // MJ025760
-  '\u8FBC\uDB40\uDD02': '\uEBC9',  // MJ025762
-  '\u8FBE\uDB40\uDD02': '\uEBCA',  // MJ025765
-  '\u8FBF\uDB40\uDD02': '\uEBCB',  // MJ025767
-  '\u8FC2\uDB40\uDD02': '\uEBCC',  // MJ025772
-  '\u8FC3\uDB40\uDD02': '\uEBCD',  // MJ025776
-  '\u8FC4\uDB40\uDD02': '\uEBCE',  // MJ025777
-  '\u8FC6\uDB40\uDD02': '\uEBCF',  // MJ025782
-  '\u8FCA\uDB40\uDD02': '\uEBD0',  // MJ025786
-  '\u8FCB\uDB40\uDD02': '\uEBD1',  // MJ025788
-  '\u8FCD\uDB40\uDD02': '\uEBD2',  // MJ025791
-  '\u8FCE\uDB40\uDD02': '\uEBD3',  // MJ025793
-  '\u8FD1\uDB40\uDD02': '\uEBD4',  // MJ025798
-  '\u8FD2\uDB40\uDD02': '\uEBD5',  // MJ025800
-  '\u8FD3\uDB40\uDD02': '\uEBD6',  // MJ025803
-  '\u8FD5\uDB40\uDD02': '\uEBD7',  // MJ025807
-  '\u8FDA\uDB40\uDD02': '\uEBD8',  // MJ025812
-  '\u8FE0\uDB40\uDD02': '\uEBD9',  // MJ025817
-  '\u8FE2\uDB40\uDD02': '\uEBDA',  // MJ025821
-  '\u8FE3\uDB40\uDD02': '\uEBDB',  // MJ025823
-  '\u8FE4\uDB40\uDD02': '\uEBDC',  // MJ025825
-  '\u8FE5\uDB40\uDD02': '\uEBDD',  // MJ025827
-  '\u8FE6\uDB40\uDD02': '\uEBDE',  // MJ025829
-  '\u8FE8\uDB40\uDD02': '\uEBDF',  // MJ025833
-  '\u8FE9\uDB40\uDD02': '\uEBE0',  // MJ025835
-  '\u8FEA\uDB40\uDD02': '\uEBE1',  // MJ025838
-  '\u8FEB\uDB40\uDD02': '\uEBE2',  // MJ025840
-  '\u8FED\uDB40\uDD02': '\uEBE3',  // MJ025844
-  '\u8FEE\uDB40\uDD02': '\uEBE4',  // MJ025846
-  '\u8FEF\uDB40\uDD02': '\uEBE5',  // MJ025848
-  '\u8FF0\uDB40\uDD02': '\uEBE6',  // MJ025851
-  '\u8FF1\uDB40\uDD02': '\uEBE7',  // MJ025853
-  '\u8FF4\uDB40\uDD02': '\uEBE8',  // MJ025856
-  '\u8FF5\uDB40\uDD02': '\uEBE9',  // MJ025858
-  '\u8FF7\uDB40\uDD02': '\uEBEA',  // MJ025861
-  '\u8FF8\uDB40\uDD02': '\uEBEB',  // MJ025864
-  '\u8FF9\uDB40\uDD02': '\uEBEC',  // MJ025865
-  '\u8FFA\uDB40\uDD02': '\uEBED',  // MJ025868
-  '\u8FFB\uDB40\uDD02': '\uEBEE',  // MJ025869
-  '\u8FFD\uDB40\uDD02': '\uEBEF',  // MJ025871
-  '\u8FFE\uDB40\uDD02': '\uEBF0',  // MJ025874
-  '\u9000\uDB40\uDD02': '\uEBF1',  // MJ025878
-  '\u9001\uDB40\uDD02': '\uEBF2',  // MJ025880
-  '\u9002\uDB40\uDD02': '\uEBF3',  // MJ025882
-  '\u9004\uDB40\uDD02': '\uEBF4',  // MJ025886
-  '\u9005\uDB40\uDD02': '\uEBF5',  // MJ025889
-  '\u9006\uDB40\uDD02': '\uEBF6',  // MJ025891
-  '\u9008\uDB40\uDD02': '\uEBF7',  // MJ025895
-  '\u900B\uDB40\uDD02': '\uEBF8',  // MJ025897
-  '\u900C\uDB40\uDD02': '\uEBF9',  // MJ025899
-  '\u900D\uDB40\uDD02': '\uEBFA',  // MJ025901
-  '\u900E\uDB40\uDD02': '\uEBFB',  // MJ025905
-  '\u900F\uDB40\uDD02': '\uEBFC',  // MJ025908
-  '\u9010\uDB40\uDD02': '\uEBFD',  // MJ025910
-  '\u9011\uDB40\uDD02': '\uEBFE',  // MJ025913
-  '\u9013\uDB40\uDD02': '\uEBFF',  // MJ025918
-  '\u9014\uDB40\uDD02': '\uEC00',  // MJ025919
-  '\u9015\uDB40\uDD02': '\uEC01',  // MJ025921
-  '\u9016\uDB40\uDD02': '\uEC02',  // MJ025923
-  '\u9017\uDB40\uDD02': '\uEC03',  // MJ025926
-  '\u9018\uDB40\uDD02': '\uEC04',  // MJ025929
-  '\u9019\uDB40\uDD02': '\uEC05',  // MJ025930
-  '\u901A\uDB40\uDD02': '\uEC06',  // MJ025932
-  '\u901B\uDB40\uDD02': '\uEC07',  // MJ025934
-  '\u901D\uDB40\uDD02': '\uEC08',  // MJ025937
-  '\u901E\uDB40\uDD02': '\uEC09',  // MJ025941
-  '\u901F\uDB40\uDD02': '\uEC0A',  // MJ025944
-  '\u9020\uDB40\uDD02': '\uEC0B',  // MJ025946
-  '\u9021\uDB40\uDD02': '\uEC0C',  // MJ025949
-  '\u9023\uDB40\uDD02': '\uEC0D',  // MJ025953
-  '\u9027\uDB40\uDD02': '\uEC0E',  // MJ025959
-  '\u9028\uDB40\uDD02': '\uEC0F',  // MJ025961
-  '\u9029\uDB40\uDD02': '\uEC10',  // MJ025962
-  '\u902A\uDB40\uDD02': '\uEC11',  // MJ025964
-  '\u902C\uDB40\uDD02': '\uEC12',  // MJ025968
-  '\u902D\uDB40\uDD02': '\uEC13',  // MJ025970
-  '\u902E\uDB40\uDD02': '\uEC14',  // MJ025972
-  '\u902F\uDB40\uDD02': '\uEC15',  // MJ025974
-  '\u9031\uDB40\uDD02': '\uEC16',  // MJ025977
-  '\u9032\uDB40\uDD02': '\uEC17',  // MJ025979
-  '\u9034\uDB40\uDD02': '\uEC18',  // MJ025982
-  '\u9035\uDB40\uDD02': '\uEC19',  // MJ025985
-  '\u9036\uDB40\uDD02': '\uEC1A',  // MJ025989
-  '\u9037\uDB40\uDD02': '\uEC1B',  // MJ025991
-  '\u9039\uDB40\uDD02': '\uEC1C',  // MJ025999
-  '\u903C\uDB40\uDD02': '\uEC1D',  // MJ026002
-  '\u903E\uDB40\uDD02': '\uEC1E',  // MJ026005
-  '\u903F\uDB40\uDD02': '\uEC1F',  // MJ026008
-  '\u9044\uDB40\uDD02': '\uEC20',  // MJ026021
-  '\u9045\uDB40\uDD02': '\uEC21',  // MJ026024
-  '\u9047\uDB40\uDD02': '\uEC22',  // MJ026026
-  '\u9049\uDB40\uDD02': '\uEC23',  // MJ026030
-  '\u904A\uDB40\uDD02': '\uEC24',  // MJ026032
-  '\u904B\uDB40\uDD02': '\uEC25',  // MJ026034
-  '\u904C\uDB40\uDD02': '\uEC26',  // MJ026036
-  '\u904D\uDB40\uDD02': '\uEC27',  // MJ026039
-  '\u904E\uDB40\uDD02': '\uEC28',  // MJ026041
-  '\u904F\uDB40\uDD02': '\uEC29',  // MJ026044
-  '\u9050\uDB40\uDD02': '\uEC2A',  // MJ026048
-  '\u9051\uDB40\uDD02': '\uEC2B',  // MJ026050
-  '\u9052\uDB40\uDD02': '\uEC2C',  // MJ026053
-  '\u9053\uDB40\uDD02': '\uEC2D',  // MJ026058
-  '\u9054\uDB40\uDD02': '\uEC2E',  // MJ026060
-  '\u9056\uDB40\uDD02': '\uEC2F',  // MJ026067
-  '\u9058\uDB40\uDD02': '\uEC30',  // MJ026071
-  '\u9059\uDB40\uDD02': '\uEC31',  // MJ026073
-  '\u905B\uDB40\uDD02': '\uEC32',  // MJ026076
-  '\u905C\uDB40\uDD02': '\uEC33',  // MJ026078
-  '\u905D\uDB40\uDD02': '\uEC34',  // MJ026080
-  '\u905E\uDB40\uDD02': '\uEC35',  // MJ026082
-  '\u9060\uDB40\uDD02': '\uEC36',  // MJ026086
-  '\u9061\uDB40\uDD02': '\uEC37',  // MJ026089
-  '\u9062\uDB40\uDD02': '\uEC38',  // MJ026093
-  '\u9063\uDB40\uDD02': '\uEC39',  // MJ026094
-  '\u9065\uDB40\uDD02': '\uEC3A',  // MJ026097
-  '\u9066\uDB40\uDD02': '\uEC3B',  // MJ026099
-  '\u9067\uDB40\uDD02': '\uEC3C',  // MJ026100
-  '\u9068\uDB40\uDD02': '\uEC3D',  // MJ026102
-  '\u9069\uDB40\uDD02': '\uEC3E',  // MJ026105
-  '\u906C\uDB40\uDD02': '\uEC3F',  // MJ026110
-  '\u906D\uDB40\uDD02': '\uEC40',  // MJ026112
-  '\u906E\uDB40\uDD02': '\uEC41',  // MJ026114
-  '\u906F\uDB40\uDD02': '\uEC42',  // MJ026118
-  '\u9070\uDB40\uDD02': '\uEC43',  // MJ026123
-  '\u9072\uDB40\uDD02': '\uEC44',  // MJ026126
-  '\u9073\uDB40\uDD02': '\uEC45',  // MJ026130
-  '\u9074\uDB40\uDD02': '\uEC46',  // MJ026134
-  '\u9076\uDB40\uDD02': '\uEC47',  // MJ026138
-  '\u9078\uDB40\uDD02': '\uEC48',  // MJ026146
-  '\u9079\uDB40\uDD02': '\uEC49',  // MJ026149
-  '\u907A\uDB40\uDD02': '\uEC4A',  // MJ026151
-  '\u907C\uDB40\uDD02': '\uEC4B',  // MJ026155
-  '\u907D\uDB40\uDD02': '\uEC4C',  // MJ026157
-  '\u907F\uDB40\uDD02': '\uEC4D',  // MJ026163
-  '\u9080\uDB40\uDD02': '\uEC4E',  // MJ026165
-  '\u9081\uDB40\uDD02': '\uEC4F',  // MJ026169
-  '\u9082\uDB40\uDD02': '\uEC50',  // MJ026172
-  '\u9083\uDB40\uDD02': '\uEC51',  // MJ026176
-  '\u9084\uDB40\uDD02': '\uEC52',  // MJ026180
-  '\u9085\uDB40\uDD02': '\uEC53',  // MJ026182
-  '\u9087\uDB40\uDD02': '\uEC54',  // MJ026186
-  '\u9088\uDB40\uDD02': '\uEC55',  // MJ026188
-  '\u908B\uDB40\uDD02': '\uEC56',  // MJ026209
-  '\u908C\uDB40\uDD02': '\uEC57',  // MJ026211
-  '\u908D\uDB40\uDD02': '\uEC58',  // MJ058874
-  '\u908E\uDB40\uDD02': '\uEC59',  // MJ026215
-  '\u908F\uDB40\uDD02': '\uEC5A',  // MJ026217
-  '\u9090\uDB40\uDD02': '\uEC5B',  // MJ026219
-  '\u9099\uDB40\uDD02': '\uEC5C',  // MJ026230
-  '\u90A3\uDB40\uDD02': '\uEC5D',  // MJ026239
-  '\u90A8\uDB40\uDD02': '\uEC5E',  // MJ026249
-  '\u90B4\uDB40\uDD02': '\uEC5F',  // MJ026269
-  '\u90D2\uDB40\uDD02': '\uEC60',  // MJ026297
-  '\u90DB\uDB40\uDD02': '\uEC61',  // MJ026306
-  '\u90E2\uDB40\uDD02': '\uEC62',  // MJ026314
-  '\u90E4\uDB40\uDD02': '\uEC63',  // MJ026318
-  '\u90FD\uDB40\uDD02': '\uEC64',  // MJ026341
-  '\u9100\uDB40\uDD02': '\uEC65',  // MJ026345
-  '\u9102\uDB40\uDD02': '\uEC66',  // MJ026348
-  '\u9115\uDB40\uDD02': '\uEC67',  // MJ026366
-  '\u9119\uDB40\uDD02': '\uEC68',  // MJ058878
-  '\u911A\uDB40\uDD02': '\uEC69',  // MJ026376
-  '\u9123\uDB40\uDD02': '\uEC6A',  // MJ026388
-  '\u912D\uDB40\uDD02': '\uEC6B',  // MJ026399
-  '\u912E\uDB40\uDD02': '\uEC6C',  // MJ026401
-  '\u9130\uDB40\uDD02': '\uEC6D',  // MJ026403
-  '\u9137\uDB40\uDD02': '\uEC6E',  // MJ026413
-  '\u913D\uDB40\uDD02': '\uEC6F',  // MJ026420
-  '\u914B\uDB40\uDD02': '\uEC70',  // MJ026435
-  '\u914C\uDB40\uDD02': '\uEC71',  // MJ026438
-  '\u9152\uDB40\uDD02': '\uEC72',  // MJ026448
-  '\u9162\uDB40\uDD02': '\uEC73',  // MJ026463
-  '\u916A\uDB40\uDD02': '\uEC74',  // MJ026471
-  '\u916C\uDB40\uDD02': '\uEC75',  // MJ026474
-  '\u9172\uDB40\uDD02': '\uEC76',  // MJ026478
-  '\u9175\uDB40\uDD02': '\uEC77',  // MJ026483
-  '\u9177\uDB40\uDD02': '\uEC78',  // MJ026486
-  '\u9178\uDB40\uDD02': '\uEC79',  // MJ026487
-  '\u919C\uDB40\uDD02': '\uEC7A',  // MJ026526
-  '\u91A4\uDB40\uDD02': '\uEC7B',  // MJ026536
-  '\u91A7\uDB40\uDD02': '\uEC7C',  // MJ026541
-  '\u91A8\uDB40\uDD02': '\uEC7D',  // MJ026543
-  '\u91AA\uDB40\uDD02': '\uEC7E',  // MJ026545
-  '\u91AB\uDB40\uDD02': '\uEC7F',  // MJ026548
-  '\u91AC\uDB40\uDD02': '\uEC80',  // MJ026550
-  '\u91B0\uDB40\uDD02': '\uEC81',  // MJ026555
-  '\u91B5\uDB40\uDD02': '\uEC82',  // MJ026561
-  '\u91BA\uDB40\uDD02': '\uEC83',  // MJ026568
-  '\u91C1\uDB40\uDD02': '\uEC84',  // MJ026577
-  '\u91C7\uDB40\uDD02': '\uEC85',  // MJ026586
-  '\u91C8\uDB40\uDD02': '\uEC86',  // MJ058893
-  '\u91CB\uDB40\uDD02': '\uEC87',  // MJ026591
-  '\u91CD\uDB40\uDD02': '\uEC88',  // MJ060258
-  '\u91DC\uDB40\uDD02': '\uEC89',  // MJ026607
-  '\u91DF\uDB40\uDD02': '\uEC8A',  // MJ026612
-  '\u91E3\uDB40\uDD02': '\uEC8B',  // MJ026617
-  '\u91E9\uDB40\uDD02': '\uEC8C',  // MJ026624
-  '\u91EE\uDB40\uDD02': '\uEC8D',  // MJ026631
-  '\u91EF\uDB40\uDD02': '\uEC8E',  // MJ026633
-  '\u91F5\uDB40\uDD02': '\uEC8F',  // MJ026640
-  '\u9210\uDB40\uDD02': '\uEC90',  // MJ026673
-  '\u9213\uDB40\uDD02': '\uEC91',  // MJ026678
-  '\u9229\uDB40\uDD02': '\uEC92',  // MJ026702
-  '\u9238\uDB40\uDD02': '\uEC93',  // MJ026718
-  '\u9242\uDB40\uDD02': '\uEC94',  // MJ026729
-  '\u9245\uDB40\uDD02': '\uEC95',  // MJ026733
-  '\u924B\uDB40\uDD02': '\uEC96',  // MJ026740
-  '\u9261\uDB40\uDD02': '\uEC97',  // MJ026766
-  '\u9268\uDB40\uDD02': '\uEC98',  // MJ026774
-  '\u9278\uDB40\uDD02': '\uEC99',  // MJ026789
-  '\u927C\uDB40\uDD02': '\uEC9A',  // MJ026794
-  '\u9283\uDB40\uDD02': '\uEC9B',  // MJ026801
-  '\u928E\uDB40\uDD02': '\uEC9C',  // MJ026816
-  '\u9293\uDB40\uDD02': '\uEC9D',  // MJ026822
-  '\u92A2\uDB40\uDD02': '\uEC9E',  // MJ068069
-  '\u92B7\uDB40\uDD02': '\uEC9F',  // MJ026858
-  '\u92C6\uDB40\uDD02': '\uECA0',  // MJ026874
-  '\u92CB\uDB40\uDD02': '\uECA1',  // MJ026880
-  '\u92CC\uDB40\uDD02': '\uECA2',  // MJ026883
-  '\u92D5\uDB40\uDD02': '\uECA3',  // MJ026893
-  '\u92D7\uDB40\uDD02': '\uECA4',  // MJ026895
-  '\u92D8\uDB40\uDD02': '\uECA5',  // MJ026897
-  '\u92DD\uDB40\uDD02': '\uECA6',  // MJ026904
-  '\u92E3\uDB40\uDD02': '\uECA7',  // MJ026909
-  '\u92E9\uDB40\uDD02': '\uECA8',  // MJ026916
-  '\u92EE\uDB40\uDD02': '\uECA9',  // MJ026924
-  '\u92FB\uDB40\uDD02': '\uECAA',  // MJ026937
-  '\u9300\uDB40\uDD02': '\uECAB',  // MJ026943
-  '\u9302\uDB40\uDD02': '\uECAC',  // MJ026945
-  '\u9306\uDB40\uDD02': '\uECAD',  // MJ026951
-  '\u931A\uDB40\uDD02': '\uECAE',  // MJ026974
-  '\u9328\uDB40\uDD02': '\uECAF',  // MJ026990
-  '\u9335\uDB40\uDD02': '\uECB0',  // MJ027002
-  '\u933A\uDB40\uDD02': '\uECB1',  // MJ027009
-  '\u9348\uDB40\uDD02': '\uECB2',  // MJ027017
-  '\u9351\uDB40\uDD02': '\uECB3',  // MJ027027
-  '\u9365\uDB40\uDD02': '\uECB4',  // MJ027049
-  '\u9369\uDB40\uDD02': '\uECB5',  // MJ027056
-  '\u936E\uDB40\uDD02': '\uECB6',  // MJ027062
-  '\u9373\uDB40\uDD02': '\uECB7',  // MJ027068
-  '\u9375\uDB40\uDD02': '\uECB8',  // MJ027070
-  '\u938B\uDB40\uDD02': '\uECB9',  // MJ027090
-  '\u938C\uDB40\uDD02': '\uECBA',  // MJ027093
-  '\u9396\uDB40\uDD02': '\uECBB',  // MJ027104
-  '\u939A\uDB40\uDD02': '\uECBC',  // MJ027108
-  '\u93A1\uDB40\uDD02': '\uECBD',  // MJ027116
-  '\u93A6\uDB40\uDD02': '\uECBE',  // MJ027124
-  '\u93AD\uDB40\uDD02': '\uECBF',  // MJ060292
-  '\u93B0\uDB40\uDD02': '\uECC0',  // MJ027137
-  '\u93B9\uDB40\uDD02': '\uECC1',  // MJ027149
-  '\u93BA\uDB40\uDD02': '\uECC2',  // MJ027152
-  '\u93C8\uDB40\uDD02': '\uECC3',  // MJ027165
-  '\u93CC\uDB40\uDD02': '\uECC4',  // MJ027171
-  '\u93D0\uDB40\uDD02': '\uECC5',  // MJ027176
-  '\u93D1\uDB40\uDD02': '\uECC6',  // MJ027178
-  '\u93D3\uDB40\uDD02': '\uECC7',  // MJ027181
-  '\u93DE\uDB40\uDD02': '\uECC8',  // MJ027194
-  '\u93E1\uDB40\uDD02': '\uECC9',  // MJ027199
-  '\u93F5\uDB40\uDD02': '\uECCA',  // MJ027219
-  '\u93FB\uDB40\uDD02': '\uECCB',  // MJ027226
-  '\u9404\uDB40\uDD02': '\uECCC',  // MJ027237
-  '\u9414\uDB40\uDD02': '\uECCD',  // MJ027253
-  '\u9415\uDB40\uDD02': '\uECCE',  // MJ027255
-  '\u9416\uDB40\uDD02': '\uECCF',  // MJ027259
-  '\u9418\uDB40\uDD02': '\uECD0',  // MJ027263
-  '\u9429\uDB40\uDD02': '\uECD1',  // MJ027276
-  '\u942F\uDB40\uDD02': '\uECD2',  // MJ027284
-  '\u9435\uDB40\uDD02': '\uECD3',  // MJ027291
-  '\u943B\uDB40\uDD02': '\uECD4',  // MJ027299
-  '\u9441\uDB40\uDD02': '\uECD5',  // MJ058945
-  '\u944A\uDB40\uDD02': '\uECD6',  // MJ027315
-  '\u9452\uDB40\uDD02': '\uECD7',  // MJ027325
-  '\u9453\uDB40\uDD02': '\uECD8',  // MJ027326
-  '\u945B\uDB40\uDD02': '\uECD9',  // MJ027335
-  '\u945F\uDB40\uDD02': '\uECDA',  // MJ027343
-  '\u946E\uDB40\uDD02': '\uECDB',  // MJ027359
-  '\u9471\uDB40\uDD02': '\uECDC',  // MJ027364
-  '\u9475\uDB40\uDD02': '\uECDD',  // MJ027370
-  '\u9476\uDB40\uDD02': '\uECDE',  // MJ027371
-  '\u9477\uDB40\uDD02': '\uECDF',  // MJ027374
-  '\u9484\uDB40\uDD02': '\uECE0',  // MJ027390
-  '\u958B\uDB40\uDD02': '\uECE1',  // MJ027421
-  '\uD863\uDCDD\uDB40\uDD02': '\uECE2',  // MJ052103
-  '\u9592\uDB40\uDD02': '\uECE3',  // MJ027430
-  '\u9594\uDB40\uDD02': '\uECE4',  // MJ027434
-  '\u95A1\uDB40\uDD02': '\uECE5',  // MJ027447
-  '\u95AB\uDB40\uDD02': '\uECE6',  // MJ027457
-  '\u95AD\uDB40\uDD02': '\uECE7',  // MJ027461
-  '\u95BB\uDB40\uDD02': '\uECE8',  // MJ027475
-  '\u95BC\uDB40\uDD02': '\uECE9',  // MJ027477
-  '\u95C7\uDB40\uDD02': '\uECEA',  // MJ027490
-  '\u95C8\uDB40\uDD02': '\uECEB',  // MJ027491
-  '\u95C9\uDB40\uDD02': '\uECEC',  // MJ027494
-  '\u95CD\uDB40\uDD02': '\uECED',  // MJ027498
-  '\u95D2\uDB40\uDD02': '\uECEE',  // MJ027505
-  '\u95E4\uDB40\uDD02': '\uECEF',  // MJ027524
-  '\u95E5\uDB40\uDD02': '\uECF0',  // MJ027525
-  '\u964D\uDB40\uDD02': '\uECF1',  // MJ027575
-  '\u9654\uDB40\uDD02': '\uECF2',  // MJ027584
-  '\u965F\uDB40\uDD02': '\uECF3',  // MJ027597
-  '\u9675\uDB40\uDD02': '\uECF4',  // MJ027616
-  '\u967B\uDB40\uDD02': '\uECF5',  // MJ027624
-  '\u967F\uDB40\uDD02': '\uECF6',  // MJ027629
-  '\u9681\uDB40\uDD02': '\uECF7',  // MJ027632
-  '\u9682\uDB40\uDD02': '\uECF8',  // MJ027634
-  '\u968A\uDB40\uDD02': '\uECF9',  // MJ027645
-  '\u9694\uDB40\uDD02': '\uECFA',  // MJ027657
-  '\u9699\uDB40\uDD02': '\uECFB',  // MJ027665
-  '\u969C\uDB40\uDD02': '\uECFC',  // MJ027670
-  '\u96A0\uDB40\uDD02': '\uECFD',  // MJ027674
-  '\u96A7\uDB40\uDD02': '\uECFE',  // MJ027685
-  '\u96A8\uDB40\uDD02': '\uECFF',  // MJ027688
-  '\u96AA\uDB40\uDD02': '\uED00',  // MJ058977
-  '\u96B1\uDB40\uDD02': '\uED01',  // MJ027699
-  '\u96B4\uDB40\uDD02': '\uED02',  // MJ027703
-  '\u96B6\uDB40\uDD02': '\uED03',  // MJ027705
-  '\u96B9\uDB40\uDD02': '\uED04',  // MJ056921
-  '\u96BB\uDB40\uDD02': '\uED05',  // MJ027711
-  '\u96C7\uDB40\uDD02': '\uED06',  // MJ027726
-  '\u96CC\uDB40\uDD02': '\uED07',  // MJ027732
-  '\u96D5\uDB40\uDD02': '\uED08',  // MJ027742
-  '\u96D8\uDB40\uDD02': '\uED09',  // MJ027746
-  '\u96D9\uDB40\uDD02': '\uED0A',  // MJ027749
-  '\u96DA\uDB40\uDD02': '\uED0B',  // MJ027752
-  '\u96E2\uDB40\uDD02': '\uED0C',  // MJ027761
-  '\u96E3\uDB40\uDD02': '\uED0D',  // MJ027762
-  '\u96E8\uDB40\uDD02': '\uED0E',  // MJ027770
-  '\u96E9\uDB40\uDD02': '\uED0F',  // MJ027773
-  '\u96EA\uDB40\uDD02': '\uED10',  // MJ027775
-  '\u96EF\uDB40\uDD02': '\uED11',  // MJ027782
-  '\u96F0\uDB40\uDD02': '\uED12',  // MJ027783
-  '\u96F9\uDB40\uDD02': '\uED13',  // MJ027794
-  '\u9704\uDB40\uDD02': '\uED14',  // MJ027804
-  '\u9706\uDB40\uDD02': '\uED15',  // MJ027807
-  '\u9707\uDB40\uDD02': '\uED16',  // MJ058994
-  '\u9713\uDB40\uDD02': '\uED17',  // MJ027823
-  '\u9719\uDB40\uDD02': '\uED18',  // MJ027830
-  '\u9721\uDB40\uDD02': '\uED19',  // MJ027839
-  '\u9724\uDB40\uDD02': '\uED1A',  // MJ027844
-  '\u972A\uDB40\uDD02': '\uED1B',  // MJ027851
-  '\u9736\uDB40\uDD02': '\uED1C',  // MJ027864
-  '\u9746\uDB40\uDD02': '\uED1D',  // MJ027882
-  '\u9749\uDB40\uDD02': '\uED1E',  // MJ027888
-  '\u9755\uDB40\uDD02': '\uED1F',  // MJ027900
-  '\u9756\uDB40\uDD02': '\uED20',  // MJ027901
-  '\u9757\uDB40\uDD02': '\uED21',  // MJ027903
-  '\u9758\uDB40\uDD02': '\uED22',  // MJ027905
-  '\u975A\uDB40\uDD02': '\uED23',  // MJ027910
-  '\u975B\uDB40\uDD02': '\uED24',  // MJ027912
-  '\u975E\uDB40\uDD02': '\uED25',  // MJ027921
-  '\u9761\uDB40\uDD02': '\uED26',  // MJ027928
-  '\u9764\uDB40\uDD02': '\uED27',  // MJ027932
-  '\u9769\uDB40\uDD02': '\uED28',  // MJ059006
-  '\u976B\uDB40\uDD02': '\uED29',  // MJ027939
-  '\u9774\uDB40\uDD02': '\uED2A',  // MJ027950
-  '\u9779\uDB40\uDD02': '\uED2B',  // MJ027958
-  '\u9784\uDB40\uDD02': '\uED2C',  // MJ027971
-  '\u9786\uDB40\uDD02': '\uED2D',  // MJ027974
-  '\u978F\uDB40\uDD02': '\uED2E',  // MJ027984
-  '\u9798\uDB40\uDD02': '\uED2F',  // MJ027992
-  '\u979A\uDB40\uDD02': '\uED30',  // MJ027995
-  '\u97A8\uDB40\uDD02': '\uED31',  // MJ028009
-  '\u97AD\uDB40\uDD02': '\uED32',  // MJ028015
-  '\u97B3\uDB40\uDD02': '\uED33',  // MJ028022
-  '\u97B8\uDB40\uDD02': '\uED34',  // MJ028026
-  '\u97BE\uDB40\uDD02': '\uED35',  // MJ028034
-  '\u97BF\uDB40\uDD02': '\uED36',  // MJ028036
-  '\u97C3\uDB40\uDD02': '\uED37',  // MJ028040
-  '\u97C4\uDB40\uDD02': '\uED38',  // MJ028043
-  '\u97C6\uDB40\uDD02': '\uED39',  // MJ028049
-  '\u97C8\uDB40\uDD02': '\uED3A',  // MJ028053
-  '\u97C9\uDB40\uDD02': '\uED3B',  // MJ028056
-  '\u97CA\uDB40\uDD02': '\uED3C',  // MJ028058
-  '\u97CB\uDB40\uDD02': '\uED3D',  // MJ028059
-  '\u97CC\uDB40\uDD02': '\uED3E',  // MJ028062
-  '\u97CD\uDB40\uDD02': '\uED3F',  // MJ028066
-  '\u97CE\uDB40\uDD02': '\uED40',  // MJ028068
-  '\u97D0\uDB40\uDD02': '\uED41',  // MJ028071
-  '\u97D1\uDB40\uDD02': '\uED42',  // MJ028073
-  '\u97D3\uDB40\uDD02': '\uED43',  // MJ028078
-  '\u97D4\uDB40\uDD02': '\uED44',  // MJ028080
-  '\u97D7\uDB40\uDD02': '\uED45',  // MJ028084
-  '\u97D8\uDB40\uDD02': '\uED46',  // MJ028086
-  '\u97D9\uDB40\uDD02': '\uED47',  // MJ028088
-  '\u97DB\uDB40\uDD02': '\uED48',  // MJ028091
-  '\u97DC\uDB40\uDD02': '\uED49',  // MJ028093
-  '\u97DD\uDB40\uDD02': '\uED4A',  // MJ028097
-  '\u97DE\uDB40\uDD02': '\uED4B',  // MJ028101
-  '\u97E0\uDB40\uDD02': '\uED4C',  // MJ028103
-  '\u97E1\uDB40\uDD02': '\uED4D',  // MJ028106
-  '\u97E4\uDB40\uDD02': '\uED4E',  // MJ028110
-  '\u97EE\uDB40\uDD02': '\uED4F',  // MJ028117
-  '\u97F1\uDB40\uDD02': '\uED50',  // MJ059021
-  '\u97F3\uDB40\uDD02': '\uED51',  // MJ028122
-  '\u97F5\uDB40\uDD02': '\uED52',  // MJ028126
-  '\u97F6\uDB40\uDD02': '\uED53',  // MJ028128
-  '\u97FA\uDB40\uDD02': '\uED54',  // MJ028134
-  '\u97FB\uDB40\uDD02': '\uED55',  // MJ028137
-  '\u9800\uDB40\uDD02': '\uED56',  // MJ028147
-  '\u9803\uDB40\uDD02': '\uED57',  // MJ028152
-  '\u9804\uDB40\uDD02': '\uED58',  // MJ028154
-  '\u980C\uDB40\uDD02': '\uED59',  // MJ028163
-  '\u9811\uDB40\uDD02': '\uED5A',  // MJ028169
-  '\u9812\uDB40\uDD02': '\uED5B',  // MJ028171
-  '\u9813\uDB40\uDD02': '\uED5C',  // MJ028174
-  '\u9819\uDB40\uDD02': '\uED5D',  // MJ028183
-  '\u9820\uDB40\uDD02': '\uED5E',  // MJ028191
-  '\u9824\uDB40\uDD02': '\uED5F',  // MJ028195
-  '\u9832\uDB40\uDD02': '\uED60',  // MJ028212
-  '\u983B\uDB40\uDD02': '\uED61',  // MJ028222
-  '\u9844\uDB40\uDD02': '\uED62',  // MJ028233
-  '\u984E\uDB40\uDD02': '\uED63',  // MJ028245
-  '\u985B\uDB40\uDD02': '\uED64',  // MJ028259
-  '\u985E\uDB40\uDD02': '\uED65',  // MJ028263
-  '\u9867\uDB40\uDD02': '\uED66',  // MJ028273
-  '\u9870\uDB40\uDD02': '\uED67',  // MJ028283
-  '\u9873\uDB40\uDD02': '\uED68',  // MJ028286
-  '\u9874\uDB40\uDD02': '\uED69',  // MJ028290
-  '\u98B6\uDB40\uDD02': '\uED6A',  // MJ028309
-  '\u98DF\uDB40\uDD02': '\uED6B',  // MJ028338
-  '\u98E2\uDB40\uDD02': '\uED6C',  // MJ028343
-  '\u98E3\uDB40\uDD02': '\uED6D',  // MJ028345
-  '\u98E6\uDB40\uDD02': '\uED6E',  // MJ028350
-  '\u98E9\uDB40\uDD02': '\uED6F',  // MJ028354
-  '\u98EA\uDB40\uDD02': '\uED70',  // MJ028356
-  '\u98EB\uDB40\uDD02': '\uED71',  // MJ028359
-  '\u98ED\uDB40\uDD02': '\uED72',  // MJ028361
-  '\u98F4\uDB40\uDD02': '\uED73',  // MJ028369
-  '\u98F6\uDB40\uDD02': '\uED74',  // MJ028373
-  '\u98FC\uDB40\uDD02': '\uED75',  // MJ028381
-  '\u98FD\uDB40\uDD02': '\uED76',  // MJ028382
-  '\u98FE\uDB40\uDD02': '\uED77',  // MJ028385
-  '\u9902\uDB40\uDD02': '\uED78',  // MJ028391
-  '\u9903\uDB40\uDD02': '\uED79',  // MJ028394
-  '\u9905\uDB40\uDD02': '\uED7A',  // MJ028397
-  '\u9909\uDB40\uDD02': '\uED7B',  // MJ028404
-  '\u990A\uDB40\uDD02': '\uED7C',  // MJ028405
-  '\u9910\uDB40\uDD02': '\uED7D',  // MJ028414
-  '\u9911\uDB40\uDD02': '\uED7E',  // MJ028416
-  '\u9912\uDB40\uDD02': '\uED7F',  // MJ028420
-  '\u9913\uDB40\uDD02': '\uED80',  // MJ028421
-  '\u9914\uDB40\uDD02': '\uED81',  // MJ028423
-  '\u9915\uDB40\uDD02': '\uED82',  // MJ028427
-  '\u9916\uDB40\uDD02': '\uED83',  // MJ028428
-  '\u9917\uDB40\uDD02': '\uED84',  // MJ028430
-  '\u9918\uDB40\uDD02': '\uED85',  // MJ028432
-  '\u991A\uDB40\uDD02': '\uED86',  // MJ028434
-  '\u991B\uDB40\uDD02': '\uED87',  // MJ028436
-  '\u991C\uDB40\uDD02': '\uED88',  // MJ028438
-  '\u991D\uDB40\uDD02': '\uED89',  // MJ028440
-  '\u991E\uDB40\uDD02': '\uED8A',  // MJ028443
-  '\u991F\uDB40\uDD02': '\uED8B',  // MJ028445
-  '\u9920\uDB40\uDD02': '\uED8C',  // MJ028447
-  '\u9921\uDB40\uDD02': '\uED8D',  // MJ028450
-  '\u9922\uDB40\uDD02': '\uED8E',  // MJ028452
-  '\u9924\uDB40\uDD02': '\uED8F',  // MJ028456
-  '\u9926\uDB40\uDD02': '\uED90',  // MJ028459
-  '\u9927\uDB40\uDD02': '\uED91',  // MJ028461
-  '\u9928\uDB40\uDD02': '\uED92',  // MJ028464
-  '\u9929\uDB40\uDD02': '\uED93',  // MJ028467
-  '\u992B\uDB40\uDD02': '\uED94',  // MJ028470
-  '\u992C\uDB40\uDD02': '\uED95',  // MJ028472
-  '\u992E\uDB40\uDD02': '\uED96',  // MJ028477
-  '\u9931\uDB40\uDD02': '\uED97',  // MJ028481
-  '\u9932\uDB40\uDD02': '\uED98',  // MJ028483
-  '\u9933\uDB40\uDD02': '\uED99',  // MJ028485
-  '\u9934\uDB40\uDD02': '\uED9A',  // MJ028488
-  '\u9939\uDB40\uDD02': '\uED9B',  // MJ028495
-  '\u993A\uDB40\uDD02': '\uED9C',  // MJ028496
-  '\u993B\uDB40\uDD02': '\uED9D',  // MJ028498
-  '\u993C\uDB40\uDD02': '\uED9E',  // MJ028500
-  '\u993D\uDB40\uDD02': '\uED9F',  // MJ028502
-  '\u993E\uDB40\uDD02': '\uEDA0',  // MJ028504
-  '\u9940\uDB40\uDD02': '\uEDA1',  // MJ028508
-  '\u9941\uDB40\uDD02': '\uEDA2',  // MJ028514
-  '\u9942\uDB40\uDD02': '\uEDA3',  // MJ028516
-  '\u9946\uDB40\uDD02': '\uEDA4',  // MJ028526
-  '\u9947\uDB40\uDD02': '\uEDA5',  // MJ028529
-  '\u9948\uDB40\uDD02': '\uEDA6',  // MJ028532
-  '\u9949\uDB40\uDD02': '\uEDA7',  // MJ028534
-  '\u994B\uDB40\uDD02': '\uEDA8',  // MJ028540
-  '\u994C\uDB40\uDD02': '\uEDA9',  // MJ028541
-  '\u994D\uDB40\uDD02': '\uEDAA',  // MJ028544
-  '\u994E\uDB40\uDD02': '\uEDAB',  // MJ028546
-  '\u9950\uDB40\uDD02': '\uEDAC',  // MJ028549
-  '\u9951\uDB40\uDD02': '\uEDAD',  // MJ028551
-  '\u9952\uDB40\uDD02': '\uEDAE',  // MJ028555
-  '\u9955\uDB40\uDD02': '\uEDAF',  // MJ028561
-  '\u9958\uDB40\uDD02': '\uEDB0',  // MJ028571
-  '\u9959\uDB40\uDD02': '\uEDB1',  // MJ028573
-  '\u995B\uDB40\uDD02': '\uEDB2',  // MJ028580
-  '\u995C\uDB40\uDD02': '\uEDB3',  // MJ028583
-  '\u995E\uDB40\uDD02': '\uEDB4',  // MJ028586
-  '\u995F\uDB40\uDD02': '\uEDB5',  // MJ028589
-  '\u9960\uDB40\uDD02': '\uEDB6',  // MJ028590
-  '\u99B0\uDB40\uDD02': '\uEDB7',  // MJ028624
-  '\u99BA\uDB40\uDD02': '\uEDB8',  // MJ028636
-  '\u99BC\uDB40\uDD02': '\uEDB9',  // MJ028639
-  '\u99C1\uDB40\uDD02': '\uEDBA',  // MJ028644
-  '\u99D0\uDB40\uDD02': '\uEDBB',  // MJ028659
-  '\u99DB\uDB40\uDD02': '\uEDBC',  // MJ028672
-  '\u99ED\uDB40\uDD02': '\uEDBD',  // MJ028693
-  '\u99EE\uDB40\uDD02': '\uEDBE',  // MJ028695
-  '\u99F8\uDB40\uDD02': '\uEDBF',  // MJ028706
-  '\u99FF\uDB40\uDD02': '\uEDC0',  // MJ028713
-  '\u9A19\uDB40\uDD02': '\uEDC1',  // MJ028742
-  '\u9A1E\uDB40\uDD02': '\uEDC2',  // MJ028749
-  '\u9A30\uDB40\uDD02': '\uEDC3',  // MJ028770
-  '\u9A40\uDB40\uDD02': '\uEDC4',  // MJ028787
-  '\u9A41\uDB40\uDD02': '\uEDC5',  // MJ028789
-  '\u9A44\uDB40\uDD02': '\uEDC6',  // MJ028793
-  '\u9A4A\uDB40\uDD02': '\uEDC7',  // MJ028800
-  '\u9A4E\uDB40\uDD02': '\uEDC8',  // MJ028806
-  '\u9A54\uDB40\uDD02': '\uEDC9',  // MJ028813
-  '\u9A56\uDB40\uDD02': '\uEDCA',  // MJ028817
-  '\u9A58\uDB40\uDD02': '\uEDCB',  // MJ028820
-  '\u9A5A\uDB40\uDD02': '\uEDCC',  // MJ028824
-  '\u9A5B\uDB40\uDD02': '\uEDCD',  // MJ028826
-  '\u9A5F\uDB40\uDD02': '\uEDCE',  // MJ028830
-  '\u9A65\uDB40\uDD02': '\uEDCF',  // MJ028837
-  '\u9A69\uDB40\uDD02': '\uEDD0',  // MJ028843
-  '\u9AA8\uDB40\uDD02': '\uEDD1',  // MJ059058
-  '\u9AB8\uDB40\uDD02': '\uEDD2',  // MJ028865
-  '\u9ABE\uDB40\uDD02': '\uEDD3',  // MJ028872
-  '\u9ABF\uDB40\uDD02': '\uEDD4',  // MJ028873
-  '\u9AC8\uDB40\uDD02': '\uEDD5',  // MJ028883
-  '\u9AD2\uDB40\uDD02': '\uEDD6',  // MJ028892
-  '\u9AD3\uDB40\uDD02': '\uEDD7',  // MJ028894
-  '\u9AD6\uDB40\uDD02': '\uEDD8',  // MJ028899
-  '\u9ADF\uDB40\uDD02': '\uEDD9',  // MJ060349
-  '\u9AEE\uDB40\uDD02': '\uEDDA',  // MJ059067
-  '\u9AEF\uDB40\uDD02': '\uEDDB',  // MJ028926
-  '\u9AF1\uDB40\uDD02': '\uEDDC',  // MJ028930
-  '\u9B06\uDB40\uDD02': '\uEDDD',  // MJ028952
-  '\u9B12\uDB40\uDD02': '\uEDDE',  // MJ028964
-  '\u9B18\uDB40\uDD02': '\uEDDF',  // MJ028970
-  '\u9B1B\uDB40\uDD02': '\uEDE0',  // MJ028974
-  '\u9B23\uDB40\uDD02': '\uEDE1',  // MJ028981
-  '\u9B2D\uDB40\uDD02': '\uEDE2',  // MJ028993
-  '\u9B2E\uDB40\uDD02': '\uEDE3',  // MJ028996
-  '\u9B32\uDB40\uDD02': '\uEDE4',  // MJ059076
-  '\u9B3C\uDB40\uDD02': '\uEDE5',  // MJ059079
-  '\u9B43\uDB40\uDD02': '\uEDE6',  // MJ059083
-  '\u9B4D\uDB40\uDD02': '\uEDE7',  // MJ029029
-  '\u9B4F\uDB40\uDD02': '\uEDE8',  // MJ029033
-  '\u9B51\uDB40\uDD02': '\uEDE9',  // MJ029036
-  '\u9B54\uDB40\uDD02': '\uEDEA',  // MJ029040
-  '\u9B75\uDB40\uDD02': '\uEDEB',  // MJ029074
-  '\u9B83\uDB40\uDD02': '\uEDEC',  // MJ029091
-  '\u9B8E\uDB40\uDD02': '\uEDED',  // MJ029103
-  '\u9B91\uDB40\uDD02': '\uEDEE',  // MJ029109
-  '\u9B92\uDB40\uDD02': '\uEDEF',  // MJ029112
-  '\u9B97\uDB40\uDD02': '\uEDF0',  // MJ029119
-  '\u9BA0\uDB40\uDD02': '\uEDF1',  // MJ029129
-  '\u9BAC\uDB40\uDD02': '\uEDF2',  // MJ029145
-  '\u9BB1\uDB40\uDD02': '\uEDF3',  // MJ029153
-  '\u9BB9\uDB40\uDD02': '\uEDF4',  // MJ029161
-  '\u9BBC\uDB40\uDD02': '\uEDF5',  // MJ029166
-  '\u9BC1\uDB40\uDD02': '\uEDF6',  // MJ029172
-  '\u9BC9\uDB40\uDD02': '\uEDF7',  // MJ029181
-  '\u9BCE\uDB40\uDD02': '\uEDF8',  // MJ029186
-  '\u9BD4\uDB40\uDD02': '\uEDF9',  // MJ029192
-  '\u9BD6\uDB40\uDD02': '\uEDFA',  // MJ029195
-  '\u9BDB\uDB40\uDD02': '\uEDFB',  // MJ029202
-  '\u9BE1\uDB40\uDD02': '\uEDFC',  // MJ029209
-  '\u9BE8\uDB40\uDD02': '\uEDFD',  // MJ029218
-  '\u9BEB\uDB40\uDD02': '\uEDFE',  // MJ029222
-  '\u9BF0\uDB40\uDD02': '\uEDFF',  // MJ029227
-  '\u9BF1\uDB40\uDD02': '\uEE00',  // MJ029229
-  '\u9BF2\uDB40\uDD02': '\uEE01',  // MJ029234
-  '\u9BF5\uDB40\uDD02': '\uEE02',  // MJ029237
-  '\u9BFD\uDB40\uDD02': '\uEE03',  // MJ029246
-  '\u9C00\uDB40\uDD02': '\uEE04',  // MJ029250
-  '\u9C04\uDB40\uDD02': '\uEE05',  // MJ029256
-  '\u9C0B\uDB40\uDD02': '\uEE06',  // MJ029264
-  '\u9C0C\uDB40\uDD02': '\uEE07',  // MJ029267
-  '\u9C10\uDB40\uDD02': '\uEE08',  // MJ029273
-  '\u9C19\uDB40\uDD02': '\uEE09',  // MJ029283
-  '\u9C21\uDB40\uDD02': '\uEE0A',  // MJ029294
-  '\u9C22\uDB40\uDD02': '\uEE0B',  // MJ029295
-  '\u9C26\uDB40\uDD02': '\uEE0C',  // MJ029301
-  '\u9C27\uDB40\uDD02': '\uEE0D',  // MJ029303
-  '\u9C2D\uDB40\uDD02': '\uEE0E',  // MJ029310
-  '\u9C2F\uDB40\uDD02': '\uEE0F',  // MJ029313
-  '\u9C30\uDB40\uDD02': '\uEE10',  // MJ029315
-  '\u9C31\uDB40\uDD02': '\uEE11',  // MJ029317
-  '\u9C39\uDB40\uDD02': '\uEE12',  // MJ029326
-  '\u9C3A\uDB40\uDD02': '\uEE13',  // MJ029328
-  '\u9C3B\uDB40\uDD02': '\uEE14',  // MJ029331
-  '\u9C41\uDB40\uDD02': '\uEE15',  // MJ029340
-  '\u9C48\uDB40\uDD02': '\uEE16',  // MJ029348
-  '\u9C4F\uDB40\uDD02': '\uEE17',  // MJ029356
-  '\u9C52\uDB40\uDD02': '\uEE18',  // MJ029361
-  '\u9C57\uDB40\uDD02': '\uEE19',  // MJ029367
-  '\u9C5D\uDB40\uDD02': '\uEE1A',  // MJ029376
-  '\u9C76\uDB40\uDD02': '\uEE1B',  // MJ029404
-  '\u9CE6\uDB40\uDD02': '\uEE1C',  // MJ029412
-  '\u9D07\uDB40\uDD02': '\uEE1D',  // MJ029447
-  '\u9D08\uDB40\uDD02': '\uEE1E',  // MJ029449
-  '\u9D09\uDB40\uDD02': '\uEE1F',  // MJ029452
-  '\u9D2A\uDB40\uDD02': '\uEE20',  // MJ029487
-  '\u9D43\uDB40\uDD02': '\uEE21',  // MJ029514
-  '\u9D47\uDB40\uDD02': '\uEE22',  // MJ029519
-  '\u9D48\uDB40\uDD02': '\uEE23',  // MJ029520
-  '\u9D60\uDB40\uDD02': '\uEE24',  // MJ029548
-  '\u9D65\uDB40\uDD02': '\uEE25',  // MJ029554
-  '\u9D6C\uDB40\uDD02': '\uEE26',  // MJ029563
-  '\u9D70\uDB40\uDD02': '\uEE27',  // MJ029568
-  '\u9D7C\uDB40\uDD02': '\uEE28',  // MJ029581
-  '\u9D84\uDB40\uDD02': '\uEE29',  // MJ029590
-  '\u9D93\uDB40\uDD02': '\uEE2A',  // MJ029605
-  '\u9DA1\uDB40\uDD02': '\uEE2B',  // MJ060360
-  '\u9DB2\uDB40\uDD02': '\uEE2C',  // MJ029637
-  '\u9DB4\uDB40\uDD02': '\uEE2D',  // MJ029640
-  '\u9DB8\uDB40\uDD02': '\uEE2E',  // MJ029646
-  '\u9DB9\uDB40\uDD02': '\uEE2F',  // MJ029648
-  '\u9DBF\uDB40\uDD02': '\uEE30',  // MJ029654
-  '\u9DC0\uDB40\uDD02': '\uEE31',  // MJ029661
-  '\u9DC1\uDB40\uDD02': '\uEE32',  // MJ029664
-  '\u9DC4\uDB40\uDD02': '\uEE33',  // MJ029669
-  '\u9DCA\uDB40\uDD02': '\uEE34',  // MJ029676
-  '\u9DD6\uDB40\uDD02': '\uEE35',  // MJ029689
-  '\u9DD7\uDB40\uDD02': '\uEE36',  // MJ029691
-  '\u9DE3\uDB40\uDD02': '\uEE37',  // MJ029704
-  '\u9DFE\uDB40\uDD02': '\uEE38',  // MJ029733
-  '\u9E1B\uDB40\uDD02': '\uEE39',  // MJ029765
-  '\u9E80\uDB40\uDD02': '\uEE3A',  // MJ029780
-  '\u9E81\uDB40\uDD02': '\uEE3B',  // MJ029782
-  '\u9E8C\uDB40\uDD02': '\uEE3C',  // MJ029794
-  '\u9E8E\uDB40\uDD02': '\uEE3D',  // MJ029796
-  '\u9E97\uDB40\uDD02': '\uEE3E',  // MJ029806
-  '\u9E9E\uDB40\uDD02': '\uEE3F',  // MJ029815
-  '\u9EA8\uDB40\uDD02': '\uEE40',  // MJ029829
-  '\u9EA9\uDB40\uDD02': '\uEE41',  // MJ029831
-  '\u9EAA\uDB40\uDD02': '\uEE42',  // MJ029833
-  '\u9EAC\uDB40\uDD02': '\uEE43',  // MJ029836
-  '\u9EAD\uDB40\uDD02': '\uEE44',  // MJ029837
-  '\u9EAE\uDB40\uDD02': '\uEE45',  // MJ059258
-  '\u9EB0\uDB40\uDD02': '\uEE46',  // MJ029844
-  '\u9EBB\uDB40\uDD02': '\uEE47',  // MJ029855
-  '\u9EBC\uDB40\uDD02': '\uEE48',  // MJ029857
-  '\u9EBD\uDB40\uDD02': '\uEE49',  // MJ029859
-  '\u9EBE\uDB40\uDD02': '\uEE4A',  // MJ029861
-  '\u9EBF\uDB40\uDD02': '\uEE4B',  // MJ029863
-  '\u9EC4\uDB40\uDD02': '\uEE4C',  // MJ059263
-  '\u9EC8\uDB40\uDD02': '\uEE4D',  // MJ029879
-  '\u9ECB\uDB40\uDD02': '\uEE4E',  // MJ029883
-  '\u9ECC\uDB40\uDD02': '\uEE4F',  // MJ029885
-  '\u9ECE\uDB40\uDD02': '\uEE50',  // MJ029889
-  '\u9ED0\uDB40\uDD02': '\uEE51',  // MJ059266
-  '\u9ED4\uDB40\uDD02': '\uEE52',  // MJ029897
-  '\u9ED8\uDB40\uDD02': '\uEE53',  // MJ029902
-  '\u9EDB\uDB40\uDD02': '\uEE54',  // MJ029905
-  '\u9EDC\uDB40\uDD02': '\uEE55',  // MJ029908
-  '\u9EDD\uDB40\uDD02': '\uEE56',  // MJ029910
-  '\u9EDE\uDB40\uDD02': '\uEE57',  // MJ029912
-  '\u9EE0\uDB40\uDD02': '\uEE58',  // MJ029915
-  '\u9EE5\uDB40\uDD02': '\uEE59',  // MJ029920
-  '\u9EE8\uDB40\uDD02': '\uEE5A',  // MJ029924
-  '\u9EEF\uDB40\uDD02': '\uEE5B',  // MJ029930
-  '\u9EF4\uDB40\uDD02': '\uEE5C',  // MJ029938
-  '\u9EF7\uDB40\uDD02': '\uEE5D',  // MJ029942
-  '\u9EF9\uDB40\uDD02': '\uEE5E',  // MJ029945
-  '\u9EFB\uDB40\uDD02': '\uEE5F',  // MJ029948
-  '\u9EFC\uDB40\uDD02': '\uEE60',  // MJ029950
-  '\u9EFD\uDB40\uDD02': '\uEE61',  // MJ029952
-  '\u9F02\uDB40\uDD02': '\uEE62',  // MJ029958
-  '\u9F03\uDB40\uDD02': '\uEE63',  // MJ029960
-  '\u9F07\uDB40\uDD02': '\uEE64',  // MJ029967
-  '\u9F0F\uDB40\uDD02': '\uEE65',  // MJ029978
-  '\u9F10\uDB40\uDD02': '\uEE66',  // MJ029980
-  '\u9F12\uDB40\uDD02': '\uEE67',  // MJ029983
-  '\u9F15\uDB40\uDD02': '\uEE68',  // MJ029987
-  '\u9F16\uDB40\uDD02': '\uEE69',  // MJ029989
-  '\u9F1B\uDB40\uDD02': '\uEE6A',  // MJ029996
-  '\u9F22\uDB40\uDD02': '\uEE6B',  // MJ030005
-  '\u9F2C\uDB40\uDD02': '\uEE6C',  // MJ030019
-  '\u9F31\uDB40\uDD02': '\uEE6D',  // MJ030026
-  '\u9F32\uDB40\uDD02': '\uEE6E',  // MJ030029
-  '\u9F34\uDB40\uDD02': '\uEE6F',  // MJ030032
-  '\u9F39\uDB40\uDD02': '\uEE70',  // MJ030038
-  '\u9F3A\uDB40\uDD02': '\uEE71',  // MJ030040
-  '\u9F3B\uDB40\uDD02': '\uEE72',  // MJ030042
-  '\u9F3E\uDB40\uDD02': '\uEE73',  // MJ030046
-  '\u9F4A\uDB40\uDD02': '\uEE74',  // MJ030059
-  '\u9F4B\uDB40\uDD02': '\uEE75',  // MJ030060
-  '\u9F4E\uDB40\uDD02': '\uEE76',  // MJ030067
-  '\u9F4F\uDB40\uDD02': '\uEE77',  // MJ030070
-  '\u9F56\uDB40\uDD02': '\uEE78',  // MJ030076
-  '\u9F60\uDB40\uDD02': '\uEE79',  // MJ030087
-  '\u9F67\uDB40\uDD02': '\uEE7A',  // MJ030096
-  '\u9F76\uDB40\uDD02': '\uEE7B',  // MJ030114
-  '\u9F90\uDB40\uDD02': '\uEE7C',  // MJ030136
-  '\u9F91\uDB40\uDD02': '\uEE7D',  // MJ030139
-  '\u9F94\uDB40\uDD02': '\uEE7E',  // MJ030144
-  '\u9F95\uDB40\uDD02': '\uEE7F',  // MJ030146
-  '\u9F9C\uDB40\uDD02': '\uEE80',  // MJ030155
-  '\u9F9D\uDB40\uDD02': '\uEE81',  // MJ030160
-  '\uFA0E\uDB40\uDD02': '\uEE82',  // MJ030192
-  '\uFA11\uDB40\uDD02': '\uEE83',  // MJ030196
-  '\uFA13\uDB40\uDD02': '\uEE84',  // MJ030201
-  '\uFA1F\uDB40\uDD02': '\uEE85',  // MJ030219
-  '\uFA24\uDB40\uDD02': '\uEE86',  // MJ030233
-  '\uFA27\uDB40\uDD02': '\uEE87',  // MJ030237
-  '\uD850\uDEEE\uDB40\uDD02': '\uEE88',  // MJ039982
-  '\uD840\uDC00\uDB40\uDD02': '\uEE89',  // MJ056848
-  '\uD840\uDC41\uDB40\uDD02': '\uEE8A',  // MJ030346
-  '\uD840\uDCA2\uDB40\uDD02': '\uEE8B',  // MJ030386
-  '\uD840\uDF2B\uDB40\uDD02': '\uEE8C',  // MJ030741
-  '\uD840\uDFF9\uDB40\uDD02': '\uEE8D',  // MJ056954
-  '\uD841\uDD09\uDB40\uDD02': '\uEE8E',  // MJ030983
-  '\uD841\uDD25\uDB40\uDD02': '\uEE8F',  // MJ056997
-  '\uD841\uDD4B\uDB40\uDD02': '\uEE90',  // MJ057003
-  '\uD842\uDC07\uDB40\uDD02': '\uEE91',  // MJ031474
-  '\uD842\uDD84\uDB40\uDD02': '\uEE92',  // MJ031729
-  '\uD842\uDED3\uDB40\uDD02': '\uEE93',  // MJ031959
-  '\uD843\uDD45\uDB40\uDD02': '\uEE94',  // MJ032335
-  '\uD844\uDE74\uDB40\uDD02': '\uEE95',  // MJ032960
-  '\uD844\uDF1B\uDB40\uDD02': '\uEE96',  // MJ033043
-  '\uD845\uDC6D\uDB40\uDD02': '\uEE97',  // MJ033204
-  '\uD845\uDF06\uDB40\uDD02': '\uEE98',  // MJ033578
-  '\uD846\uDE0B\uDB40\uDD02': '\uEE99',  // MJ057337
-  '\uD847\uDDA1\uDB40\uDD02': '\uEE9A',  // MJ034542
-  '\uD847\uDF76\uDB40\uDD02': '\uEE9B',  // MJ034826
-  '\uD847\uDFEE\uDB40\uDD02': '\uEE9C',  // MJ034911
-  '\uD848\uDF31\uDB40\uDD02': '\uEE9D',  // MJ035485
-  '\uD84B\uDC1D\uDB40\uDD02': '\uEE9E',  // MJ036910
-  '\uD84C\uDFD2\uDB40\uDD02': '\uEE9F',  // MJ037938
-  '\uD84D\uDD5A\uDB40\uDD02': '\uEEA0',  // MJ038133
-  '\uD84D\uDDC4\uDB40\uDD02': '\uEEA1',  // MJ038173
-  '\uD84D\uDE38\uDB40\uDD02': '\uEEA2',  // MJ038222
-  '\uD84D\uDF1C\uDB40\uDD02': '\uEEA3',  // MJ038319
-  '\uD84D\uDF3F\uDB40\uDD02': '\uEEA4',  // MJ038333
-  '\uD84D\uDF64\uDB40\uDD02': '\uEEA5',  // MJ057856
-  '\uD84D\uDFE7\uDB40\uDD02': '\uEEA6',  // MJ038419
-  '\uD84E\uDD69\uDB40\uDD02': '\uEEA7',  // MJ057894
-  '\uD84F\uDC75\uDB40\uDD02': '\uEEA8',  // MJ039190
-  '\uD84F\uDCFE\uDB40\uDD02': '\uEEA9',  // MJ059775
-  '\uD84F\uDDF9\uDB40\uDD02': '\uEEAA',  // MJ039399
-  '\uD84F\uDF1B\uDB40\uDD02': '\uEEAB',  // MJ059817
-  '\uD850\uDE85\uDB40\uDD02': '\uEEAC',  // MJ059860
-  '\uD850\uDFC1\uDB40\uDD02': '\uEEAD',  // MJ059875
-  '\uD853\uDC1E\uDB40\uDD02': '\uEEAE',  // MJ041343
-  '\uD853\uDC83\uDB40\uDD02': '\uEEAF',  // MJ058099
-  '\uD854\uDD02\uDB40\uDD02': '\uEEB0',  // MJ042188
-  '\uD854\uDE4C\uDB40\uDD02': '\uEEB1',  // MJ042409
-  '\uD855\uDE6E\uDB40\uDD02': '\uEEB2',  // MJ043009
-  '\uD855\uDEC6\uDB40\uDD02': '\uEEB3',  // MJ043037
-  '\uD855\uDFA9\uDB40\uDD02': '\uEEB4',  // MJ043174
-  '\uD855\uDFB4\uDB40\uDD02': '\uEEB5',  // MJ043183
-  '\uD857\uDC4B\uDB40\uDD02': '\uEEB6',  // MJ060022
-  '\uD858\uDE22\uDB40\uDD02': '\uEEB7',  // MJ044772
-  '\uD858\uDFC1\uDB40\uDD02': '\uEEB8',  // MJ045050
-  '\uD85A\uDF20\uDB40\uDD02': '\uEEB9',  // MJ046314
-  '\uD85B\uDC29\uDB40\uDD02': '\uEEBA',  // MJ057282
-  '\uD85B\uDC73\uDB40\uDD02': '\uEEBB',  // MJ046536
-  '\uD85B\uDCDD\uDB40\uDD02': '\uEEBC',  // MJ046586
-  '\uD85B\uDE40\uDB40\uDD02': '\uEEBD',  // MJ046815
-  '\uD85B\uDF2F\uDB40\uDD02': '\uEEBE',  // MJ046956
-  '\uD85B\uDF94\uDB40\uDD02': '\uEEBF',  // MJ047031
-  '\uD85B\uDFF8\uDB40\uDD02': '\uEEC0',  // MJ068087
-  '\uD85C\uDCF4\uDB40\uDD02': '\uEEC1',  // MJ047258
-  '\uD85C\uDD0D\uDB40\uDD02': '\uEEC2',  // MJ047265
-  '\uD85C\uDD39\uDB40\uDD02': '\uEEC3',  // MJ047296
-  '\uD85C\uDFFE\uDB40\uDD02': '\uEEC4',  // MJ047791
-  '\uD861\uDC55\uDB40\uDD02': '\uEEC5',  // MJ050779
-  '\uD861\uDCE4\uDB40\uDD02': '\uEEC6',  // MJ050890
-  '\uD861\uDD6B\uDB40\uDD02': '\uEEC7',  // MJ050990
-  '\uD861\uDDC9\uDB40\uDD02': '\uEEC8',  // MJ051060
-  '\uD861\uDE59\uDB40\uDD02': '\uEEC9',  // MJ058876
-  '\uD861\uDE5A\uDB40\uDD02': '\uEECA',  // MJ051169
-  '\uD861\uDE5F\uDB40\uDD02': '\uEECB',  // MJ051174
-  '\uD862\uDE71\uDB40\uDD02': '\uEECC',  // MJ051828
-  '\uD862\uDFEF\uDB40\uDD02': '\uEECD',  // MJ051960
-  '\uD865\uDF0F\uDB40\uDD02': '\uEECE',  // MJ053990
-  '\uD865\uDF19\uDB40\uDD02': '\uEECF',  // MJ054002
-  '\uD865\uDF2F\uDB40\uDD02': '\uEED0',  // MJ059044
-  '\uD865\uDF34\uDB40\uDD02': '\uEED1',  // MJ054016
-  '\uD865\uDFAB\uDB40\uDD02': '\uEED2',  // MJ054114
-  '\uD865\uDFAD\uDB40\uDD02': '\uEED3',  // MJ054118
-  '\uD867\uDE3D\uDB40\uDD02': '\uEED4',  // MJ055217
-  '\uD867\uDE8A\uDB40\uDD02': '\uEED5',  // MJ055264
-  '\uD867\uDEDB\uDB40\uDD02': '\uEED6',  // MJ055300
-  '\uD868\uDC2F\uDB40\uDD02': '\uEED7',  // MJ055514
-  '\uD868\uDCF9\uDB40\uDD02': '\uEED8',  // MJ055659
-  '\uD869\uDD02\uDB40\uDD02': '\uEED9',  // MJ056431
-  '\uD86D\uDF42\uDB40\uDD02': '\uEEDA',  // MJ056836
-  '\uD873\uDF4C\uDB40\uDD02': '\uEEDB',  // MJ056894
-  '\uD86D\uDF46\uDB40\uDD02': '\uEEDC',  // MJ059340
-  '\uD874\uDC6F\uDB40\uDD02': '\uEEDD',  // MJ057019
-  '\uD874\uDC77\uDB40\uDD02': '\uEEDE',  // MJ057029
-  '\uD86D\uDF51\uDB40\uDD02': '\uEEDF',  // MJ060385
-  '\uD86D\uDF62\uDB40\uDD02': '\uEEE0',  // MJ057262
-  '\uD86D\uDF63\uDB40\uDD02': '\uEEE1',  // MJ057266
-  '\uD875\uDE4C\uDB40\uDD02': '\uEEE2',  // MJ057435
-  '\uD86D\uDF77\uDB40\uDD02': '\uEEE3',  // MJ057445
-  '\uD86D\uDF76\uDB40\uDD02': '\uEEE4',  // MJ059555
-  '\uD875\uDEB6\uDB40\uDD02': '\uEEE5',  // MJ059575
-  '\uD86D\uDF89\uDB40\uDD02': '\uEEE6',  // MJ059715
-  '\uD86D\uDF8E\uDB40\uDD02': '\uEEE7',  // MJ059735
-  '\uD86D\uDF93\uDB40\uDD02': '\uEEE8',  // MJ059759
-  '\uD877\uDEBE\uDB40\uDD02': '\uEEE9',  // MJ058094
-  '\uD86D\uDFB9\uDB40\uDD02': '\uEEEA',  // MJ058241
-  '\uD874\uDC48\uDB40\uDD02': '\uEEEB',  // MJ059342
-  '\uD878\uDFB0\uDB40\uDD02': '\uEEEC',  // MJ060102
-  '\uD871\uDF3B\uDB40\uDD02': '\uEEED',  // MJ060112
-  '\uD86D\uDFD2\uDB40\uDD02': '\uEEEE',  // MJ058495
-  '\uD86D\uDFD8\uDB40\uDD02': '\uEEEF',  // MJ060164
-  '\uD86D\uDFEA\uDB40\uDD02': '\uEEF0',  // MJ058869
-  '\uD86E\uDD30\uDB40\uDD02': '\uEEF1',  // MJ059349
-  '\uD86E\uDDE4\uDB40\uDD02': '\uEEF2',  // MJ059401
-  '\uD874\uDE60\uDB40\uDD02': '\uEEF3',  // MJ059430
-  '\uD877\uDCD3\uDB40\uDD02': '\uEEF4',  // MJ059845
-  '\uD87A\uDE41\uDB40\uDD02': '\uEEF5',  // MJ068100
-  '\u3404\uDB40\uDD01': '\uEEF6',  // MJ000007
-  '\u342A\uDB40\uDD01': '\uEEF7',  // MJ000023
-  '\u342C\uDB40\uDD01': '\uEEF8',  // MJ000025
-  '\u342E\uDB40\uDD01': '\uEEF9',  // MJ000027
-  '\u3436\uDB40\uDD01': '\uEEFA',  // MJ000037
-  '\u3441\uDB40\uDD01': '\uEEFB',  // MJ000046
-  '\u3442\uDB40\uDD01': '\uEEFC',  // MJ000048
-  '\u3464\uDB40\uDD01': '\uEEFD',  // MJ000073
-  '\u3479\uDB40\uDD01': '\uEEFE',  // MJ013511
-  '\u348A\uDB40\uDD01': '\uEEFF',  // MJ000105
-  '\u34A7\uDB40\uDD01': '\uEF00',  // MJ000130
-  '\u34B8\uDB40\uDD01': '\uEF01',  // MJ000144
-  '\u34B9\uDB40\uDD01': '\uEF02',  // MJ000145
-  '\u34BC\uDB40\uDD01': '\uEF03',  // MJ000150
-  '\u34C3\uDB40\uDD01': '\uEF04',  // MJ000157
-  '\u34D7\uDB40\uDD01': '\uEF05',  // MJ000176
-  '\u34F5\uDB40\uDD01': '\uEF06',  // MJ000207
-  '\u34F6\uDB40\uDD01': '\uEF07',  // MJ000209
-  '\u351C\uDB40\uDD01': '\uEF08',  // MJ000241
-  '\u351F\uDB40\uDD01': '\uEF09',  // MJ000245
-  '\u3530\uDB40\uDD01': '\uEF0A',  // MJ000264
-  '\u3531\uDB40\uDD01': '\uEF0B',  // MJ000267
-  '\u3534\uDB40\uDD01': '\uEF0C',  // MJ000270
-  '\u353A\uDB40\uDD01': '\uEF0D',  // MJ000277
-  '\u3553\uDB40\uDD01': '\uEF0E',  // MJ000302
-  '\u355B\uDB40\uDD01': '\uEF0F',  // MJ000310
-  '\u355C\uDB40\uDD01': '\uEF10',  // MJ000312
-  '\u3561\uDB40\uDD01': '\uEF11',  // MJ000318
-  '\u356F\uDB40\uDD01': '\uEF12',  // MJ000333
-  '\u35B6\uDB40\uDD01': '\uEF13',  // MJ000380
-  '\u35D4\uDB40\uDD01': '\uEF14',  // MJ000406
-  '\u35D6\uDB40\uDD01': '\uEF15',  // MJ000409
-  '\u35F4\uDB40\uDD01': '\uEF16',  // MJ000433
-  '\u35FB\uDB40\uDD01': '\uEF17',  // MJ000436
-  '\u361D\uDB40\uDD01': '\uEF18',  // MJ000463
-  '\u3634\uDB40\uDD01': '\uEF19',  // MJ000486
-  '\u3644\uDB40\uDD01': '\uEF1A',  // MJ000500
-  '\u365B\uDB40\uDD01': '\uEF1B',  // MJ000520
-  '\u3687\uDB40\uDD01': '\uEF1C',  // MJ000557
-  '\u3688\uDB40\uDD01': '\uEF1D',  // MJ057261
-  '\u3689\uDB40\uDD01': '\uEF1E',  // MJ000559
-  '\u3691\uDB40\uDD01': '\uEF1F',  // MJ000568
-  '\u36A2\uDB40\uDD01': '\uEF20',  // MJ000584
-  '\u36EE\uDB40\uDD01': '\uEF21',  // MJ000649
-  '\u36FA\uDB40\uDD01': '\uEF22',  // MJ000661
-  '\u36FC\uDB40\uDD01': '\uEF23',  // MJ000664
-  '\u3732\uDB40\uDD01': '\uEF24',  // MJ000712
-  '\u3778\uDB40\uDD01': '\uEF25',  // MJ000778
-  '\u37B7\uDB40\uDD01': '\uEF26',  // MJ000835
-  '\u37D0\uDB40\uDD01': '\uEF27',  // MJ000860
-  '\u37DF\uDB40\uDD01': '\uEF28',  // MJ000874
-  '\u37E7\uDB40\uDD01': '\uEF29',  // MJ000880
-  '\u3809\uDB40\uDD01': '\uEF2A',  // MJ000911
-  '\u3815\uDB40\uDD01': '\uEF2B',  // MJ000924
-  '\u3817\uDB40\uDD01': '\uEF2C',  // MJ000927
-  '\u382F\uDB40\uDD01': '\uEF2D',  // MJ000946
-  '\u3836\uDB40\uDD01': '\uEF2E',  // MJ000951
-  '\u384C\uDB40\uDD01': '\uEF2F',  // MJ000974
-  '\u385B\uDB40\uDD01': '\uEF30',  // MJ000989
-  '\u3862\uDB40\uDD01': '\uEF31',  // MJ000997
-  '\u386D\uDB40\uDD01': '\uEF32',  // MJ001008
-  '\u38A2\uDB40\uDD01': '\uEF33',  // MJ001059
-  '\u38A3\uDB40\uDD01': '\uEF34',  // MJ001061
-  '\u38B4\uDB40\uDD01': '\uEF35',  // MJ001076
-  '\u38C7\uDB40\uDD01': '\uEF36',  // MJ001093
-  '\u38FA\uDB40\uDD01': '\uEF37',  // MJ001132
-  '\u38FC\uDB40\uDD01': '\uEF38',  // MJ001136
-  '\u3905\uDB40\uDD01': '\uEF39',  // MJ001145
-  '\u3917\uDB40\uDD01': '\uEF3A',  // MJ001164
-  '\u393A\uDB40\uDD01': '\uEF3B',  // MJ001198
-  '\u396F\uDB40\uDD01': '\uEF3C',  // MJ001247
-  '\u3971\uDB40\uDD01': '\uEF3D',  // MJ001251
-  '\u39A2\uDB40\uDD01': '\uEF3E',  // MJ001298
-  '\u39AE\uDB40\uDD01': '\uEF3F',  // MJ057537
-  '\u39B6\uDB40\uDD01': '\uEF40',  // MJ001322
-  '\u39B8\uDB40\uDD01': '\uEF41',  // MJ001325
-  '\u39DE\uDB40\uDD01': '\uEF42',  // MJ001357
-  '\u3A17\uDB40\uDD01': '\uEF43',  // MJ001408
-  '\u3A2F\uDB40\uDD01': '\uEF44',  // MJ001430
-  '\u3A3E\uDB40\uDD01': '\uEF45',  // MJ057568
-  '\u3A3F\uDB40\uDD01': '\uEF46',  // MJ001447
-  '\u3A6E\uDB40\uDD01': '\uEF47',  // MJ001487
-  '\u3A9C\uDB40\uDD01': '\uEF48',  // MJ057606
-  '\u3AA4\uDB40\uDD01': '\uEF49',  // MJ001536
-  '\u3AC4\uDB40\uDD01': '\uEF4A',  // MJ001566
-  '\u3AE6\uDB40\uDD01': '\uEF4B',  // MJ001594
-  '\u3AF4\uDB40\uDD01': '\uEF4C',  // MJ001609
-  '\u3AF7\uDB40\uDD01': '\uEF4D',  // MJ001612
-  '\u3B08\uDB40\uDD01': '\uEF4E',  // MJ001628
-  '\u3B0A\uDB40\uDD01': '\uEF4F',  // MJ001631
-  '\u3B1D\uDB40\uDD01': '\uEF50',  // MJ001650
-  '\u3B26\uDB40\uDD01': '\uEF51',  // MJ001658
-  '\u3B27\uDB40\uDD01': '\uEF52',  // MJ001661
-  '\u3B3C\uDB40\uDD01': '\uEF53',  // MJ001682
-  '\u3B52\uDB40\uDD01': '\uEF54',  // MJ057714
-  '\u3B74\uDB40\uDD01': '\uEF55',  // MJ001727
-  '\u3B78\uDB40\uDD01': '\uEF56',  // MJ001729
-  '\u3BAE\uDB40\uDD01': '\uEF57',  // MJ057785
-  '\u3BB5\uDB40\uDD01': '\uEF58',  // MJ001791
-  '\u3BB8\uDB40\uDD01': '\uEF59',  // MJ001796
-  '\u3BCD\uDB40\uDD01': '\uEF5A',  // MJ001814
-  '\u3BEC\uDB40\uDD01': '\uEF5B',  // MJ001841
-  '\u3BF3\uDB40\uDD01': '\uEF5C',  // MJ001848
-  '\u3BFE\uDB40\uDD01': '\uEF5D',  // MJ001854
-  '\u3C05\uDB40\uDD01': '\uEF5E',  // MJ001862
-  '\u3C0D\uDB40\uDD01': '\uEF5F',  // MJ001871
-  '\u3C4E\uDB40\uDD01': '\uEF60',  // MJ001936
-  '\u3C4F\uDB40\uDD01': '\uEF61',  // MJ057890
-  '\u3C8A\uDB40\uDD01': '\uEF62',  // MJ001991
-  '\u3CDF\uDB40\uDD01': '\uEF63',  // MJ002066
-  '\u3CE4\uDB40\uDD01': '\uEF64',  // MJ002068
-  '\u3D00\uDB40\uDD01': '\uEF65',  // MJ002094
-  '\u3D04\uDB40\uDD01': '\uEF66',  // MJ002098
-  '\u3D1B\uDB40\uDD01': '\uEF67',  // MJ002119
-  '\u3D1E\uDB40\uDD01': '\uEF68',  // MJ002123
-  '\u3D31\uDB40\uDD01': '\uEF69',  // MJ002139
-  '\u3D5D\uDB40\uDD01': '\uEF6A',  // MJ002177
-  '\u3D67\uDB40\uDD01': '\uEF6B',  // MJ002188
-  '\u3D7E\uDB40\uDD01': '\uEF6C',  // MJ002214
-  '\u3D80\uDB40\uDD01': '\uEF6D',  // MJ002217
-  '\u3D93\uDB40\uDD01': '\uEF6E',  // MJ002230
-  '\u3DB3\uDB40\uDD01': '\uEF6F',  // MJ057991
-  '\u3DC0\uDB40\uDD01': '\uEF70',  // MJ002269
-  '\u3DD4\uDB40\uDD01': '\uEF71',  // MJ002287
-  '\u3DDF\uDB40\uDD01': '\uEF72',  // MJ002293
-  '\u3DED\uDB40\uDD01': '\uEF73',  // MJ002305
-  '\u3DF1\uDB40\uDD01': '\uEF74',  // MJ058003
-  '\u3E02\uDB40\uDD01': '\uEF75',  // MJ002324
-  '\u3E0F\uDB40\uDD01': '\uEF76',  // MJ002336
-  '\u3E37\uDB40\uDD01': '\uEF77',  // MJ002375
-  '\u3E83\uDB40\uDD01': '\uEF78',  // MJ002447
-  '\u3E9A\uDB40\uDD01': '\uEF79',  // MJ002468
-  '\u3EE8\uDB40\uDD01': '\uEF7A',  // MJ059908
-  '\u3F0B\uDB40\uDD01': '\uEF7B',  // MJ002550
-  '\u3F1B\uDB40\uDD01': '\uEF7C',  // MJ002568
-  '\u3FC2\uDB40\uDD01': '\uEF7D',  // MJ002722
-  '\u3FCA\uDB40\uDD01': '\uEF7E',  // MJ002731
-  '\u3FDF\uDB40\uDD01': '\uEF7F',  // MJ002749
-  '\u3FFC\uDB40\uDD01': '\uEF80',  // MJ002781
-  '\u4018\uDB40\uDD01': '\uEF81',  // MJ002808
-  '\u4048\uDB40\uDD01': '\uEF82',  // MJ002855
-  '\u404F\uDB40\uDD01': '\uEF83',  // MJ002864
-  '\u4050\uDB40\uDD01': '\uEF84',  // MJ002866
-  '\u4071\uDB40\uDD01': '\uEF85',  // MJ059940
-  '\u407E\uDB40\uDD01': '\uEF86',  // MJ002911
-  '\u4096\uDB40\uDD01': '\uEF87',  // MJ002934
-  '\u40AE\uDB40\uDD01': '\uEF88',  // MJ002961
-  '\u40CD\uDB40\uDD01': '\uEF89',  // MJ002985
-  '\u40FD\uDB40\uDD01': '\uEF8A',  // MJ003031
-  '\u40FE\uDB40\uDD01': '\uEF8B',  // MJ003033
-  '\u4102\uDB40\uDD01': '\uEF8C',  // MJ003039
-  '\u4103\uDB40\uDD01': '\uEF8D',  // MJ003040
-  '\u4104\uDB40\uDD01': '\uEF8E',  // MJ003042
-  '\u4105\uDB40\uDD01': '\uEF8F',  // MJ003044
-  '\u4107\uDB40\uDD01': '\uEF90',  // MJ003050
-  '\u410D\uDB40\uDD01': '\uEF91',  // MJ003056
-  '\u410F\uDB40\uDD01': '\uEF92',  // MJ003059
-  '\u4112\uDB40\uDD01': '\uEF93',  // MJ003063
-  '\u4120\uDB40\uDD01': '\uEF94',  // MJ003077
-  '\u412A\uDB40\uDD01': '\uEF95',  // MJ003087
-  '\u412F\uDB40\uDD01': '\uEF96',  // MJ003094
-  '\u4146\uDB40\uDD01': '\uEF97',  // MJ003113
-  '\u4148\uDB40\uDD01': '\uEF98',  // MJ003117
-  '\u4165\uDB40\uDD01': '\uEF99',  // MJ003147
-  '\u4183\uDB40\uDD01': '\uEF9A',  // MJ003177
-  '\u4192\uDB40\uDD01': '\uEF9B',  // MJ003191
-  '\u41B3\uDB40\uDD01': '\uEF9C',  // MJ003225
-  '\u41D2\uDB40\uDD01': '\uEF9D',  // MJ003257
-  '\u41F1\uDB40\uDD01': '\uEF9E',  // MJ003289
-  '\u4227\uDB40\uDD01': '\uEF9F',  // MJ003345
-  '\u422A\uDB40\uDD01': '\uEFA0',  // MJ003348
-  '\u4275\uDB40\uDD01': '\uEFA1',  // MJ003425
-  '\u42B8\uDB40\uDD01': '\uEFA2',  // MJ003497
-  '\u42C6\uDB40\uDD01': '\uEFA3',  // MJ003510
-  '\u42E3\uDB40\uDD01': '\uEFA4',  // MJ003542
-  '\u4301\uDB40\uDD01': '\uEFA5',  // MJ003572
-  '\u4313\uDB40\uDD01': '\uEFA6',  // MJ003589
-  '\u4334\uDB40\uDD01': '\uEFA7',  // MJ003624
-  '\u4343\uDB40\uDD01': '\uEFA8',  // MJ003627
-  '\u4359\uDB40\uDD01': '\uEFA9',  // MJ003650
-  '\u43A9\uDB40\uDD01': '\uEFAA',  // MJ003729
-  '\u43CA\uDB40\uDD01': '\uEFAB',  // MJ003763
-  '\u43D5\uDB40\uDD01': '\uEFAC',  // MJ003776
-  '\u43D9\uDB40\uDD01': '\uEFAD',  // MJ003783
-  '\u43E2\uDB40\uDD01': '\uEFAE',  // MJ003792
-  '\u43F0\uDB40\uDD01': '\uEFAF',  // MJ003807
-  '\u440B\uDB40\uDD01': '\uEFB0',  // MJ003834
-  '\u440C\uDB40\uDD01': '\uEFB1',  // MJ003836
-  '\u446B\uDB40\uDD01': '\uEFB2',  // MJ003928
-  '\u4494\uDB40\uDD01': '\uEFB3',  // MJ003966
-  '\u44A2\uDB40\uDD01': '\uEFB4',  // MJ003981
-  '\u44A9\uDB40\uDD01': '\uEFB5',  // MJ003990
-  '\u44AB\uDB40\uDD01': '\uEFB6',  // MJ003993
-  '\u44B1\uDB40\uDD01': '\uEFB7',  // MJ003998
-  '\u44B3\uDB40\uDD01': '\uEFB8',  // MJ004000
-  '\u44B6\uDB40\uDD01': '\uEFB9',  // MJ004005
-  '\u44B9\uDB40\uDD01': '\uEFBA',  // MJ004008
-  '\u44BE\uDB40\uDD01': '\uEFBB',  // MJ004018
-  '\u44C1\uDB40\uDD01': '\uEFBC',  // MJ004020
-  '\u44CC\uDB40\uDD01': '\uEFBD',  // MJ004035
-  '\u44D0\uDB40\uDD01': '\uEFBE',  // MJ004040
-  '\u44D3\uDB40\uDD01': '\uEFBF',  // MJ004044
-  '\u44D4\uDB40\uDD01': '\uEFC0',  // MJ004045
-  '\u44E6\uDB40\uDD01': '\uEFC1',  // MJ004065
-  '\u44F2\uDB40\uDD01': '\uEFC2',  // MJ004073
-  '\u44F5\uDB40\uDD01': '\uEFC3',  // MJ004078
-  '\u44FA\uDB40\uDD01': '\uEFC4',  // MJ004085
-  '\u4506\uDB40\uDD01': '\uEFC5',  // MJ004098
-  '\u4508\uDB40\uDD01': '\uEFC6',  // MJ004100
-  '\u450A\uDB40\uDD01': '\uEFC7',  // MJ004104
-  '\u450F\uDB40\uDD01': '\uEFC8',  // MJ004109
-  '\u4524\uDB40\uDD01': '\uEFC9',  // MJ004132
-  '\u4525\uDB40\uDD01': '\uEFCA',  // MJ004133
-  '\u4535\uDB40\uDD01': '\uEFCB',  // MJ004149
-  '\u453B\uDB40\uDD01': '\uEFCC',  // MJ004156
-  '\u453C\uDB40\uDD01': '\uEFCD',  // MJ004158
-  '\u4543\uDB40\uDD01': '\uEFCE',  // MJ004166
-  '\u454C\uDB40\uDD01': '\uEFCF',  // MJ004176
-  '\u455E\uDB40\uDD01': '\uEFD0',  // MJ004198
-  '\u4572\uDB40\uDD01': '\uEFD1',  // MJ004221
-  '\u4576\uDB40\uDD01': '\uEFD2',  // MJ004225
-  '\u457A\uDB40\uDD01': '\uEFD3',  // MJ004230
-  '\u457E\uDB40\uDD01': '\uEFD4',  // MJ004236
-  '\u4587\uDB40\uDD01': '\uEFD5',  // MJ004245
-  '\u458D\uDB40\uDD01': '\uEFD6',  // MJ004252
-  '\u458E\uDB40\uDD01': '\uEFD7',  // MJ004256
-  '\u459D\uDB40\uDD01': '\uEFD8',  // MJ004277
-  '\u459F\uDB40\uDD01': '\uEFD9',  // MJ004280
-  '\u45C8\uDB40\uDD01': '\uEFDA',  // MJ004320
-  '\u45CE\uDB40\uDD01': '\uEFDB',  // MJ004327
-  '\u45CF\uDB40\uDD01': '\uEFDC',  // MJ058641
-  '\u45D7\uDB40\uDD01': '\uEFDD',  // MJ004336
-  '\u45E6\uDB40\uDD01': '\uEFDE',  // MJ004351
-  '\u460D\uDB40\uDD01': '\uEFDF',  // MJ004388
-  '\u4638\uDB40\uDD01': '\uEFE0',  // MJ004427
-  '\u4645\uDB40\uDD01': '\uEFE1',  // MJ058700
-  '\u465C\uDB40\uDD01': '\uEFE2',  // MJ004458
-  '\u465D\uDB40\uDD01': '\uEFE3',  // MJ004461
-  '\u4670\uDB40\uDD01': '\uEFE4',  // MJ004479
-  '\u4672\uDB40\uDD01': '\uEFE5',  // MJ004483
-  '\u4674\uDB40\uDD01': '\uEFE6',  // MJ004487
-  '\u46AC\uDB40\uDD01': '\uEFE7',  // MJ004540
-  '\u46B0\uDB40\uDD01': '\uEFE8',  // MJ004545
-  '\u4704\uDB40\uDD01': '\uEFE9',  // MJ004628
-  '\u470C\uDB40\uDD01': '\uEFEA',  // MJ004636
-  '\u471A\uDB40\uDD01': '\uEFEB',  // MJ004648
-  '\u471F\uDB40\uDD01': '\uEFEC',  // MJ004654
-  '\u4722\uDB40\uDD01': '\uEFED',  // MJ004659
-  '\u475F\uDB40\uDD01': '\uEFEE',  // MJ004712
-  '\u4768\uDB40\uDD01': '\uEFEF',  // MJ004722
-  '\u477C\uDB40\uDD01': '\uEFF0',  // MJ004742
-  '\u47E6\uDB40\uDD01': '\uEFF1',  // MJ004840
-  '\u484E\uDB40\uDD01': '\uEFF2',  // MJ004939
-  '\u4871\uDB40\uDD01': '\uEFF3',  // MJ004975
-  '\u4875\uDB40\uDD01': '\uEFF4',  // MJ004980
-  '\u4889\uDB40\uDD01': '\uEFF5',  // MJ004994
-  '\u488B\uDB40\uDD01': '\uEFF6',  // MJ058841
-  '\u488C\uDB40\uDD01': '\uEFF7',  // MJ004998
-  '\u4890\uDB40\uDD01': '\uEFF8',  // MJ005002
-  '\u4894\uDB40\uDD01': '\uEFF9',  // MJ005008
-  '\u48A6\uDB40\uDD01': '\uEFFA',  // MJ005029
-  '\u48AB\uDB40\uDD01': '\uEFFB',  // MJ005035
-  '\u48B0\uDB40\uDD01': '\uEFFC',  // MJ005041
-  '\u48D0\uDB40\uDD01': '\uEFFD',  // MJ005073
-  '\u493F\uDB40\uDD01': '\uEFFE',  // MJ005180
-  '\u494E\uDB40\uDD01': '\uEFFF',  // MJ005197
-  '\u496C\uDB40\uDD01': '\uF000',  // MJ005226
-  '\u4995\uDB40\uDD01': '\uF001',  // MJ005253
-  '\u49A8\uDB40\uDD01': '\uF002',  // MJ005273
-  '\u49E2\uDB40\uDD01': '\uF003',  // MJ005323
-  '\u4A22\uDB40\uDD01': '\uF004',  // MJ005385
-  '\u4A24\uDB40\uDD01': '\uF005',  // MJ005387
-  '\u4A28\uDB40\uDD01': '\uF006',  // MJ005391
-  '\u4A3C\uDB40\uDD01': '\uF007',  // MJ005412
-  '\u4A7F\uDB40\uDD01': '\uF008',  // MJ059013
-  '\u4A9D\uDB40\uDD01': '\uF009',  // MJ068057
-  '\u4AA7\uDB40\uDD01': '\uF00A',  // MJ005516
-  '\u4AAB\uDB40\uDD01': '\uF00B',  // MJ005521
-  '\u4AB4\uDB40\uDD01': '\uF00C',  // MJ005531
-  '\u4AB5\uDB40\uDD01': '\uF00D',  // MJ005532
-  '\u4ADD\uDB40\uDD01': '\uF00E',  // MJ005573
-  '\u4B12\uDB40\uDD01': '\uF00F',  // MJ059037
-  '\u4B13\uDB40\uDD01': '\uF010',  // MJ005626
-  '\u4B19\uDB40\uDD01': '\uF011',  // MJ005633
-  '\u4B1F\uDB40\uDD01': '\uF012',  // MJ005640
-  '\u4B22\uDB40\uDD01': '\uF013',  // MJ005643
-  '\u4B2A\uDB40\uDD01': '\uF014',  // MJ005652
-  '\u4B2E\uDB40\uDD01': '\uF015',  // MJ005657
-  '\u4B33\uDB40\uDD01': '\uF016',  // MJ005664
-  '\u4B34\uDB40\uDD01': '\uF017',  // MJ005666
-  '\u4B39\uDB40\uDD01': '\uF018',  // MJ005672
-  '\u4B3B\uDB40\uDD01': '\uF019',  // MJ005675
-  '\u4B3C\uDB40\uDD01': '\uF01A',  // MJ005677
-  '\u4B40\uDB40\uDD01': '\uF01B',  // MJ005682
-  '\u4B43\uDB40\uDD01': '\uF01C',  // MJ005687
-  '\u4B45\uDB40\uDD01': '\uF01D',  // MJ005690
-  '\u4B47\uDB40\uDD01': '\uF01E',  // MJ005693
-  '\u4B49\uDB40\uDD01': '\uF01F',  // MJ005696
-  '\u4B4B\uDB40\uDD01': '\uF020',  // MJ005699
-  '\u4B50\uDB40\uDD01': '\uF021',  // MJ005704
-  '\u4B51\uDB40\uDD01': '\uF022',  // MJ005706
-  '\u4B52\uDB40\uDD01': '\uF023',  // MJ005708
-  '\u4B54\uDB40\uDD01': '\uF024',  // MJ005711
-  '\u4B61\uDB40\uDD01': '\uF025',  // MJ005724
-  '\u4B63\uDB40\uDD01': '\uF026',  // MJ005727
-  '\u4B68\uDB40\uDD01': '\uF027',  // MJ005733
-  '\u4B69\uDB40\uDD01': '\uF028',  // MJ005735
-  '\u4BEC\uDB40\uDD01': '\uF029',  // MJ005862
-  '\u4C17\uDB40\uDD01': '\uF02A',  // MJ005901
-  '\u4C50\uDB40\uDD01': '\uF02B',  // MJ005956
-  '\u4C95\uDB40\uDD01': '\uF02C',  // MJ006020
-  '\u4CCE\uDB40\uDD01': '\uF02D',  // MJ006069
-  '\u4CF1\uDB40\uDD01': '\uF02E',  // MJ006105
-  '\u4D1F\uDB40\uDD01': '\uF02F',  // MJ006143
-  '\u4D2A\uDB40\uDD01': '\uF030',  // MJ006153
-  '\u4D34\uDB40\uDD01': '\uF031',  // MJ006165
-  '\u4D39\uDB40\uDD01': '\uF032',  // MJ006171
-  '\u4D43\uDB40\uDD01': '\uF033',  // MJ006182
-  '\u4DB0\uDB40\uDD01': '\uF034',  // MJ006289
-  '\u4E07\uDB40\uDD01': '\uF035',  // MJ006300
-  '\u4E11\uDB40\uDD01': '\uF036',  // MJ006315
-  '\u4E12\uDB40\uDD01': '\uF037',  // MJ006316
-  '\u4E14\uDB40\uDD01': '\uF038',  // MJ006321
-  '\u4E35\uDB40\uDD01': '\uF039',  // MJ006355
-  '\u4E38\uDB40\uDD01': '\uF03A',  // MJ006358
-  '\u4E3D\uDB40\uDD01': '\uF03B',  // MJ006366
-  '\u4E41\uDB40\uDD01': '\uF03C',  // MJ006370
-  '\u4E42\uDB40\uDD01': '\uF03D',  // MJ006372
-  '\u4E44\uDB40\uDD01': '\uF03E',  // MJ006376
-  '\u4E45\uDB40\uDD01': '\uF03F',  // MJ006378
-  '\u4E47\uDB40\uDD01': '\uF040',  // MJ006381
-  '\u4E55\uDB40\uDD01': '\uF041',  // MJ006395
-  '\u4E75\uDB40\uDD01': '\uF042',  // MJ006419
-  '\u4E82\uDB40\uDD01': '\uF043',  // MJ006426
-  '\u4E88\uDB40\uDD01': '\uF044',  // MJ006433
-  '\u4E94\uDB40\uDD01': '\uF045',  // MJ006444
-  '\u4E9E\uDB40\uDD01': '\uF046',  // MJ006456
-  '\u4E9F\uDB40\uDD01': '\uF047',  // MJ006458
-  '\u4EA0\uDB40\uDD01': '\uF048',  // MJ006460
-  '\u4EA2\uDB40\uDD01': '\uF049',  // MJ006464
-  '\u4EA5\uDB40\uDD01': '\uF04A',  // MJ006470
-  '\u4EA8\uDB40\uDD01': '\uF04B',  // MJ006473
-  '\u4EAB\uDB40\uDD01': '\uF04C',  // MJ006474
-  '\u4EAE\uDB40\uDD01': '\uF04D',  // MJ006477
-  '\u4EB6\uDB40\uDD01': '\uF04E',  // MJ006485
-  '\u4EB7\uDB40\uDD01': '\uF04F',  // MJ006488
-  '\u4EB9\uDB40\uDD01': '\uF050',  // MJ006491
-  '\u4EDE\uDB40\uDD01': '\uF051',  // MJ006526
-  '\u4EE2\uDB40\uDD01': '\uF052',  // MJ006531
-  '\u4EE4\uDB40\uDD01': '\uF053',  // MJ006533
-  '\u4EE5\uDB40\uDD01': '\uF054',  // MJ006534
-  '\u4EED\uDB40\uDD01': '\uF055',  // MJ006538
-  '\u4F00\uDB40\uDD01': '\uF056',  // MJ006558
-  '\u4F0A\uDB40\uDD01': '\uF057',  // MJ006569
-  '\u4F0B\uDB40\uDD01': '\uF058',  // MJ006571
-  '\u4F33\uDB40\uDD01': '\uF059',  // MJ006599
-  '\u4F36\uDB40\uDD01': '\uF05A',  // MJ006605
-  '\u4F40\uDB40\uDD01': '\uF05B',  // MJ006616
-  '\u4F53\uDB40\uDD01': '\uF05C',  // MJ006637
-  '\u4F69\uDB40\uDD01': '\uF05D',  // MJ006658
-  '\u4F6A\uDB40\uDD01': '\uF05E',  // MJ006659
-  '\u4F6D\uDB40\uDD01': '\uF05F',  // MJ006663
-  '\u4F7A\uDB40\uDD01': '\uF060',  // MJ006678
-  '\u4F7C\uDB40\uDD01': '\uF061',  // MJ006681
-  '\u4F7D\uDB40\uDD01': '\uF062',  // MJ006683
-  '\u4F7E\uDB40\uDD01': '\uF063',  // MJ006686
-  '\u4F83\uDB40\uDD01': '\uF064',  // MJ006692
-  '\u4F89\uDB40\uDD01': '\uF065',  // MJ006698
-  '\u4F96\uDB40\uDD01': '\uF066',  // MJ006711
-  '\u4F9C\uDB40\uDD01': '\uF067',  // MJ006717
-  '\u4FA1\uDB40\uDD01': '\uF068',  // MJ006723
-  '\u4FAB\uDB40\uDD01': '\uF069',  // MJ006725
-  '\u4FB1\uDB40\uDD01': '\uF06A',  // MJ006731
-  '\u4FB9\uDB40\uDD01': '\uF06B',  // MJ006742
-  '\u4FCA\uDB40\uDD01': '\uF06C',  // MJ006763
-  '\u4FD8\uDB40\uDD01': '\uF06D',  // MJ006776
-  '\u4FDE\uDB40\uDD01': '\uF06E',  // MJ006783
-  '\u5002\uDB40\uDD01': '\uF06F',  // MJ006816
-  '\u500F\uDB40\uDD01': '\uF070',  // MJ006829
-  '\u5010\uDB40\uDD01': '\uF071',  // MJ006831
-  '\u5016\uDB40\uDD01': '\uF072',  // MJ006838
-  '\u501D\uDB40\uDD01': '\uF073',  // MJ006848
-  '\u5025\uDB40\uDD01': '\uF074',  // MJ006856
-  '\u5029\uDB40\uDD01': '\uF075',  // MJ006862
-  '\u5030\uDB40\uDD01': '\uF076',  // MJ006871
-  '\u5036\uDB40\uDD01': '\uF077',  // MJ006878
-  '\u5040\uDB40\uDD01': '\uF078',  // MJ006885
-  '\u5042\uDB40\uDD01': '\uF079',  // MJ006888
-  '\u5043\uDB40\uDD01': '\uF07A',  // MJ006890
-  '\u5048\uDB40\uDD01': '\uF07B',  // MJ006896
-  '\u504C\uDB40\uDD01': '\uF07C',  // MJ006903
-  '\u5050\uDB40\uDD01': '\uF07D',  // MJ006909
-  '\u505C\uDB40\uDD01': '\uF07E',  // MJ006922
-  '\u5060\uDB40\uDD01': '\uF07F',  // MJ006926
-  '\u5070\uDB40\uDD01': '\uF080',  // MJ006945
-  '\u5077\uDB40\uDD01': '\uF081',  // MJ006955
-  '\u508B\uDB40\uDD01': '\uF082',  // MJ006977
-  '\u508D\uDB40\uDD01': '\uF083',  // MJ006979
-  '\u508E\uDB40\uDD01': '\uF084',  // MJ006981
-  '\u5094\uDB40\uDD01': '\uF085',  // MJ006991
-  '\u5099\uDB40\uDD01': '\uF086',  // MJ006997
-  '\u50A2\uDB40\uDD01': '\uF087',  // MJ007007
-  '\u50AF\uDB40\uDD01': '\uF088',  // MJ007016
-  '\u50B3\uDB40\uDD01': '\uF089',  // MJ007023
-  '\u50B4\uDB40\uDD01': '\uF08A',  // MJ007026
-  '\u50B9\uDB40\uDD01': '\uF08B',  // MJ007032
-  '\u50BB\uDB40\uDD01': '\uF08C',  // MJ007036
-  '\u50BD\uDB40\uDD01': '\uF08D',  // MJ007038
-  '\u50C3\uDB40\uDD01': '\uF08E',  // MJ007045
-  '\u50C9\uDB40\uDD01': '\uF08F',  // MJ007053
-  '\u50DB\uDB40\uDD01': '\uF090',  // MJ007078
-  '\u50DE\uDB40\uDD01': '\uF091',  // MJ007081
-  '\u50E2\uDB40\uDD01': '\uF092',  // MJ007089
-  '\u50E8\uDB40\uDD01': '\uF093',  // MJ007097
-  '\u50EE\uDB40\uDD01': '\uF094',  // MJ007104
-  '\u50EF\uDB40\uDD01': '\uF095',  // MJ007107
-  '\u50F6\uDB40\uDD01': '\uF096',  // MJ007117
-  '\u5104\uDB40\uDD01': '\uF097',  // MJ007133
-  '\u5106\uDB40\uDD01': '\uF098',  // MJ007137
-  '\u5108\uDB40\uDD01': '\uF099',  // MJ007139
-  '\u510D\uDB40\uDD01': '\uF09A',  // MJ007144
-  '\u5110\uDB40\uDD01': '\uF09B',  // MJ007146
-  '\u5114\uDB40\uDD01': '\uF09C',  // MJ007151
-  '\u511B\uDB40\uDD01': '\uF09D',  // MJ007161
-  '\u5125\uDB40\uDD01': '\uF09E',  // MJ007172
-  '\u512A\uDB40\uDD01': '\uF09F',  // MJ007179
-  '\u512C\uDB40\uDD01': '\uF0A0',  // MJ007182
-  '\u5131\uDB40\uDD01': '\uF0A1',  // MJ007188
-  '\u513A\uDB40\uDD01': '\uF0A2',  // MJ007199
-  '\u513B\uDB40\uDD01': '\uF0A3',  // MJ007201
-  '\u513C\uDB40\uDD01': '\uF0A4',  // MJ007203
-  '\u5140\uDB40\uDD01': '\uF0A5',  // MJ007207
-  '\u5142\uDB40\uDD01': '\uF0A6',  // MJ007212
-  '\u5145\uDB40\uDD01': '\uF0A7',  // MJ007216
-  '\u5147\uDB40\uDD01': '\uF0A8',  // MJ007219
-  '\u514A\uDB40\uDD01': '\uF0A9',  // MJ007222
-  '\u514C\uDB40\uDD01': '\uF0AA',  // MJ007227
-  '\u5152\uDB40\uDD01': '\uF0AB',  // MJ007236
-  '\u5153\uDB40\uDD01': '\uF0AC',  // MJ007240
-  '\u515C\uDB40\uDD01': '\uF0AD',  // MJ007251
-  '\u5164\uDB40\uDD01': '\uF0AE',  // MJ007259
-  '\u5169\uDB40\uDD01': '\uF0AF',  // MJ007270
-  '\u516A\uDB40\uDD01': '\uF0B0',  // MJ007271
-  '\u516E\uDB40\uDD01': '\uF0B1',  // MJ007278
-  '\u5173\uDB40\uDD01': '\uF0B2',  // MJ007284
-  '\u5178\uDB40\uDD01': '\uF0B3',  // MJ007291
-  '\u517B\uDB40\uDD01': '\uF0B4',  // MJ007293
-  '\u5180\uDB40\uDD01': '\uF0B5',  // MJ007300
-  '\u5185\uDB40\uDD01': '\uF0B6',  // MJ007304
-  '\u518E\uDB40\uDD01': '\uF0B7',  // MJ007314
-  '\u5197\uDB40\uDD01': '\uF0B8',  // MJ007329
-  '\u5198\uDB40\uDD01': '\uF0B9',  // MJ007331
-  '\u519D\uDB40\uDD01': '\uF0BA',  // MJ007334
-  '\u51A1\uDB40\uDD01': '\uF0BB',  // MJ007339
-  '\u51A2\uDB40\uDD01': '\uF0BC',  // MJ007342
-  '\u51A5\uDB40\uDD01': '\uF0BD',  // MJ007350
-  '\u51A6\uDB40\uDD01': '\uF0BE',  // MJ007351
-  '\u51AA\uDB40\uDD01': '\uF0BF',  // MJ007356
-  '\u51B5\uDB40\uDD01': '\uF0C0',  // MJ007372
-  '\u51CA\uDB40\uDD01': '\uF0C1',  // MJ007391
-  '\u51CC\uDB40\uDD01': '\uF0C2',  // MJ007396
-  '\u51E2\uDB40\uDD01': '\uF0C3',  // MJ007418
-  '\u51F6\uDB40\uDD01': '\uF0C4',  // MJ007438
-  '\u51FE\uDB40\uDD01': '\uF0C5',  // MJ007445
-  '\u5204\uDB40\uDD01': '\uF0C6',  // MJ007452
-  '\u5207\uDB40\uDD01': '\uF0C7',  // MJ007457
-  '\u520B\uDB40\uDD01': '\uF0C8',  // MJ007464
-  '\u5213\uDB40\uDD01': '\uF0C9',  // MJ007473
-  '\u5220\uDB40\uDD01': '\uF0CA',  // MJ007486
-  '\u523B\uDB40\uDD01': '\uF0CB',  // MJ007516
-  '\u524F\uDB40\uDD01': '\uF0CC',  // MJ007534
-  '\u5268\uDB40\uDD01': '\uF0CD',  // MJ007558
-  '\u526A\uDB40\uDD01': '\uF0CE',  // MJ007560
-  '\u5273\uDB40\uDD01': '\uF0CF',  // MJ007574
-  '\u527F\uDB40\uDD01': '\uF0D0',  // MJ007589
-  '\u5283\uDB40\uDD01': '\uF0D1',  // MJ007594
-  '\u5289\uDB40\uDD01': '\uF0D2',  // MJ007602
-  '\u5291\uDB40\uDD01': '\uF0D3',  // MJ007609
-  '\u5292\uDB40\uDD01': '\uF0D4',  // MJ007611
-  '\u5298\uDB40\uDD01': '\uF0D5',  // MJ007619
-  '\u52A9\uDB40\uDD01': '\uF0D6',  // MJ007634
-  '\u52B5\uDB40\uDD01': '\uF0D7',  // MJ007645
-  '\u52BE\uDB40\uDD01': '\uF0D8',  // MJ007655
-  '\u52C3\uDB40\uDD01': '\uF0D9',  // MJ007662
-  '\u52C6\uDB40\uDD01': '\uF0DA',  // MJ007665
-  '\u52CC\uDB40\uDD01': '\uF0DB',  // MJ007672
-  '\u52D2\uDB40\uDD01': '\uF0DC',  // MJ007687
-  '\u52D6\uDB40\uDD01': '\uF0DD',  // MJ007692
-  '\u52D8\uDB40\uDD01': '\uF0DE',  // MJ007696
-  '\u52DF\uDB40\uDD01': '\uF0DF',  // MJ007703
-  '\u52E0\uDB40\uDD01': '\uF0E0',  // MJ007705
-  '\u52E6\uDB40\uDD01': '\uF0E1',  // MJ007714
-  '\u52E8\uDB40\uDD01': '\uF0E2',  // MJ007717
-  '\u52EC\uDB40\uDD01': '\uF0E3',  // MJ007722
-  '\u52F1\uDB40\uDD01': '\uF0E4',  // MJ007729
-  '\u52F2\uDB40\uDD01': '\uF0E5',  // MJ007731
-  '\u52F3\uDB40\uDD01': '\uF0E6',  // MJ007733
-  '\u52F5\uDB40\uDD01': '\uF0E7',  // MJ007736
-  '\u52F8\uDB40\uDD01': '\uF0E8',  // MJ007740
-  '\u52F9\uDB40\uDD01': '\uF0E9',  // MJ007742
-  '\u5304\uDB40\uDD01': '\uF0EA',  // MJ007756
-  '\u5306\uDB40\uDD01': '\uF0EB',  // MJ007760
-  '\u5308\uDB40\uDD01': '\uF0EC',  // MJ007763
-  '\u530B\uDB40\uDD01': '\uF0ED',  // MJ007766
-  '\u530F\uDB40\uDD01': '\uF0EE',  // MJ007770
-  '\u5317\uDB40\uDD01': '\uF0EF',  // MJ007780
-  '\u532C\uDB40\uDD01': '\uF0F0',  // MJ007802
-  '\u5335\uDB40\uDD01': '\uF0F1',  // MJ007811
-  '\u5336\uDB40\uDD01': '\uF0F2',  // MJ007814
-  '\u533B\uDB40\uDD01': '\uF0F3',  // MJ007820
-  '\u533C\uDB40\uDD01': '\uF0F4',  // MJ007822
-  '\u533D\uDB40\uDD01': '\uF0F5',  // MJ007825
-  '\u533E\uDB40\uDD01': '\uF0F6',  // MJ007827
-  '\u5344\uDB40\uDD01': '\uF0F7',  // MJ057090
-  '\u5345\uDB40\uDD01': '\uF0F8',  // MJ007838
-  '\u5352\uDB40\uDD01': '\uF0F9',  // MJ007852
-  '\u535E\uDB40\uDD01': '\uF0FA',  // MJ007868
-  '\u536F\uDB40\uDD01': '\uF0FB',  // MJ007885
-  '\u5373\uDB40\uDD01': '\uF0FC',  // MJ007891
-  '\u537D\uDB40\uDD01': '\uF0FD',  // MJ007909
-  '\u5377\uDB40\uDD01': '\uF0FE',  // MJ007897
-  '\u537B\uDB40\uDD01': '\uF0FF',  // MJ007906
-  '\uD848\uDC34\uDB40\uDD01': '\uF100',  // MJ034957
-  '\u5396\uDB40\uDD01': '\uF101',  // MJ007931
-  '\u53A5\uDB40\uDD01': '\uF102',  // MJ007944
-  '\u53B0\uDB40\uDD01': '\uF103',  // MJ007962
-  '\u53B2\uDB40\uDD01': '\uF104',  // MJ007966
-  '\u53C8\uDB40\uDD01': '\uF105',  // MJ007985
-  '\u53D0\uDB40\uDD01': '\uF106',  // MJ056859
-  '\u53D4\uDB40\uDD01': '\uF107',  // MJ008002
-  '\u53DC\uDB40\uDD01': '\uF108',  // MJ057139
-  '\u53DD\uDB40\uDD01': '\uF109',  // MJ008014
-  '\u53EB\uDB40\uDD01': '\uF10A',  // MJ008032
-  '\u53ED\uDB40\uDD01': '\uF10B',  // MJ008034
-  '\u53F7\uDB40\uDD01': '\uF10C',  // MJ008047
-  '\u5406\uDB40\uDD01': '\uF10D',  // MJ008061
-  '\u541B\uDB40\uDD01': '\uF10E',  // MJ008081
-  '\u541D\uDB40\uDD01': '\uF10F',  // MJ008084
-  '\u541F\uDB40\uDD01': '\uF110',  // MJ008087
-  '\u5429\uDB40\uDD01': '\uF111',  // MJ008097
-  '\u542B\uDB40\uDD01': '\uF112',  // MJ008100
-  '\u5455\uDB40\uDD01': '\uF113',  // MJ008144
-  '\u5471\uDB40\uDD01': '\uF114',  // MJ008169
-  '\u5485\uDB40\uDD01': '\uF115',  // MJ008189
-  '\u5486\uDB40\uDD01': '\uF116',  // MJ008191
-  '\u548E\uDB40\uDD01': '\uF117',  // MJ008201
-  '\u549E\uDB40\uDD01': '\uF118',  // MJ008212
-  '\u54A2\uDB40\uDD01': '\uF119',  // MJ008217
-  '\u54B5\uDB40\uDD01': '\uF11A',  // MJ008240
-  '\u54BC\uDB40\uDD01': '\uF11B',  // MJ008247
-  '\u54C9\uDB40\uDD01': '\uF11C',  // MJ008260
-  '\u54CE\uDB40\uDD01': '\uF11D',  // MJ008265
-  '\u54E0\uDB40\uDD01': '\uF11E',  // MJ008270
-  '\u54F2\uDB40\uDD01': '\uF11F',  // MJ008290
-  '\u54FD\uDB40\uDD01': '\uF120',  // MJ008302
-  '\u5506\uDB40\uDD01': '\uF121',  // MJ008314
-  '\u550C\uDB40\uDD01': '\uF122',  // MJ008320
-  '\u5547\uDB40\uDD01': '\uF123',  // MJ008378
-  '\u554C\uDB40\uDD01': '\uF124',  // MJ008383
-  '\u555A\uDB40\uDD01': '\uF125',  // MJ008400
-  '\u555D\uDB40\uDD01': '\uF126',  // MJ008404
-  '\u5568\uDB40\uDD01': '\uF127',  // MJ008416
-  '\u557C\uDB40\uDD01': '\uF128',  // MJ008420
-  '\u5586\uDB40\uDD01': '\uF129',  // MJ008435
-  '\u558F\uDB40\uDD01': '\uF12A',  // MJ008445
-  '\u5591\uDB40\uDD01': '\uF12B',  // MJ008448
-  '\u5593\uDB40\uDD01': '\uF12C',  // MJ008451
-  '\u5599\uDB40\uDD01': '\uF12D',  // MJ008458
-  '\u559E\uDB40\uDD01': '\uF12E',  // MJ008469
-  '\u55A8\uDB40\uDD01': '\uF12F',  // MJ008480
-  '\u55AA\uDB40\uDD01': '\uF130',  // MJ008484
-  '\u55AE\uDB40\uDD01': '\uF131',  // MJ008491
-  '\u55BB\uDB40\uDD01': '\uF132',  // MJ008502
-  '\u55C2\uDB40\uDD01': '\uF133',  // MJ008508
-  '\u55C5\uDB40\uDD01': '\uF134',  // MJ008511
-  '\u55D0\uDB40\uDD01': '\uF135',  // MJ008524
-  '\u55D2\uDB40\uDD01': '\uF136',  // MJ008526
-  '\u55D4\uDB40\uDD01': '\uF137',  // MJ008529
-  '\u55DD\uDB40\uDD01': '\uF138',  // MJ008539
-  '\u55DE\uDB40\uDD01': '\uF139',  // MJ008540
-  '\u55E2\uDB40\uDD01': '\uF13A',  // MJ008546
-  '\u55F9\uDB40\uDD01': '\uF13B',  // MJ008562
-  '\u5614\uDB40\uDD01': '\uF13C',  // MJ008595
-  '\u561B\uDB40\uDD01': '\uF13D',  // MJ008603
-  '\u5629\uDB40\uDD01': '\uF13E',  // MJ008610
-  '\u562C\uDB40\uDD01': '\uF13F',  // MJ008615
-  '\u5630\uDB40\uDD01': '\uF140',  // MJ008619
-  '\u563C\uDB40\uDD01': '\uF141',  // MJ008634
-  '\u563E\uDB40\uDD01': '\uF142',  // MJ008637
-  '\u5644\uDB40\uDD01': '\uF143',  // MJ008645
-  '\u5646\uDB40\uDD01': '\uF144',  // MJ008649
-  '\u5647\uDB40\uDD01': '\uF145',  // MJ008650
-  '\u5660\uDB40\uDD01': '\uF146',  // MJ008675
-  '\u566B\uDB40\uDD01': '\uF147',  // MJ008686
-  '\u5671\uDB40\uDD01': '\uF148',  // MJ008693
-  '\u5676\uDB40\uDD01': '\uF149',  // MJ008702
-  '\u5680\uDB40\uDD01': '\uF14A',  // MJ008711
-  '\u5683\uDB40\uDD01': '\uF14B',  // MJ008716
-  '\u5684\uDB40\uDD01': '\uF14C',  // MJ008717
-  '\u5686\uDB40\uDD01': '\uF14D',  // MJ008720
-  '\u568A\uDB40\uDD01': '\uF14E',  // MJ008725
-  '\u5694\uDB40\uDD01': '\uF14F',  // MJ008733
-  '\u569D\uDB40\uDD01': '\uF150',  // MJ008744
-  '\u56A0\uDB40\uDD01': '\uF151',  // MJ008749
-  '\u56A8\uDB40\uDD01': '\uF152',  // MJ008757
-  '\u56BC\uDB40\uDD01': '\uF153',  // MJ008778
-  '\u56C8\uDB40\uDD01': '\uF154',  // MJ008793
-  '\u56CC\uDB40\uDD01': '\uF155',  // MJ008798
-  '\u56D3\uDB40\uDD01': '\uF156',  // MJ008808
-  '\u56DB\uDB40\uDD01': '\uF157',  // MJ008816
-  '\u56F6\uDB40\uDD01': '\uF158',  // MJ008843
-  '\u5702\uDB40\uDD01': '\uF159',  // MJ008855
-  '\u5708\uDB40\uDD01': '\uF15A',  // MJ008861
-  '\u570A\uDB40\uDD01': '\uF15B',  // MJ008864
-  '\u5711\uDB40\uDD01': '\uF15C',  // MJ008874
-  '\u5716\uDB40\uDD01': '\uF15D',  // MJ008880
-  '\u5717\uDB40\uDD01': '\uF15E',  // MJ008883
-  '\u571B\uDB40\uDD01': '\uF15F',  // MJ008887
-  '\u5723\uDB40\uDD01': '\uF160',  // MJ008896
-  '\u572C\uDB40\uDD01': '\uF161',  // MJ008906
-  '\u572D\uDB40\uDD01': '\uF162',  // MJ008908
-  '\u5734\uDB40\uDD01': '\uF163',  // MJ008916
-  '\u5748\uDB40\uDD01': '\uF164',  // MJ008937
-  '\u5789\uDB40\uDD01': '\uF165',  // MJ008996
-  '\u578B\uDB40\uDD01': '\uF166',  // MJ008998
-  '\u5793\uDB40\uDD01': '\uF167',  // MJ009007
-  '\u5794\uDB40\uDD01': '\uF168',  // MJ009009
-  '\u579D\uDB40\uDD01': '\uF169',  // MJ009019
-  '\u57AA\uDB40\uDD01': '\uF16A',  // MJ009033
-  '\u57C8\uDB40\uDD01': '\uF16B',  // MJ009056
-  '\u57D2\uDB40\uDD01': '\uF16C',  // MJ009067
-  '\u57D3\uDB40\uDD01': '\uF16D',  // MJ009070
-  '\u57D5\uDB40\uDD01': '\uF16E',  // MJ009073
-  '\u57E7\uDB40\uDD01': '\uF16F',  // MJ009090
-  '\u57F6\uDB40\uDD01': '\uF170',  // MJ009109
-  '\u57F8\uDB40\uDD01': '\uF171',  // MJ009112
-  '\u5805\uDB40\uDD01': '\uF172',  // MJ009126
-  '\u581F\uDB40\uDD01': '\uF173',  // MJ009149
-  '\u5830\uDB40\uDD01': '\uF174',  // MJ009167
-  '\u5831\uDB40\uDD01': '\uF175',  // MJ009169
-  '\u5832\uDB40\uDD01': '\uF176',  // MJ009171
-  '\u5834\uDB40\uDD01': '\uF177',  // MJ009174
-  '\u5837\uDB40\uDD01': '\uF178',  // MJ009180
-  '\u584A\uDB40\uDD01': '\uF179',  // MJ009193
-  '\u584C\uDB40\uDD01': '\uF17A',  // MJ009196
-  '\u5851\uDB40\uDD01': '\uF17B',  // MJ009202
-  '\u5854\uDB40\uDD01': '\uF17C',  // MJ009205
-  '\u585F\uDB40\uDD01': '\uF17D',  // MJ009221
-  '\u5870\uDB40\uDD01': '\uF17E',  // MJ009236
-  '\u5880\uDB40\uDD01': '\uF17F',  // MJ009255
-  '\u5881\uDB40\uDD01': '\uF180',  // MJ009256
-  '\u5883\uDB40\uDD01': '\uF181',  // MJ009259
-  '\u588D\uDB40\uDD01': '\uF182',  // MJ009271
-  '\u5893\uDB40\uDD01': '\uF183',  // MJ009279
-  '\u589E\uDB40\uDD01': '\uF184',  // MJ009289
-  '\u589F\uDB40\uDD01': '\uF185',  // MJ009291
-  '\u58B3\uDB40\uDD01': '\uF186',  // MJ009315
-  '\u58B8\uDB40\uDD01': '\uF187',  // MJ009319
-  '\u58BA\uDB40\uDD01': '\uF188',  // MJ009322
-  '\u58C4\uDB40\uDD01': '\uF189',  // MJ009333
-  '\u58C7\uDB40\uDD01': '\uF18A',  // MJ009337
-  '\u58CE\uDB40\uDD01': '\uF18B',  // MJ009344
-  '\u58D0\uDB40\uDD01': '\uF18C',  // MJ009347
-  '\u58D2\uDB40\uDD01': '\uF18D',  // MJ009350
-  '\u58D3\uDB40\uDD01': '\uF18E',  // MJ009352
-  '\u58D5\uDB40\uDD01': '\uF18F',  // MJ009355
-  '\u58D9\uDB40\uDD01': '\uF190',  // MJ009360
-  '\u58DD\uDB40\uDD01': '\uF191',  // MJ009366
-  '\u58DF\uDB40\uDD01': '\uF192',  // MJ009368
-  '\u58E0\uDB40\uDD01': '\uF193',  // MJ009370
-  '\u58E1\uDB40\uDD01': '\uF194',  // MJ009372
-  '\u58E5\uDB40\uDD01': '\uF195',  // MJ009377
-  '\u58F3\uDB40\uDD01': '\uF196',  // MJ009391
-  '\u58F4\uDB40\uDD01': '\uF197',  // MJ009393
-  '\u58F7\uDB40\uDD01': '\uF198',  // MJ009395
-  '\u58FD\uDB40\uDD01': '\uF199',  // MJ009401
-  '\u5900\uDB40\uDD01': '\uF19A',  // MJ057356
-  '\u5905\uDB40\uDD01': '\uF19B',  // MJ009409
-  '\u590A\uDB40\uDD01': '\uF19C',  // MJ009413
-  '\u590C\uDB40\uDD01': '\uF19D',  // MJ009416
-  '\u590F\uDB40\uDD01': '\uF19E',  // MJ009420
-  '\u5912\uDB40\uDD01': '\uF19F',  // MJ009424
-  '\u5913\uDB40\uDD01': '\uF1A0',  // MJ009426
-  '\u5914\uDB40\uDD01': '\uF1A1',  // MJ009429
-  '\u5916\uDB40\uDD01': '\uF1A2',  // MJ009431
-  '\u5917\uDB40\uDD01': '\uF1A3',  // MJ009434
-  '\u5922\uDB40\uDD01': '\uF1A4',  // MJ009446
-  '\u5938\uDB40\uDD01': '\uF1A5',  // MJ009468
-  '\u5946\uDB40\uDD01': '\uF1A6',  // MJ009479
-  '\u5954\uDB40\uDD01': '\uF1A7',  // MJ009497
-  '\u5958\uDB40\uDD01': '\uF1A8',  // MJ009502
-  '\u595F\uDB40\uDD01': '\uF1A9',  // MJ009512
-  '\u5963\uDB40\uDD01': '\uF1AA',  // MJ009521
-  '\u5965\uDB40\uDD01': '\uF1AB',  // MJ009524
-  '\u5969\uDB40\uDD01': '\uF1AC',  // MJ009530
-  '\u5970\uDB40\uDD01': '\uF1AD',  // MJ059485
-  '\u5972\uDB40\uDD01': '\uF1AE',  // MJ009541
-  '\u5981\uDB40\uDD01': '\uF1AF',  // MJ009558
-  '\u5983\uDB40\uDD01': '\uF1B0',  // MJ009560
-  '\u599B\uDB40\uDD01': '\uF1B1',  // MJ009587
-  '\u59A0\uDB40\uDD01': '\uF1B2',  // MJ009593
-  '\u59CD\uDB40\uDD01': '\uF1B3',  // MJ009636
-  '\u59D8\uDB40\uDD01': '\uF1B4',  // MJ009648
-  '\u59E3\uDB40\uDD01': '\uF1B5',  // MJ009660
-  '\u5A01\uDB40\uDD01': '\uF1B6',  // MJ009693
-  '\u5A41\uDB40\uDD01': '\uF1B7',  // MJ009756
-  '\u5A48\uDB40\uDD01': '\uF1B8',  // MJ009764
-  '\u5A4C\uDB40\uDD01': '\uF1B9',  // MJ009768
-  '\u5A67\uDB40\uDD01': '\uF1BA',  // MJ009798
-  '\u5A6C\uDB40\uDD01': '\uF1BB',  // MJ009804
-  '\u5A7E\uDB40\uDD01': '\uF1BC',  // MJ009820
-  '\u5A8D\uDB40\uDD01': '\uF1BD',  // MJ057309
-  '\u5A96\uDB40\uDD01': '\uF1BE',  // MJ009845
-  '\u5AA2\uDB40\uDD01': '\uF1BF',  // MJ009859
-  '\u5AB5\uDB40\uDD01': '\uF1C0',  // MJ009875
-  '\u5ABA\uDB40\uDD01': '\uF1C1',  // MJ009881
-  '\u5ABF\uDB40\uDD01': '\uF1C2',  // MJ009889
-  '\u5AC1\uDB40\uDD01': '\uF1C3',  // MJ009891
-  '\u5ACB\uDB40\uDD01': '\uF1C4',  // MJ009907
-  '\u5AD7\uDB40\uDD01': '\uF1C5',  // MJ009917
-  '\u5ADB\uDB40\uDD01': '\uF1C6',  // MJ009924
-  '\u5ADC\uDB40\uDD01': '\uF1C7',  // MJ009925
-  '\u5ADF\uDB40\uDD01': '\uF1C8',  // MJ009930
-  '\u5AE1\uDB40\uDD01': '\uF1C9',  // MJ009932
-  '\u5B05\uDB40\uDD01': '\uF1CA',  // MJ009969
-  '\u5B2A\uDB40\uDD01': '\uF1CB',  // MJ010008
-  '\u5B34\uDB40\uDD01': '\uF1CC',  // MJ010019
-  '\u5B36\uDB40\uDD01': '\uF1CD',  // MJ010024
-  '\u5B3E\uDB40\uDD01': '\uF1CE',  // MJ010032
-  '\u5B64\uDB40\uDD01': '\uF1CF',  // MJ010073
-  '\u5B69\uDB40\uDD01': '\uF1D0',  // MJ010077
-  '\u5B70\uDB40\uDD01': '\uF1D1',  // MJ010084
-  '\u5B75\uDB40\uDD01': '\uF1D2',  // MJ010090
-  '\u5B76\uDB40\uDD01': '\uF1D3',  // MJ010093
-  '\u5B7D\uDB40\uDD01': '\uF1D4',  // MJ010102
-  '\u5B85\uDB40\uDD01': '\uF1D5',  // MJ010110
-  '\u5B90\uDB40\uDD01': '\uF1D6',  // MJ010121
-  '\u5BA3\uDB40\uDD01': '\uF1D7',  // MJ010139
-  '\u5BB2\uDB40\uDD01': '\uF1D8',  // MJ010157
-  '\u5BB6\uDB40\uDD01': '\uF1D9',  // MJ010165
-  '\u5BBB\uDB40\uDD01': '\uF1DA',  // MJ057334
-  '\u5BC0\uDB40\uDD01': '\uF1DB',  // MJ010175
-  '\u5BC7\uDB40\uDD01': '\uF1DC',  // MJ010185
-  '\u5BC8\uDB40\uDD01': '\uF1DD',  // MJ010188
-  '\u5BD0\uDB40\uDD01': '\uF1DE',  // MJ010196
-  '\u5BD7\uDB40\uDD01': '\uF1DF',  // MJ010205
-  '\u5BD9\uDB40\uDD01': '\uF1E0',  // MJ010210
-  '\u5BDE\uDB40\uDD01': '\uF1E1',  // MJ010217
-  '\u5BE2\uDB40\uDD01': '\uF1E2',  // MJ010222
-  '\u5BE4\uDB40\uDD01': '\uF1E3',  // MJ010225
-  '\u5BE5\uDB40\uDD01': '\uF1E4',  // MJ010227
-  '\u5BEC\uDB40\uDD01': '\uF1E5',  // MJ010236
-  '\u5BF5\uDB40\uDD01': '\uF1E6',  // MJ010248
-  '\u5BF6\uDB40\uDD01': '\uF1E7',  // MJ010251
-  '\u5BFD\uDB40\uDD01': '\uF1E8',  // MJ010256
-  '\u5BFF\uDB40\uDD01': '\uF1E9',  // MJ010260
-  '\u5C04\uDB40\uDD01': '\uF1EA',  // MJ010265
-  '\u5C07\uDB40\uDD01': '\uF1EB',  // MJ010271
-  '\u5C08\uDB40\uDD01': '\uF1EC',  // MJ010272
-  '\u5C09\uDB40\uDD01': '\uF1ED',  // MJ010274
-  '\u5C19\uDB40\uDD01': '\uF1EE',  // MJ010294
-  '\u5C23\uDB40\uDD01': '\uF1EF',  // MJ010304
-  '\u5C2D\uDB40\uDD01': '\uF1F0',  // MJ010316
-  '\u5C39\uDB40\uDD01': '\uF1F1',  // MJ010329
-  '\u5C46\uDB40\uDD01': '\uF1F2',  // MJ010342
-  '\u5C4F\uDB40\uDD01': '\uF1F3',  // MJ010352
-  '\u5C53\uDB40\uDD01': '\uF1F4',  // MJ010358
-  '\u5C55\uDB40\uDD01': '\uF1F5',  // MJ010361
-  '\u5C65\uDB40\uDD01': '\uF1F6',  // MJ010380
-  '\u5C88\uDB40\uDD01': '\uF1F7',  // MJ010411
-  '\u5C8C\uDB40\uDD01': '\uF1F8',  // MJ010416
-  '\u5C8D\uDB40\uDD01': '\uF1F9',  // MJ010419
-  '\u5C91\uDB40\uDD01': '\uF1FA',  // MJ010423
-  '\u5C94\uDB40\uDD01': '\uF1FB',  // MJ010426
-  '\u5CBC\uDB40\uDD01': '\uF1FC',  // MJ010465
-  '\u5CC0\uDB40\uDD01': '\uF1FD',  // MJ068030
-  '\u5CED\uDB40\uDD01': '\uF1FE',  // MJ010506
-  '\u5CFA\uDB40\uDD01': '\uF1FF',  // MJ010521
-  '\u5CFB\uDB40\uDD01': '\uF200',  // MJ010524
-  '\u5D06\uDB40\uDD01': '\uF201',  // MJ010531
-  '\u5D0B\uDB40\uDD01': '\uF202',  // MJ010537
-  '\u5D1A\uDB40\uDD01': '\uF203',  // MJ010554
-  '\u5D1D\uDB40\uDD01': '\uF204',  // MJ010557
-  '\u5D21\uDB40\uDD01': '\uF205',  // MJ010563
-  '\u5D22\uDB40\uDD01': '\uF206',  // MJ010564
-  '\u5D27\uDB40\uDD01': '\uF207',  // MJ010570
-  '\u5D2A\uDB40\uDD01': '\uF208',  // MJ010576
-  '\u5D3F\uDB40\uDD01': '\uF209',  // MJ010592
-  '\u5D41\uDB40\uDD01': '\uF20A',  // MJ010596
-  '\u5D46\uDB40\uDD01': '\uF20B',  // MJ010602
-  '\u5D69\uDB40\uDD01': '\uF20C',  // MJ010633
-  '\u5D6B\uDB40\uDD01': '\uF20D',  // MJ010637
-  '\u5D6E\uDB40\uDD01': '\uF20E',  // MJ010640
-  '\u5D76\uDB40\uDD01': '\uF20F',  // MJ010649
-  '\u5D82\uDB40\uDD01': '\uF210',  // MJ010662
-  '\u5D90\uDB40\uDD01': '\uF211',  // MJ010677
-  '\u5D92\uDB40\uDD01': '\uF212',  // MJ010680
-  '\u5D99\uDB40\uDD01': '\uF213',  // MJ010689
-  '\u5DC1\uDB40\uDD01': '\uF214',  // MJ010727
-  '\u5DC3\uDB40\uDD01': '\uF215',  // MJ010730
-  '\u5DCD\uDB40\uDD01': '\uF216',  // MJ010742
-  '\u5DCE\uDB40\uDD01': '\uF217',  // MJ010746
-  '\u5DD6\uDB40\uDD01': '\uF218',  // MJ010754
-  '\u5DD9\uDB40\uDD01': '\uF219',  // MJ010759
-  '\u5DE2\uDB40\uDD01': '\uF21A',  // MJ010769
-  '\u5DE4\uDB40\uDD01': '\uF21B',  // MJ010772
-  '\u5DE6\uDB40\uDD01': '\uF21C',  // MJ010774
-  '\u5DE9\uDB40\uDD01': '\uF21D',  // MJ010778
-  '\u5DEE\uDB40\uDD01': '\uF21E',  // MJ010781
-  '\u5DF8\uDB40\uDD01': '\uF21F',  // MJ010791
-  '\u5DFB\uDB40\uDD01': '\uF220',  // MJ010798
-  '\u5E0C\uDB40\uDD01': '\uF221',  // MJ010817
-  '\u5E13\uDB40\uDD01': '\uF222',  // MJ010823
-  '\u5E1A\uDB40\uDD01': '\uF223',  // MJ010830
-  '\u5E23\uDB40\uDD01': '\uF224',  // MJ010841
-  '\u5E28\uDB40\uDD01': '\uF225',  // MJ010844
-  '\u5E2B\uDB40\uDD01': '\uF226',  // MJ010848
-  '\u5E2E\uDB40\uDD01': '\uF227',  // MJ010852
-  '\u5E2F\uDB40\uDD01': '\uF228',  // MJ010854
-  '\u5E3E\uDB40\uDD01': '\uF229',  // MJ010869
-  '\u5E42\uDB40\uDD01': '\uF22A',  // MJ010875
-  '\u5E55\uDB40\uDD01': '\uF22B',  // MJ010897
-  '\u5E59\uDB40\uDD01': '\uF22C',  // MJ010902
-  '\u5E5B\uDB40\uDD01': '\uF22D',  // MJ010905
-  '\u5E5F\uDB40\uDD01': '\uF22E',  // MJ010910
-  '\u5E62\uDB40\uDD01': '\uF22F',  // MJ010914
-  '\u5E69\uDB40\uDD01': '\uF230',  // MJ010923
-  '\u5E6A\uDB40\uDD01': '\uF231',  // MJ010926
-  '\u5E6D\uDB40\uDD01': '\uF232',  // MJ010932
-  '\u5E6F\uDB40\uDD01': '\uF233',  // MJ010936
-  '\u5E70\uDB40\uDD01': '\uF234',  // MJ010938
-  '\u5E74\uDB40\uDD01': '\uF235',  // MJ010944
-  '\u5E75\uDB40\uDD01': '\uF236',  // MJ010946
-  '\u5E78\uDB40\uDD01': '\uF237',  // MJ010951
-  '\u5E95\uDB40\uDD01': '\uF238',  // MJ010979
-  '\u5EA6\uDB40\uDD01': '\uF239',  // MJ010996
-  '\u5EAC\uDB40\uDD01': '\uF23A',  // MJ011002
-  '\u5EB3\uDB40\uDD01': '\uF23B',  // MJ011012
-  '\u5EB6\uDB40\uDD01': '\uF23C',  // MJ011015
-  '\u5EB7\uDB40\uDD01': '\uF23D',  // MJ011017
-  '\u5EB8\uDB40\uDD01': '\uF23E',  // MJ011018
-  '\u5EB9\uDB40\uDD01': '\uF23F',  // MJ011020
-  '\u5EBB\uDB40\uDD01': '\uF240',  // MJ011022
-  '\u5EBE\uDB40\uDD01': '\uF241',  // MJ011025
-  '\u5EBF\uDB40\uDD01': '\uF242',  // MJ011027
-  '\u5ED6\uDB40\uDD01': '\uF243',  // MJ011058
-  '\u5ED9\uDB40\uDD01': '\uF244',  // MJ011062
-  '\u5EF4\uDB40\uDD01': '\uF245',  // MJ011098
-  '\u5EF8\uDB40\uDD01': '\uF246',  // MJ011106
-  '\u5EF9\uDB40\uDD01': '\uF247',  // MJ011108
-  '\u5EFC\uDB40\uDD01': '\uF248',  // MJ011115
-  '\u5EFD\uDB40\uDD01': '\uF249',  // MJ011118
-  '\u5EFE\uDB40\uDD01': '\uF24A',  // MJ011120
-  '\u5F02\uDB40\uDD01': '\uF24B',  // MJ011125
-  '\u5F09\uDB40\uDD01': '\uF24C',  // MJ011133
-  '\u5F0D\uDB40\uDD01': '\uF24D',  // MJ011140
-  '\u5F0E\uDB40\uDD01': '\uF24E',  // MJ011143
-  '\u5F13\uDB40\uDD01': '\uF24F',  // MJ011149
-  '\u5F14\uDB40\uDD01': '\uF250',  // MJ011150
-  '\u5F16\uDB40\uDD01': '\uF251',  // MJ011153
-  '\u5F17\uDB40\uDD01': '\uF252',  // MJ011155
-  '\u5F21\uDB40\uDD01': '\uF253',  // MJ011167
-  '\u5F22\uDB40\uDD01': '\uF254',  // MJ011169
-  '\u5F27\uDB40\uDD01': '\uF255',  // MJ011178
-  '\u5F29\uDB40\uDD01': '\uF256',  // MJ011180
-  '\u5F44\uDB40\uDD01': '\uF257',  // MJ011208
-  '\u5F4C\uDB40\uDD01': '\uF258',  // MJ011219
-  '\u5F55\uDB40\uDD01': '\uF259',  // MJ057475
-  '\u5F56\uDB40\uDD01': '\uF25A',  // MJ011233
-  '\u5F57\uDB40\uDD01': '\uF25B',  // MJ011236
-  '\u5F5A\uDB40\uDD01': '\uF25C',  // MJ059586
-  '\u5F5C\uDB40\uDD01': '\uF25D',  // MJ011243
-  '\u5F60\uDB40\uDD01': '\uF25E',  // MJ011249
-  '\u5F6A\uDB40\uDD01': '\uF25F',  // MJ011262
-  '\u5F70\uDB40\uDD01': '\uF260',  // MJ011272
-  '\u5F74\uDB40\uDD01': '\uF261',  // MJ011277
-  '\u5F8C\uDB40\uDD01': '\uF262',  // MJ011303
-  '\u5F8F\uDB40\uDD01': '\uF263',  // MJ011306
-  '\u5F93\uDB40\uDD01': '\uF264',  // MJ011312
-  '\u5F9E\uDB40\uDD01': '\uF265',  // MJ011321
-  '\u5FA4\uDB40\uDD01': '\uF266',  // MJ011329
-  '\u5FAB\uDB40\uDD01': '\uF267',  // MJ011338
-  '\u5FAC\uDB40\uDD01': '\uF268',  // MJ011339
-  '\u5FB2\uDB40\uDD01': '\uF269',  // MJ011349
-  '\u5FB3\uDB40\uDD01': '\uF26A',  // MJ011351
-  '\u5FB7\uDB40\uDD01': '\uF26B',  // MJ011356
-  '\u5FDE\uDB40\uDD01': '\uF26C',  // MJ011400
-  '\u5FDF\uDB40\uDD01': '\uF26D',  // MJ011403
-  '\u5FED\uDB40\uDD01': '\uF26E',  // MJ011418
-  '\u5FF0\uDB40\uDD01': '\uF26F',  // MJ011422
-  '\u5FFF\uDB40\uDD01': '\uF270',  // MJ011438
-  '\u6026\uDB40\uDD01': '\uF271',  // MJ011475
-  '\u604A\uDB40\uDD01': '\uF272',  // MJ011509
-  '\u6054\uDB40\uDD01': '\uF273',  // MJ011519
-  '\u605D\uDB40\uDD01': '\uF274',  // MJ011530
-  '\u6071\uDB40\uDD01': '\uF275',  // MJ011555
-  '\u607E\uDB40\uDD01': '\uF276',  // MJ011563
-  '\u6081\uDB40\uDD01': '\uF277',  // MJ011569
-  '\u6084\uDB40\uDD01': '\uF278',  // MJ011572
-  '\u608B\uDB40\uDD01': '\uF279',  // MJ011580
-  '\u609F\uDB40\uDD01': '\uF27A',  // MJ011608
-  '\u60A8\uDB40\uDD01': '\uF27B',  // MJ011618
-  '\u60BE\uDB40\uDD01': '\uF27C',  // MJ011639
-  '\u60C6\uDB40\uDD01': '\uF27D',  // MJ011649
-  '\u60C7\uDB40\uDD01': '\uF27E',  // MJ011651
-  '\u60D3\uDB40\uDD01': '\uF27F',  // MJ011664
-  '\u60DD\uDB40\uDD01': '\uF280',  // MJ011677
-  '\u60E0\uDB40\uDD01': '\uF281',  // MJ011681
-  '\u60E5\uDB40\uDD01': '\uF282',  // MJ011687
-  '\u60E7\uDB40\uDD01': '\uF283',  // MJ011690
-  '\u60F9\uDB40\uDD01': '\uF284',  // MJ011704
-  '\u6107\uDB40\uDD01': '\uF285',  // MJ011720
-  '\u6111\uDB40\uDD01': '\uF286',  // MJ011736
-  '\u6112\uDB40\uDD01': '\uF287',  // MJ011738
-  '\u6114\uDB40\uDD01': '\uF288',  // MJ011741
-  '\u6115\uDB40\uDD01': '\uF289',  // MJ011743
-  '\u6116\uDB40\uDD01': '\uF28A',  // MJ011745
-  '\u611B\uDB40\uDD01': '\uF28B',  // MJ011752
-  '\u613A\uDB40\uDD01': '\uF28C',  // MJ011781
-  '\u613C\uDB40\uDD01': '\uF28D',  // MJ011784
-  '\u614A\uDB40\uDD01': '\uF28E',  // MJ011807
-  '\u6155\uDB40\uDD01': '\uF28F',  // MJ011821
-  '\u615C\uDB40\uDD01': '\uF290',  // MJ011829
-  '\u615D\uDB40\uDD01': '\uF291',  // MJ011831
-  '\u615E\uDB40\uDD01': '\uF292',  // MJ011834
-  '\u6165\uDB40\uDD01': '\uF293',  // MJ011844
-  '\u6174\uDB40\uDD01': '\uF294',  // MJ011869
-  '\u6176\uDB40\uDD01': '\uF295',  // MJ011873
-  '\u617A\uDB40\uDD01': '\uF296',  // MJ057518
-  '\u617F\uDB40\uDD01': '\uF297',  // MJ011884
-  '\u6181\uDB40\uDD01': '\uF298',  // MJ011887
-  '\u6182\uDB40\uDD01': '\uF299',  // MJ011891
-  '\u618A\uDB40\uDD01': '\uF29A',  // MJ011899
-  '\u6193\uDB40\uDD01': '\uF29B',  // MJ011911
-  '\u619B\uDB40\uDD01': '\uF29C',  // MJ011921
-  '\u61A7\uDB40\uDD01': '\uF29D',  // MJ011935
-  '\u61AF\uDB40\uDD01': '\uF29E',  // MJ011944
-  '\u61B4\uDB40\uDD01': '\uF29F',  // MJ011954
-  '\u61B6\uDB40\uDD01': '\uF2A0',  // MJ011956
-  '\u61BC\uDB40\uDD01': '\uF2A1',  // MJ011963
-  '\u61C2\uDB40\uDD01': '\uF2A2',  // MJ011971
-  '\u61CA\uDB40\uDD01': '\uF2A3',  // MJ011980
-  '\u61CB\uDB40\uDD01': '\uF2A4',  // MJ011982
-  '\u61CC\uDB40\uDD01': '\uF2A5',  // MJ011983
-  '\u61D0\uDB40\uDD01': '\uF2A6',  // MJ011988
-  '\u61D5\uDB40\uDD01': '\uF2A7',  // MJ011991
-  '\u61DE\uDB40\uDD01': '\uF2A8',  // MJ012001
-  '\u61E5\uDB40\uDD01': '\uF2A9',  // MJ012011
-  '\u61E9\uDB40\uDD01': '\uF2AA',  // MJ012015
-  '\u61EC\uDB40\uDD01': '\uF2AB',  // MJ012019
-  '\u61F5\uDB40\uDD01': '\uF2AC',  // MJ012030
-  '\u61F6\uDB40\uDD01': '\uF2AD',  // MJ012033
-  '\u61FB\uDB40\uDD01': '\uF2AE',  // MJ012039
-  '\u61FD\uDB40\uDD01': '\uF2AF',  // MJ012041
-  '\u61FF\uDB40\uDD01': '\uF2B0',  // MJ012045
-  '\u6205\uDB40\uDD01': '\uF2B1',  // MJ012053
-  '\u6207\uDB40\uDD01': '\uF2B2',  // MJ012054
-  '\u620E\uDB40\uDD01': '\uF2B3',  // MJ012061
-  '\u6214\uDB40\uDD01': '\uF2B4',  // MJ012068
-  '\u621A\uDB40\uDD01': '\uF2B5',  // MJ012072
-  '\u621B\uDB40\uDD01': '\uF2B6',  // MJ012073
-  '\u6220\uDB40\uDD01': '\uF2B7',  // MJ012080
-  '\u6222\uDB40\uDD01': '\uF2B8',  // MJ012084
-  '\u622E\uDB40\uDD01': '\uF2B9',  // MJ012096
-  '\u6233\uDB40\uDD01': '\uF2BA',  // MJ012102
-  '\u6234\uDB40\uDD01': '\uF2BB',  // MJ012104
-  '\u624D\uDB40\uDD01': '\uF2BC',  // MJ012140
-  '\u625A\uDB40\uDD01': '\uF2BD',  // MJ012153
-  '\u625D\uDB40\uDD01': '\uF2BE',  // MJ012158
-  '\u6260\uDB40\uDD01': '\uF2BF',  // MJ012161
-  '\u626E\uDB40\uDD01': '\uF2C0',  // MJ012174
-  '\u6280\uDB40\uDD01': '\uF2C1',  // MJ012194
-  '\u6283\uDB40\uDD01': '\uF2C2',  // MJ012198
-  '\u6286\uDB40\uDD01': '\uF2C3',  // MJ012203
-  '\u6295\uDB40\uDD01': '\uF2C4',  // MJ012217
-  '\u62F4\uDB40\uDD01': '\uF2C5',  // MJ012305
-  '\u62FC\uDB40\uDD01': '\uF2C6',  // MJ012315
-  '\u6308\uDB40\uDD01': '\uF2C7',  // MJ012328
-  '\u6327\uDB40\uDD01': '\uF2C8',  // MJ012350
-  '\u633C\uDB40\uDD01': '\uF2C9',  // MJ012374
-  '\u6344\uDB40\uDD01': '\uF2CA',  // MJ012384
-  '\u634B\uDB40\uDD01': '\uF2CB',  // MJ012393
-  '\u634D\uDB40\uDD01': '\uF2CC',  // MJ012397
-  '\u63D1\uDB40\uDD01': '\uF2CD',  // MJ012540
-  '\u6350\uDB40\uDD01': '\uF2CE',  // MJ012404
-  '\u6353\uDB40\uDD01': '\uF2CF',  // MJ012408
-  '\u6354\uDB40\uDD01': '\uF2D0',  // MJ012409
-  '\u6395\uDB40\uDD01': '\uF2D1',  // MJ012476
-  '\u63A9\uDB40\uDD01': '\uF2D2',  // MJ012498
-  '\u63BE\uDB40\uDD01': '\uF2D3',  // MJ012513
-  '\u63C4\uDB40\uDD01': '\uF2D4',  // MJ012523
-  '\u63C5\uDB40\uDD01': '\uF2D5',  // MJ012525
-  '\u63CF\uDB40\uDD01': '\uF2D6',  // MJ012537
-  '\u63D6\uDB40\uDD01': '\uF2D7',  // MJ012545
-  '\u63DE\uDB40\uDD01': '\uF2D8',  // MJ012555
-  '\u63E0\uDB40\uDD01': '\uF2D9',  // MJ012557
-  '\u63E5\uDB40\uDD01': '\uF2DA',  // MJ012563
-  '\u63F3\uDB40\uDD01': '\uF2DB',  // MJ012579
-  '\u63F5\uDB40\uDD01': '\uF2DC',  // MJ012583
-  '\u640D\uDB40\uDD01': '\uF2DD',  // MJ012600
-  '\u6412\uDB40\uDD01': '\uF2DE',  // MJ012606
-  '\u6422\uDB40\uDD01': '\uF2DF',  // MJ012624
-  '\u6424\uDB40\uDD01': '\uF2E0',  // MJ012628
-  '\u6425\uDB40\uDD01': '\uF2E1',  // MJ012630
-  '\u6426\uDB40\uDD01': '\uF2E2',  // MJ012631
-  '\u6429\uDB40\uDD01': '\uF2E3',  // MJ012638
-  '\u642D\uDB40\uDD01': '\uF2E4',  // MJ012642
-  '\u643D\uDB40\uDD01': '\uF2E5',  // MJ012660
-  '\u644E\uDB40\uDD01': '\uF2E6',  // MJ012671
-  '\u6452\uDB40\uDD01': '\uF2E7',  // MJ012677
-  '\u6453\uDB40\uDD01': '\uF2E8',  // MJ012679
-  '\u6455\uDB40\uDD01': '\uF2E9',  // MJ012682
-  '\u6458\uDB40\uDD01': '\uF2EA',  // MJ012685
-  '\u6459\uDB40\uDD01': '\uF2EB',  // MJ012688
-  '\u645B\uDB40\uDD01': '\uF2EC',  // MJ012690
-  '\u6460\uDB40\uDD01': '\uF2ED',  // MJ012695
-  '\u6461\uDB40\uDD01': '\uF2EE',  // MJ012699
-  '\u6466\uDB40\uDD01': '\uF2EF',  // MJ012704
-  '\u646D\uDB40\uDD01': '\uF2F0',  // MJ012713
-  '\u6473\uDB40\uDD01': '\uF2F1',  // MJ012720
-  '\u6477\uDB40\uDD01': '\uF2F2',  // MJ012726
-  '\u6478\uDB40\uDD01': '\uF2F3',  // MJ012727
-  '\u6479\uDB40\uDD01': '\uF2F4',  // MJ012730
-  '\u6490\uDB40\uDD01': '\uF2F5',  // MJ012755
-  '\u649B\uDB40\uDD01': '\uF2F6',  // MJ012768
-  '\u649E\uDB40\uDD01': '\uF2F7',  // MJ012771
-  '\u64A2\uDB40\uDD01': '\uF2F8',  // MJ012777
-  '\u64B9\uDB40\uDD01': '\uF2F9',  // MJ012797
-  '\u64BB\uDB40\uDD01': '\uF2FA',  // MJ012800
-  '\u64BE\uDB40\uDD01': '\uF2FB',  // MJ012804
-  '\u64C4\uDB40\uDD01': '\uF2FC',  // MJ012810
-  '\u64CD\uDB40\uDD01': '\uF2FD',  // MJ012820
-  '\u64CE\uDB40\uDD01': '\uF2FE',  // MJ012821
-  '\u64D2\uDB40\uDD01': '\uF2FF',  // MJ012826
-  '\u64DA\uDB40\uDD01': '\uF300',  // MJ012835
-  '\u64E4\uDB40\uDD01': '\uF301',  // MJ012845
-  '\u64EA\uDB40\uDD01': '\uF302',  // MJ012852
-  '\u64ED\uDB40\uDD01': '\uF303',  // MJ012857
-  '\u64EF\uDB40\uDD01': '\uF304',  // MJ012860
-  '\u64F4\uDB40\uDD01': '\uF305',  // MJ012869
-  '\u64FF\uDB40\uDD01': '\uF306',  // MJ012887
-  '\u6507\uDB40\uDD01': '\uF307',  // MJ012897
-  '\u650F\uDB40\uDD01': '\uF308',  // MJ012905
-  '\u6514\uDB40\uDD01': '\uF309',  // MJ012909
-  '\u6524\uDB40\uDD01': '\uF30A',  // MJ012928
-  '\u652C\uDB40\uDD01': '\uF30B',  // MJ012936
-  '\u652F\uDB40\uDD01': '\uF30C',  // MJ012940
-  '\u6534\uDB40\uDD01': '\uF30D',  // MJ012946
-  '\u6535\uDB40\uDD01': '\uF30E',  // MJ012947
-  '\u6538\uDB40\uDD01': '\uF30F',  // MJ012953
-  '\u653F\uDB40\uDD01': '\uF310',  // MJ012960
-  '\u6556\uDB40\uDD01': '\uF311',  // MJ012984
-  '\u6566\uDB40\uDD01': '\uF312',  // MJ013001
-  '\u656C\uDB40\uDD01': '\uF313',  // MJ013006
-  '\u6572\uDB40\uDD01': '\uF314',  // MJ013015
-  '\u6575\uDB40\uDD01': '\uF315',  // MJ013018
-  '\u6578\uDB40\uDD01': '\uF316',  // MJ013023
-  '\u657A\uDB40\uDD01': '\uF317',  // MJ013026
-  '\u6581\uDB40\uDD01': '\uF318',  // MJ013031
-  '\u6588\uDB40\uDD01': '\uF319',  // MJ013042
-  '\u659F\uDB40\uDD01': '\uF31A',  // MJ013068
-  '\u65A5\uDB40\uDD01': '\uF31B',  // MJ013075
-  '\u65B2\uDB40\uDD01': '\uF31C',  // MJ013088
-  '\u65B4\uDB40\uDD01': '\uF31D',  // MJ013092
-  '\u65B5\uDB40\uDD01': '\uF31E',  // MJ013094
-  '\u65B7\uDB40\uDD01': '\uF31F',  // MJ013096
-  '\u65C1\uDB40\uDD01': '\uF320',  // MJ013106
-  '\u65C9\uDB40\uDD01': '\uF321',  // MJ013115
-  '\u65D8\uDB40\uDD01': '\uF322',  // MJ013130
-  '\u65DD\uDB40\uDD01': '\uF323',  // MJ013137
-  '\u65DE\uDB40\uDD01': '\uF324',  // MJ013139
-  '\u65E3\uDB40\uDD01': '\uF325',  // MJ013149
-  '\u65E5\uDB40\uDD01': '\uF326',  // MJ013151
-  '\u65F3\uDB40\uDD01': '\uF327',  // MJ013167
-  '\u65FB\uDB40\uDD01': '\uF328',  // MJ013173
-  '\u6600\uDB40\uDD01': '\uF329',  // MJ013181
-  '\u6602\uDB40\uDD01': '\uF32A',  // MJ013184
-  '\u6607\uDB40\uDD01': '\uF32B',  // MJ013190
-  '\u6608\uDB40\uDD01': '\uF32C',  // MJ013191
-  '\u660B\uDB40\uDD01': '\uF32D',  // MJ013197
-  '\u660F\uDB40\uDD01': '\uF32E',  // MJ013203
-  '\u6624\uDB40\uDD01': '\uF32F',  // MJ013228
-  '\u662C\uDB40\uDD01': '\uF330',  // MJ013237
-  '\u6636\uDB40\uDD01': '\uF331',  // MJ013247
-  '\u663C\uDB40\uDD01': '\uF332',  // MJ013255
-  '\u6647\uDB40\uDD01': '\uF333',  // MJ057665
-  '\u6648\uDB40\uDD01': '\uF334',  // MJ013265
-  '\u6659\uDB40\uDD01': '\uF335',  // MJ013282
-  '\u666B\uDB40\uDD01': '\uF336',  // MJ013303
-  '\u6676\uDB40\uDD01': '\uF337',  // MJ013315
-  '\u6680\uDB40\uDD01': '\uF338',  // MJ013327
-  '\u668E\uDB40\uDD01': '\uF339',  // MJ013341
-  '\u6690\uDB40\uDD01': '\uF33A',  // MJ013346
-  '\u669C\uDB40\uDD01': '\uF33B',  // MJ013363
-  '\u66A0\uDB40\uDD01': '\uF33C',  // MJ013368
-  '\u66AE\uDB40\uDD01': '\uF33D',  // MJ013383
-  '\u66B1\uDB40\uDD01': '\uF33E',  // MJ013387
-  '\u66B3\uDB40\uDD01': '\uF33F',  // MJ013391
-  '\u66B9\uDB40\uDD01': '\uF340',  // MJ013401
-  '\u66BC\uDB40\uDD01': '\uF341',  // MJ013405
-  '\u66C3\uDB40\uDD01': '\uF342',  // MJ013418
-  '\u66C4\uDB40\uDD01': '\uF343',  // MJ013419
-  '\u66C5\uDB40\uDD01': '\uF344',  // MJ013421
-  '\u66C8\uDB40\uDD01': '\uF345',  // MJ013425
-  '\u66C9\uDB40\uDD01': '\uF346',  // MJ013426
-  '\u66CF\uDB40\uDD01': '\uF347',  // MJ013432
-  '\u66D6\uDB40\uDD01': '\uF348',  // MJ013444
-  '\u66DA\uDB40\uDD01': '\uF349',  // MJ013449
-  '\u66E0\uDB40\uDD01': '\uF34A',  // MJ013459
-  '\u66E8\uDB40\uDD01': '\uF34B',  // MJ013469
-  '\u66F7\uDB40\uDD01': '\uF34C',  // MJ013488
-  '\u66FE\uDB40\uDD01': '\uF34D',  // MJ013501
-  '\u66FF\uDB40\uDD01': '\uF34E',  // MJ013504
-  '\u6701\uDB40\uDD01': '\uF34F',  // MJ013508
-  '\u6703\uDB40\uDD01': '\uF350',  // MJ013510
-  '\u670E\uDB40\uDD01': '\uF351',  // MJ013529
-  '\u6713\uDB40\uDD01': '\uF352',  // MJ013534
-  '\u6714\uDB40\uDD01': '\uF353',  // MJ013536
-  '\u6719\uDB40\uDD01': '\uF354',  // MJ013545
-  '\u671A\uDB40\uDD01': '\uF355',  // MJ013548
-  '\u671E\uDB40\uDD01': '\uF356',  // MJ013559
-  '\u6720\uDB40\uDD01': '\uF357',  // MJ013564
-  '\u6721\uDB40\uDD01': '\uF358',  // MJ013566
-  '\u6722\uDB40\uDD01': '\uF359',  // MJ013568
-  '\u6723\uDB40\uDD01': '\uF35A',  // MJ057693
-  '\u6726\uDB40\uDD01': '\uF35B',  // MJ013572
-  '\u6727\uDB40\uDD01': '\uF35C',  // MJ013575
-  '\u6748\uDB40\uDD01': '\uF35D',  // MJ013604
-  '\u6757\uDB40\uDD01': '\uF35E',  // MJ013624
-  '\u675C\uDB40\uDD01': '\uF35F',  // MJ013629
-  '\u6781\uDB40\uDD01': '\uF360',  // MJ013672
-  '\u6785\uDB40\uDD01': '\uF361',  // MJ013677
-  '\u678C\uDB40\uDD01': '\uF362',  // MJ013687
-  '\u6792\uDB40\uDD01': '\uF363',  // MJ013695
-  '\u6794\uDB40\uDD01': '\uF364',  // MJ059710
-  '\u6795\uDB40\uDD01': '\uF365',  // MJ013698
-  '\u67B9\uDB40\uDD01': '\uF366',  // MJ013730
-  '\u67D7\uDB40\uDD01': '\uF367',  // MJ013765
-  '\u67DC\uDB40\uDD01': '\uF368',  // MJ013770
-  '\u67F3\uDB40\uDD01': '\uF369',  // MJ013797
-  '\u67FA\uDB40\uDD01': '\uF36A',  // MJ013807
-  '\u67FB\uDB40\uDD01': '\uF36B',  // MJ013808
-  '\u6803\uDB40\uDD01': '\uF36C',  // MJ013818
-  '\u6814\uDB40\uDD01': '\uF36D',  // MJ013828
-  '\u6816\uDB40\uDD01': '\uF36E',  // MJ013832
-  '\u681D\uDB40\uDD01': '\uF36F',  // MJ013840
-  '\u6825\uDB40\uDD01': '\uF370',  // MJ013852
-  '\u6829\uDB40\uDD01': '\uF371',  // MJ013856
-  '\u6832\uDB40\uDD01': '\uF372',  // MJ013866
-  '\u6834\uDB40\uDD01': '\uF373',  // MJ013869
-  '\u6838\uDB40\uDD01': '\uF374',  // MJ013874
-  '\u6840\uDB40\uDD01': '\uF375',  // MJ013884
-  '\u6845\uDB40\uDD01': '\uF376',  // MJ013890
-  '\u6874\uDB40\uDD01': '\uF377',  // MJ013937
-  '\u6875\uDB40\uDD01': '\uF378',  // MJ013939
-  '\u6883\uDB40\uDD01': '\uF379',  // MJ013957
-  '\u6886\uDB40\uDD01': '\uF37A',  // MJ013962
-  '\u688F\uDB40\uDD01': '\uF37B',  // MJ013973
-  '\u689F\uDB40\uDD01': '\uF37C',  // MJ013993
-  '\u68A5\uDB40\uDD01': '\uF37D',  // MJ014001
-  '\u68AD\uDB40\uDD01': '\uF37E',  // MJ014013
-  '\u68B5\uDB40\uDD01': '\uF37F',  // MJ014021
-  '\u68C4\uDB40\uDD01': '\uF380',  // MJ014032
-  '\u68CF\uDB40\uDD01': '\uF381',  // MJ014046
-  '\u68FB\uDB40\uDD01': '\uF382',  // MJ014094
-  '\u6907\uDB40\uDD01': '\uF383',  // MJ014111
-  '\u690C\uDB40\uDD01': '\uF384',  // MJ014116
-  '\u6911\uDB40\uDD01': '\uF385',  // MJ014123
-  '\u6914\uDB40\uDD01': '\uF386',  // MJ014127
-  '\u691B\uDB40\uDD01': '\uF387',  // MJ014135
-  '\u6926\uDB40\uDD01': '\uF388',  // MJ014143
-  '\u6939\uDB40\uDD01': '\uF389',  // MJ014160
-  '\u6946\uDB40\uDD01': '\uF38A',  // MJ014177
-  '\u6949\uDB40\uDD01': '\uF38B',  // MJ014180
-  '\u6954\uDB40\uDD01': '\uF38C',  // MJ014193
-  '\u6956\uDB40\uDD01': '\uF38D',  // MJ014197
-  '\u6957\uDB40\uDD01': '\uF38E',  // MJ014198
-  '\u695B\uDB40\uDD01': '\uF38F',  // MJ014203
-  '\u696E\uDB40\uDD01': '\uF390',  // MJ014229
-  '\u6991\uDB40\uDD01': '\uF391',  // MJ014262
-  '\u6992\uDB40\uDD01': '\uF392',  // MJ014264
-  '\u6998\uDB40\uDD01': '\uF393',  // MJ014273
-  '\u699C\uDB40\uDD01': '\uF394',  // MJ014277
-  '\u69A3\uDB40\uDD01': '\uF395',  // MJ014285
-  '\u69BA\uDB40\uDD01': '\uF396',  // MJ014311
-  '\u69C7\uDB40\uDD01': '\uF397',  // MJ014333
-  '\u69CF\uDB40\uDD01': '\uF398',  // MJ014346
-  '\u69E2\uDB40\uDD01': '\uF399',  // MJ014361
-  '\u69E4\uDB40\uDD01': '\uF39A',  // MJ014365
-  '\u69E9\uDB40\uDD01': '\uF39B',  // MJ014372
-  '\u69EB\uDB40\uDD01': '\uF39C',  // MJ014376
-  '\u69F1\uDB40\uDD01': '\uF39D',  // MJ014384
-  '\u69FF\uDB40\uDD01': '\uF39E',  // MJ014400
-  '\u6A13\uDB40\uDD01': '\uF39F',  // MJ014425
-  '\u6A14\uDB40\uDD01': '\uF3A0',  // MJ014426
-  '\u6A1B\uDB40\uDD01': '\uF3A1',  // MJ014434
-  '\u6A1E\uDB40\uDD01': '\uF3A2',  // MJ014438
-  '\u6A1F\uDB40\uDD01': '\uF3A3',  // MJ014440
-  '\u6A21\uDB40\uDD01': '\uF3A4',  // MJ014443
-  '\u6A23\uDB40\uDD01': '\uF3A5',  // MJ014446
-  '\u6A2A\uDB40\uDD01': '\uF3A6',  // MJ014455
-  '\u6A2E\uDB40\uDD01': '\uF3A7',  // MJ014461
-  '\u6A34\uDB40\uDD01': '\uF3A8',  // MJ014466
-  '\u6A36\uDB40\uDD01': '\uF3A9',  // MJ014471
-  '\u6A39\uDB40\uDD01': '\uF3AA',  // MJ014474
-  '\u6A3A\uDB40\uDD01': '\uF3AB',  // MJ014476
-  '\u6A49\uDB40\uDD01': '\uF3AC',  // MJ014494
-  '\u6A59\uDB40\uDD01': '\uF3AD',  // MJ014511
-  '\u6A5D\uDB40\uDD01': '\uF3AE',  // MJ014516
-  '\u6A61\uDB40\uDD01': '\uF3AF',  // MJ014523
-  '\u6A66\uDB40\uDD01': '\uF3B0',  // MJ014529
-  '\u6A67\uDB40\uDD01': '\uF3B1',  // MJ014531
-  '\u6A80\uDB40\uDD01': '\uF3B2',  // MJ014554
-  '\u6A89\uDB40\uDD01': '\uF3B3',  // MJ014564
-  '\u6A8D\uDB40\uDD01': '\uF3B4',  // MJ014569
-  '\u6A96\uDB40\uDD01': '\uF3B5',  // MJ014582
-  '\u6A9B\uDB40\uDD01': '\uF3B6',  // MJ014588
-  '\u6AA0\uDB40\uDD01': '\uF3B7',  // MJ014596
-  '\u6AA8\uDB40\uDD01': '\uF3B8',  // MJ057832
-  '\u6AAC\uDB40\uDD01': '\uF3B9',  // MJ014608
-  '\u6AB3\uDB40\uDD01': '\uF3BA',  // MJ014618
-  '\u6AB4\uDB40\uDD01': '\uF3BB',  // MJ014621
-  '\u6AB8\uDB40\uDD01': '\uF3BC',  // MJ014626
-  '\u6AC2\uDB40\uDD01': '\uF3BD',  // MJ014638
-  '\u6ACE\uDB40\uDD01': '\uF3BE',  // MJ014652
-  '\u6AD4\uDB40\uDD01': '\uF3BF',  // MJ014658
-  '\u6ADC\uDB40\uDD01': '\uF3C0',  // MJ014673
-  '\u6ADD\uDB40\uDD01': '\uF3C1',  // MJ014675
-  '\u6ADE\uDB40\uDD01': '\uF3C2',  // MJ014677
-  '\u6AE4\uDB40\uDD01': '\uF3C3',  // MJ014686
-  '\u6AF3\uDB40\uDD01': '\uF3C4',  // MJ014701
-  '\u6B02\uDB40\uDD01': '\uF3C5',  // MJ014713
-  '\u6B07\uDB40\uDD01': '\uF3C6',  // MJ014719
-  '\u6B0A\uDB40\uDD01': '\uF3C7',  // MJ014723
-  '\u6B17\uDB40\uDD01': '\uF3C8',  // MJ014734
-  '\u6B1F\uDB40\uDD01': '\uF3C9',  // MJ014745
-  '\u6B2C\uDB40\uDD01': '\uF3CA',  // MJ014760
-  '\u6B2E\uDB40\uDD01': '\uF3CB',  // MJ057877
-  '\u6B3F\uDB40\uDD01': '\uF3CC',  // MJ014780
-  '\u6B46\uDB40\uDD01': '\uF3CD',  // MJ014787
-  '\u6B47\uDB40\uDD01': '\uF3CE',  // MJ014790
-  '\u6B49\uDB40\uDD01': '\uF3CF',  // MJ014792
-  '\u6B50\uDB40\uDD01': '\uF3D0',  // MJ014801
-  '\u6B54\uDB40\uDD01': '\uF3D1',  // MJ014807
-  '\u6B55\uDB40\uDD01': '\uF3D2',  // MJ014809
-  '\u6B59\uDB40\uDD01': '\uF3D3',  // MJ014813
-  '\u6B61\uDB40\uDD01': '\uF3D4',  // MJ014821
-  '\u6B62\uDB40\uDD01': '\uF3D5',  // MJ014823
-  '\u6B6F\uDB40\uDD01': '\uF3D6',  // MJ014837
-  '\u6B70\uDB40\uDD01': '\uF3D7',  // MJ014838
-  '\u6B72\uDB40\uDD01': '\uF3D8',  // MJ014842
-  '\u6B73\uDB40\uDD01': '\uF3D9',  // MJ014844
-  '\u6B78\uDB40\uDD01': '\uF3DA',  // MJ014849
-  '\u6B8D\uDB40\uDD01': '\uF3DB',  // MJ014869
-  '\u6B9F\uDB40\uDD01': '\uF3DC',  // MJ014885
-  '\u6BA9\uDB40\uDD01': '\uF3DD',  // MJ014894
-  '\u6BAF\uDB40\uDD01': '\uF3DE',  // MJ014901
-  '\u6BB0\uDB40\uDD01': '\uF3DF',  // MJ014904
-  '\u6BB3\uDB40\uDD01': '\uF3E0',  // MJ014908
-  '\u6BB8\uDB40\uDD01': '\uF3E1',  // MJ014914
-  '\u6BBC\uDB40\uDD01': '\uF3E2',  // MJ014919
-  '\u6BC5\uDB40\uDD01': '\uF3E3',  // MJ014928
-  '\u6BC6\uDB40\uDD01': '\uF3E4',  // MJ014929
-  '\u6BD2\uDB40\uDD01': '\uF3E5',  // MJ014943
-  '\u6BD3\uDB40\uDD01': '\uF3E6',  // MJ014944
-  '\u6BFA\uDB40\uDD01': '\uF3E7',  // MJ014979
-  '\u6C03\uDB40\uDD01': '\uF3E8',  // MJ014989
-  '\u6C0E\uDB40\uDD01': '\uF3E9',  // MJ015002
-  '\u6C10\uDB40\uDD01': '\uF3EA',  // MJ015005
-  '\u6C14\uDB40\uDD01': '\uF3EB',  // MJ015011
-  '\u6C1B\uDB40\uDD01': '\uF3EC',  // MJ015015
-  '\u6C42\uDB40\uDD01': '\uF3ED',  // MJ015049
-  '\u6C4D\uDB40\uDD01': '\uF3EE',  // MJ015059
-  '\u6C4E\uDB40\uDD01': '\uF3EF',  // MJ015061
-  '\u6C52\uDB40\uDD01': '\uF3F0',  // MJ015066
-  '\u6C5B\uDB40\uDD01': '\uF3F1',  // MJ015076
-  '\u6C67\uDB40\uDD01': '\uF3F2',  // MJ015091
-  '\u6C6D\uDB40\uDD01': '\uF3F3',  // MJ015098
-  '\u6C74\uDB40\uDD01': '\uF3F4',  // MJ015108
-  '\u6C76\uDB40\uDD01': '\uF3F5',  // MJ015111
-  '\u6C7E\uDB40\uDD01': '\uF3F6',  // MJ015120
-  '\u6C88\uDB40\uDD01': '\uF3F7',  // MJ015132
-  '\u6C97\uDB40\uDD01': '\uF3F8',  // MJ015148
-  '\u6CA0\uDB40\uDD01': '\uF3F9',  // MJ015159
-  '\u6CA1\uDB40\uDD01': '\uF3FA',  // MJ015160
-  '\u6CB7\uDB40\uDD01': '\uF3FB',  // MJ015177
-  '\u6CD2\uDB40\uDD01': '\uF3FC',  // MJ015209
-  '\u6CD9\uDB40\uDD01': '\uF3FD',  // MJ015217
-  '\u6CE7\uDB40\uDD01': '\uF3FE',  // MJ015233
-  '\u6CF0\uDB40\uDD01': '\uF3FF',  // MJ015245
-  '\u6CFB\uDB40\uDD01': '\uF400',  // MJ015252
-  '\u6D25\uDB40\uDD01': '\uF401',  // MJ015296
-  '\u6D29\uDB40\uDD01': '\uF402',  // MJ015300
-  '\u6D2F\uDB40\uDD01': '\uF403',  // MJ015306
-  '\u6D34\uDB40\uDD01': '\uF404',  // MJ015313
-  '\u6D41\uDB40\uDD01': '\uF405',  // MJ015330
-  '\u6D8E\uDB40\uDD01': '\uF406',  // MJ015397
-  '\u6DAC\uDB40\uDD01': '\uF407',  // MJ015415
-  '\u6DB5\uDB40\uDD01': '\uF408',  // MJ015425
-  '\u6DBF\uDB40\uDD01': '\uF409',  // MJ015436
-  '\uD84F\uDD60\uDB40\uDD01': '\uF40A',  // MJ068061
-  '\u6DC3\uDB40\uDD01': '\uF40B',  // MJ015443
-  '\u6DCA\uDB40\uDD01': '\uF40C',  // MJ015451
-  '\u6DCC\uDB40\uDD01': '\uF40D',  // MJ015454
-  '\u6DCF\uDB40\uDD01': '\uF40E',  // MJ015459
-  '\u6DDE\uDB40\uDD01': '\uF40F',  // MJ015477
-  '\u6DE8\uDB40\uDD01': '\uF410',  // MJ015488
-  '\u6DF5\uDB40\uDD01': '\uF411',  // MJ015504
-  '\u6E1D\uDB40\uDD01': '\uF412',  // MJ015541
-  '\u6E20\uDB40\uDD01': '\uF413',  // MJ015545
-  '\u6E27\uDB40\uDD01': '\uF414',  // MJ015554
-  '\u6E2E\uDB40\uDD01': '\uF415',  // MJ015562
-  '\u6E33\uDB40\uDD01': '\uF416',  // MJ015572
-  '\u6E36\uDB40\uDD01': '\uF417',  // MJ015575
-  '\u6E4E\uDB40\uDD01': '\uF418',  // MJ015601
-  '\u6E52\uDB40\uDD01': '\uF419',  // MJ015605
-  '\u6E5B\uDB40\uDD01': '\uF41A',  // MJ015615
-  '\u6E67\uDB40\uDD01': '\uF41B',  // MJ015630
-  '\u6E74\uDB40\uDD01': '\uF41C',  // MJ015650
-  '\u6E7C\uDB40\uDD01': '\uF41D',  // MJ015658
-  '\u6E80\uDB40\uDD01': '\uF41E',  // MJ015663
-  '\u6E8F\uDB40\uDD01': '\uF41F',  // MJ015670
-  '\u6E90\uDB40\uDD01': '\uF420',  // MJ015672
-  '\u6E93\uDB40\uDD01': '\uF421',  // MJ015675
-  '\u6EA5\uDB40\uDD01': '\uF422',  // MJ015697
-  '\u6EAA\uDB40\uDD01': '\uF423',  // MJ015703
-  '\u6EB2\uDB40\uDD01': '\uF424',  // MJ015713
-  '\u6EBF\uDB40\uDD01': '\uF425',  // MJ015729
-  '\u6EC2\uDB40\uDD01': '\uF426',  // MJ015733
-  '\u6EC7\uDB40\uDD01': '\uF427',  // MJ015738
-  '\u6ED4\uDB40\uDD01': '\uF428',  // MJ015755
-  '\u6EF0\uDB40\uDD01': '\uF429',  // MJ015780
-  '\u6EF4\uDB40\uDD01': '\uF42A',  // MJ015783
-  '\u6EFF\uDB40\uDD01': '\uF42B',  // MJ015796
-  '\u6F01\uDB40\uDD01': '\uF42C',  // MJ015800
-  '\u6F13\uDB40\uDD01': '\uF42D',  // MJ015824
-  '\u6F1A\uDB40\uDD01': '\uF42E',  // MJ015831
-  '\u6F20\uDB40\uDD01': '\uF42F',  // MJ015838
-  '\u6F28\uDB40\uDD01': '\uF430',  // MJ015851
-  '\u6F2B\uDB40\uDD01': '\uF431',  // MJ015855
-  '\u6F2D\uDB40\uDD01': '\uF432',  // MJ015857
-  '\u6F33\uDB40\uDD01': '\uF433',  // MJ015864
-  '\u6F3B\uDB40\uDD01': '\uF434',  // MJ015873
-  '\u6F6D\uDB40\uDD01': '\uF435',  // MJ015935
-  '\u6F6F\uDB40\uDD01': '\uF436',  // MJ015938
-  '\u6F78\uDB40\uDD01': '\uF437',  // MJ015949
-  '\u6F7C\uDB40\uDD01': '\uF438',  // MJ015954
-  '\u6F7E\uDB40\uDD01': '\uF439',  // MJ015958
-  '\u6F7F\uDB40\uDD01': '\uF43A',  // MJ015961
-  '\u6F80\uDB40\uDD01': '\uF43B',  // MJ015962
-  '\u6F82\uDB40\uDD01': '\uF43C',  // MJ015966
-  '\u6F9A\uDB40\uDD01': '\uF43D',  // MJ015993
-  '\u6FA0\uDB40\uDD01': '\uF43E',  // MJ015997
-  '\u6FA4\uDB40\uDD01': '\uF43F',  // MJ016002
-  '\u6FAB\uDB40\uDD01': '\uF440',  // MJ016012
-  '\u6FAF\uDB40\uDD01': '\uF441',  // MJ016018
-  '\u6FB3\uDB40\uDD01': '\uF442',  // MJ016023
-  '\u6FB7\uDB40\uDD01': '\uF443',  // MJ016028
-  '\u6FBE\uDB40\uDD01': '\uF444',  // MJ016037
-  '\u6FC2\uDB40\uDD01': '\uF445',  // MJ016041
-  '\u6FC4\uDB40\uDD01': '\uF446',  // MJ016045
-  '\u6FC6\uDB40\uDD01': '\uF447',  // MJ016047
-  '\u6FC8\uDB40\uDD01': '\uF448',  // MJ016050
-  '\u6FD8\uDB40\uDD01': '\uF449',  // MJ016064
-  '\u6FDB\uDB40\uDD01': '\uF44A',  // MJ016068
-  '\u6FE0\uDB40\uDD01': '\uF44B',  // MJ016075
-  '\u6FE8\uDB40\uDD01': '\uF44C',  // MJ016084
-  '\u6FE9\uDB40\uDD01': '\uF44D',  // MJ016087
-  '\u6FF1\uDB40\uDD01': '\uF44E',  // MJ016101
-  '\u6FF5\uDB40\uDD01': '\uF44F',  // MJ016106
-  '\u7001\uDB40\uDD01': '\uF450',  // MJ016119
-  '\u7007\uDB40\uDD01': '\uF451',  // MJ016127
-  '\u700E\uDB40\uDD01': '\uF452',  // MJ016135
-  '\u7010\uDB40\uDD01': '\uF453',  // MJ016137
-  '\u7013\uDB40\uDD01': '\uF454',  // MJ057976
-  '\u701A\uDB40\uDD01': '\uF455',  // MJ016150
-  '\u701F\uDB40\uDD01': '\uF456',  // MJ016166
-  '\u7021\uDB40\uDD01': '\uF457',  // MJ016168
-  '\u7022\uDB40\uDD01': '\uF458',  // MJ016171
-  '\u7037\uDB40\uDD01': '\uF459',  // MJ016200
-  '\u703E\uDB40\uDD01': '\uF45A',  // MJ016207
-  '\u7041\uDB40\uDD01': '\uF45B',  // MJ016212
-  '\u7044\uDB40\uDD01': '\uF45C',  // MJ016215
-  '\u7047\uDB40\uDD01': '\uF45D',  // MJ016219
-  '\u704C\uDB40\uDD01': '\uF45E',  // MJ016226
-  '\u7055\uDB40\uDD01': '\uF45F',  // MJ016234
-  '\u7068\uDB40\uDD01': '\uF460',  // MJ016257
-  '\u706E\uDB40\uDD01': '\uF461',  // MJ016262
-  '\u7077\uDB40\uDD01': '\uF462',  // MJ016276
-  '\u707D\uDB40\uDD01': '\uF463',  // MJ016284
-  '\u7081\uDB40\uDD01': '\uF464',  // MJ016288
-  '\u7089\uDB40\uDD01': '\uF465',  // MJ016297
-  '\u70AC\uDB40\uDD01': '\uF466',  // MJ016331
-  '\u70AE\uDB40\uDD01': '\uF467',  // MJ016335
-  '\u70B3\uDB40\uDD01': '\uF468',  // MJ016341
-  '\u70B7\uDB40\uDD01': '\uF469',  // MJ016346
-  '\u70E4\uDB40\uDD01': '\uF46A',  // MJ016385
-  '\u7108\uDB40\uDD01': '\uF46B',  // MJ016413
-  '\u710F\uDB40\uDD01': '\uF46C',  // MJ016422
-  '\u712B\uDB40\uDD01': '\uF46D',  // MJ016445
-  '\u7136\uDB40\uDD01': '\uF46E',  // MJ016458
-  '\u7141\uDB40\uDD01': '\uF46F',  // MJ016465
-  '\u7156\uDB40\uDD01': '\uF470',  // MJ016492
-  '\u717A\uDB40\uDD01': '\uF471',  // MJ016529
-  '\u7188\uDB40\uDD01': '\uF472',  // MJ016545
-  '\u7196\uDB40\uDD01': '\uF473',  // MJ016564
-  '\u71A2\uDB40\uDD01': '\uF474',  // MJ016577
-  '\u71A5\uDB40\uDD01': '\uF475',  // MJ016581
-  '\u71BE\uDB40\uDD01': '\uF476',  // MJ016605
-  '\u71BF\uDB40\uDD01': '\uF477',  // MJ016607
-  '\u71C1\uDB40\uDD01': '\uF478',  // MJ016611
-  '\u71C2\uDB40\uDD01': '\uF479',  // MJ016616
-  '\u71CC\uDB40\uDD01': '\uF47A',  // MJ016626
-  '\u71D3\uDB40\uDD01': '\uF47B',  // MJ016635
-  '\u71D5\uDB40\uDD01': '\uF47C',  // MJ016637
-  '\u71E0\uDB40\uDD01': '\uF47D',  // MJ016646
-  '\u71E7\uDB40\uDD01': '\uF47E',  // MJ016655
-  '\u71EE\uDB40\uDD01': '\uF47F',  // MJ016665
-  '\u71F5\uDB40\uDD01': '\uF480',  // MJ016673
-  '\u71FB\uDB40\uDD01': '\uF481',  // MJ016677
-  '\u7207\uDB40\uDD01': '\uF482',  // MJ016691
-  '\u7209\uDB40\uDD01': '\uF483',  // MJ016694
-  '\u7217\uDB40\uDD01': '\uF484',  // MJ016708
-  '\u721B\uDB40\uDD01': '\uF485',  // MJ016712
-  '\u721F\uDB40\uDD01': '\uF486',  // MJ016718
-  '\u7224\uDB40\uDD01': '\uF487',  // MJ016723
-  '\u722F\uDB40\uDD01': '\uF488',  // MJ016738
-  '\u7230\uDB40\uDD01': '\uF489',  // MJ016740
-  '\u7232\uDB40\uDD01': '\uF48A',  // MJ016743
-  '\u7238\uDB40\uDD01': '\uF48B',  // MJ016751
-  '\u7239\uDB40\uDD01': '\uF48C',  // MJ016753
-  '\u7240\uDB40\uDD01': '\uF48D',  // MJ016766
-  '\u7246\uDB40\uDD01': '\uF48E',  // MJ016773
-  '\u7247\uDB40\uDD01': '\uF48F',  // MJ016775
-  '\u7250\uDB40\uDD01': '\uF490',  // MJ016788
-  '\u7253\uDB40\uDD01': '\uF491',  // MJ016791
-  '\u7255\uDB40\uDD01': '\uF492',  // MJ016794
-  '\u725A\uDB40\uDD01': '\uF493',  // MJ016805
-  '\u727D\uDB40\uDD01': '\uF494',  // MJ016837
-  '\u7280\uDB40\uDD01': '\uF495',  // MJ016843
-  '\u7282\uDB40\uDD01': '\uF496',  // MJ016845
-  '\u7297\uDB40\uDD01': '\uF497',  // MJ058026
-  '\u72AE\uDB40\uDD01': '\uF498',  // MJ016887
-  '\u72AF\uDB40\uDD01': '\uF499',  // MJ016889
-  '\u72B3\uDB40\uDD01': '\uF49A',  // MJ016895
-  '\u72CA\uDB40\uDD01': '\uF49B',  // MJ016917
-  '\u72D0\uDB40\uDD01': '\uF49C',  // MJ016925
-  '\u72F7\uDB40\uDD01': '\uF49D',  // MJ016958
-  '\u732B\uDB40\uDD01': '\uF49E',  // MJ017009
-  '\u7330\uDB40\uDD01': '\uF49F',  // MJ017016
-  '\u734D\uDB40\uDD01': '\uF4A0',  // MJ017049
-  '\u734F\uDB40\uDD01': '\uF4A1',  // MJ017052
-  '\u7350\uDB40\uDD01': '\uF4A2',  // MJ017054
-  '\u7352\uDB40\uDD01': '\uF4A3',  // MJ017057
-  '\u735E\uDB40\uDD01': '\uF4A4',  // MJ017069
-  '\u7363\uDB40\uDD01': '\uF4A5',  // MJ017076
-  '\u7366\uDB40\uDD01': '\uF4A6',  // MJ017078
-  '\u7370\uDB40\uDD01': '\uF4A7',  // MJ017088
-  '\u7372\uDB40\uDD01': '\uF4A8',  // MJ017091
-  '\u7378\uDB40\uDD01': '\uF4A9',  // MJ017098
-  '\u737A\uDB40\uDD01': '\uF4AA',  // MJ017100
-  '\u7381\uDB40\uDD01': '\uF4AB',  // MJ017108
-  '\u7388\uDB40\uDD01': '\uF4AC',  // MJ059891
-  '\u7389\uDB40\uDD01': '\uF4AD',  // MJ017118
-  '\u7393\uDB40\uDD01': '\uF4AE',  // MJ017128
-  '\u739F\uDB40\uDD01': '\uF4AF',  // MJ017139
-  '\u73A3\uDB40\uDD01': '\uF4B0',  // MJ068063
-  '\u73AA\uDB40\uDD01': '\uF4B1',  // MJ017152
-  '\u73BA\uDB40\uDD01': '\uF4B2',  // MJ017170
-  '\u73F5\uDB40\uDD01': '\uF4B3',  // MJ017235
-  '\u73F9\uDB40\uDD01': '\uF4B4',  // MJ017240
-  '\u73FD\uDB40\uDD01': '\uF4B5',  // MJ017246
-  '\u740A\uDB40\uDD01': '\uF4B6',  // MJ017262
-  '\u742A\uDB40\uDD01': '\uF4B7',  // MJ017294
-  '\u7434\uDB40\uDD01': '\uF4B8',  // MJ017306
-  '\u7441\uDB40\uDD01': '\uF4B9',  // MJ017321
-  '\u7447\uDB40\uDD01': '\uF4BA',  // MJ017329
-  '\u744A\uDB40\uDD01': '\uF4BB',  // MJ059902
-  '\u744B\uDB40\uDD01': '\uF4BC',  // MJ017334
-  '\u7451\uDB40\uDD01': '\uF4BD',  // MJ017341
-  '\u7459\uDB40\uDD01': '\uF4BE',  // MJ017350
-  '\u745B\uDB40\uDD01': '\uF4BF',  // MJ017352
-  '\u745C\uDB40\uDD01': '\uF4C0',  // MJ017354
-  '\u7463\uDB40\uDD01': '\uF4C1',  // MJ017365
-  '\u7465\uDB40\uDD01': '\uF4C2',  // MJ058047
-  '\u746C\uDB40\uDD01': '\uF4C3',  // MJ017376
-  '\u746E\uDB40\uDD01': '\uF4C4',  // MJ017379
-  '\u746F\uDB40\uDD01': '\uF4C5',  // MJ017381
-  '\u7471\uDB40\uDD01': '\uF4C6',  // MJ017384
-  '\u7474\uDB40\uDD01': '\uF4C7',  // MJ058049
-  '\u747E\uDB40\uDD01': '\uF4C8',  // MJ017400
-  '\u7481\uDB40\uDD01': '\uF4C9',  // MJ017404
-  '\u7483\uDB40\uDD01': '\uF4CA',  // MJ017408
-  '\u7485\uDB40\uDD01': '\uF4CB',  // MJ017411
-  '\u7488\uDB40\uDD01': '\uF4CC',  // MJ017415
-  '\u7489\uDB40\uDD01': '\uF4CD',  // MJ017417
-  '\u748A\uDB40\uDD01': '\uF4CE',  // MJ017419
-  '\u748B\uDB40\uDD01': '\uF4CF',  // MJ017420
-  '\u7498\uDB40\uDD01': '\uF4D0',  // MJ017433
-  '\u74A1\uDB40\uDD01': '\uF4D1',  // MJ017443
-  '\u74A3\uDB40\uDD01': '\uF4D2',  // MJ017446
-  '\u74A5\uDB40\uDD01': '\uF4D3',  // MJ017449
-  '\u74A6\uDB40\uDD01': '\uF4D4',  // MJ017452
-  '\u74A9\uDB40\uDD01': '\uF4D5',  // MJ017455
-  '\u74B2\uDB40\uDD01': '\uF4D6',  // MJ017468
-  '\u74CB\uDB40\uDD01': '\uF4D7',  // MJ017499
-  '\u74CF\uDB40\uDD01': '\uF4D8',  // MJ017504
-  '\u74DA\uDB40\uDD01': '\uF4D9',  // MJ017516
-  '\u74DE\uDB40\uDD01': '\uF4DA',  // MJ017524
-  '\u74DF\uDB40\uDD01': '\uF4DB',  // MJ017527
-  '\u74E2\uDB40\uDD01': '\uF4DC',  // MJ017533
-  '\u74E3\uDB40\uDD01': '\uF4DD',  // MJ017536
-  '\u74E4\uDB40\uDD01': '\uF4DE',  // MJ017538
-  '\u74EE\uDB40\uDD01': '\uF4DF',  // MJ017548
-  '\u74F0\uDB40\uDD01': '\uF4E0',  // MJ017552
-  '\u74F4\uDB40\uDD01': '\uF4E1',  // MJ017557
-  '\u7501\uDB40\uDD01': '\uF4E2',  // MJ017572
-  '\u7506\uDB40\uDD01': '\uF4E3',  // MJ017581
-  '\u750E\uDB40\uDD01': '\uF4E4',  // MJ017595
-  '\u751A\uDB40\uDD01': '\uF4E5',  // MJ017612
-  '\u7527\uDB40\uDD01': '\uF4E6',  // MJ017627
-  '\u752C\uDB40\uDD01': '\uF4E7',  // MJ017633
-  '\u7537\uDB40\uDD01': '\uF4E8',  // MJ017642
-  '\u7539\uDB40\uDD01': '\uF4E9',  // MJ017644
-  '\u753B\uDB40\uDD01': '\uF4EA',  // MJ017647
-  '\u753E\uDB40\uDD01': '\uF4EB',  // MJ017651
-  '\u7543\uDB40\uDD01': '\uF4EC',  // MJ017657
-  '\u7547\uDB40\uDD01': '\uF4ED',  // MJ017661
-  '\u7559\uDB40\uDD01': '\uF4EE',  // MJ017681
-  '\u7561\uDB40\uDD01': '\uF4EF',  // MJ017691
-  '\u7570\uDB40\uDD01': '\uF4F0',  // MJ017706
-  '\u7583\uDB40\uDD01': '\uF4F1',  // MJ017727
-  '\uD853\uDD38\uDB40\uDD01': '\uF4F2',  // MJ017747
-  '\u75B1\uDB40\uDD01': '\uF4F3',  // MJ017765
-  '\u75CA\uDB40\uDD01': '\uF4F4',  // MJ017790
-  '\u75CE\uDB40\uDD01': '\uF4F5',  // MJ017795
-  '\u75D0\uDB40\uDD01': '\uF4F6',  // MJ017799
-  '\u75DC\uDB40\uDD01': '\uF4F7',  // MJ017810
-  '\u75FB\uDB40\uDD01': '\uF4F8',  // MJ017840
-  '\u7600\uDB40\uDD01': '\uF4F9',  // MJ017846
-  '\u7603\uDB40\uDD01': '\uF4FA',  // MJ017849
-  '\u7609\uDB40\uDD01': '\uF4FB',  // MJ017855
-  '\u7616\uDB40\uDD01': '\uF4FC',  // MJ017869
-  '\u761B\uDB40\uDD01': '\uF4FD',  // MJ017874
-  '\u761F\uDB40\uDD01': '\uF4FE',  // MJ017880
-  '\u7622\uDB40\uDD01': '\uF4FF',  // MJ017883
-  '\u7627\uDB40\uDD01': '\uF500',  // MJ017890
-  '\u7629\uDB40\uDD01': '\uF501',  // MJ017893
-  '\u7634\uDB40\uDD01': '\uF502',  // MJ017903
-  '\u763C\uDB40\uDD01': '\uF503',  // MJ017912
-  '\u7641\uDB40\uDD01': '\uF504',  // MJ017917
-  '\u7647\uDB40\uDD01': '\uF505',  // MJ017923
-  '\u7650\uDB40\uDD01': '\uF506',  // MJ017933
-  '\u7658\uDB40\uDD01': '\uF507',  // MJ017943
-  '\u7662\uDB40\uDD01': '\uF508',  // MJ017952
-  '\u7665\uDB40\uDD01': '\uF509',  // MJ017956
-  '\u7671\uDB40\uDD01': '\uF50A',  // MJ017969
-  '\u7680\uDB40\uDD01': '\uF50B',  // MJ017987
-  '\u7682\uDB40\uDD01': '\uF50C',  // MJ017989
-  '\u768D\uDB40\uDD01': '\uF50D',  // MJ018005
-  '\u768E\uDB40\uDD01': '\uF50E',  // MJ018007
-  '\u769E\uDB40\uDD01': '\uF50F',  // MJ018026
-  '\u76A3\uDB40\uDD01': '\uF510',  // MJ018032
-  '\u76A7\uDB40\uDD01': '\uF511',  // MJ018039
-  '\u76B0\uDB40\uDD01': '\uF512',  // MJ018048
-  '\u76B4\uDB40\uDD01': '\uF513',  // MJ018051
-  '\u76B6\uDB40\uDD01': '\uF514',  // MJ018055
-  '\u76B7\uDB40\uDD01': '\uF515',  // MJ018057
-  '\u76C8\uDB40\uDD01': '\uF516',  // MJ018076
-  '\u76E1\uDB40\uDD01': '\uF517',  // MJ018101
-  '\u76E3\uDB40\uDD01': '\uF518',  // MJ018103
-  '\u76FB\uDB40\uDD01': '\uF519',  // MJ018132
-  '\u7704\uDB40\uDD01': '\uF51A',  // MJ018142
-  '\u7714\uDB40\uDD01': '\uF51B',  // MJ018159
-  '\u772B\uDB40\uDD01': '\uF51C',  // MJ018190
-  '\u773E\uDB40\uDD01': '\uF51D',  // MJ018210
-  '\u7740\uDB40\uDD01': '\uF51E',  // MJ018213
-  '\u774A\uDB40\uDD01': '\uF51F',  // MJ018224
-  '\u775B\uDB40\uDD01': '\uF520',  // MJ018240
-  '\u776A\uDB40\uDD01': '\uF521',  // MJ018256
-  '\u776D\uDB40\uDD01': '\uF522',  // MJ018260
-  '\u7770\uDB40\uDD01': '\uF523',  // MJ018263
-  '\u7779\uDB40\uDD01': '\uF524',  // MJ018273
-  '\u7784\uDB40\uDD01': '\uF525',  // MJ018285
-  '\u778B\uDB40\uDD01': '\uF526',  // MJ018293
-  '\u778E\uDB40\uDD01': '\uF527',  // MJ018297
-  '\u7795\uDB40\uDD01': '\uF528',  // MJ018304
-  '\u77B1\uDB40\uDD01': '\uF529',  // MJ018337
-  '\u77B3\uDB40\uDD01': '\uF52A',  // MJ018340
-  '\u77B5\uDB40\uDD01': '\uF52B',  // MJ018344
-  '\u77C7\uDB40\uDD01': '\uF52C',  // MJ018362
-  '\u77CC\uDB40\uDD01': '\uF52D',  // MJ018368
-  '\u77D2\uDB40\uDD01': '\uF52E',  // MJ018376
-  '\u77D7\uDB40\uDD01': '\uF52F',  // MJ018382
-  '\u77F1\uDB40\uDD01': '\uF530',  // MJ018409
-  '\u7809\uDB40\uDD01': '\uF531',  // MJ018431
-  '\u7811\uDB40\uDD01': '\uF532',  // MJ018442
-  '\u784E\uDB40\uDD01': '\uF533',  // MJ018493
-  '\u784F\uDB40\uDD01': '\uF534',  // MJ018495
-  '\u786B\uDB40\uDD01': '\uF535',  // MJ018519
-  '\u786E\uDB40\uDD01': '\uF536',  // MJ018523
-  '\u7874\uDB40\uDD01': '\uF537',  // MJ018529
-  '\u787A\uDB40\uDD01': '\uF538',  // MJ018533
-  '\u787B\uDB40\uDD01': '\uF539',  // MJ018536
-  '\u788C\uDB40\uDD01': '\uF53A',  // MJ018555
-  '\u78A3\uDB40\uDD01': '\uF53B',  // MJ018577
-  '\u78A4\uDB40\uDD01': '\uF53C',  // MJ018579
-  '\u78B0\uDB40\uDD01': '\uF53D',  // MJ018593
-  '\u78BA\uDB40\uDD01': '\uF53E',  // MJ018598
-  '\u78C1\uDB40\uDD01': '\uF53F',  // MJ018607
-  '\u78C5\uDB40\uDD01': '\uF540',  // MJ018614
-  '\u78CC\uDB40\uDD01': '\uF541',  // MJ018622
-  '\u78CD\uDB40\uDD01': '\uF542',  // MJ018625
-  '\u78D3\uDB40\uDD01': '\uF543',  // MJ018633
-  '\u78F7\uDB40\uDD01': '\uF544',  // MJ018672
-  '\u78F9\uDB40\uDD01': '\uF545',  // MJ018675
-  '\u7907\uDB40\uDD01': '\uF546',  // MJ018685
-  '\u791A\uDB40\uDD01': '\uF547',  // MJ018704
-  '\u791E\uDB40\uDD01': '\uF548',  // MJ018709
-  '\u7920\uDB40\uDD01': '\uF549',  // MJ018712
-  '\u7926\uDB40\uDD01': '\uF54A',  // MJ018717
-  '\u792E\uDB40\uDD01': '\uF54B',  // MJ018728
-  '\u7931\uDB40\uDD01': '\uF54C',  // MJ018732
-  '\u7932\uDB40\uDD01': '\uF54D',  // MJ018735
-  '\u7936\uDB40\uDD01': '\uF54E',  // MJ018743
-  '\u793D\uDB40\uDD01': '\uF54F',  // MJ018752
-  '\u793F\uDB40\uDD01': '\uF550',  // MJ018755
-  '\u7945\uDB40\uDD01': '\uF551',  // MJ018767
-  '\u7946\uDB40\uDD01': '\uF552',  // MJ018769
-  '\u794A\uDB40\uDD01': '\uF553',  // MJ018775
-  '\u794B\uDB40\uDD01': '\uF554',  // MJ018777
-  '\u794C\uDB40\uDD01': '\uF555',  // MJ018779
-  '\u794F\uDB40\uDD01': '\uF556',  // MJ018781
-  '\u9FC6\uDB40\uDD01': '\uF557',  // MJ018788
-  '\u7954\uDB40\uDD01': '\uF558',  // MJ018791
-  '\u7955\uDB40\uDD01': '\uF559',  // MJ018792
-  '\u7957\uDB40\uDD01': '\uF55A',  // MJ018796
-  '\u7958\uDB40\uDD01': '\uF55B',  // MJ018798
-  '\u7959\uDB40\uDD01': '\uF55C',  // MJ018802
-  '\u795A\uDB40\uDD01': '\uF55D',  // MJ018804
-  '\u795B\uDB40\uDD01': '\uF55E',  // MJ018807
-  '\u795C\uDB40\uDD01': '\uF55F',  // MJ018809
-  '\u7960\uDB40\uDD01': '\uF560',  // MJ018814
-  '\u7961\uDB40\uDD01': '\uF561',  // MJ018816
-  '\u7963\uDB40\uDD01': '\uF562',  // MJ018823
-  '\u7967\uDB40\uDD01': '\uF563',  // MJ018829
-  '\u796B\uDB40\uDD01': '\uF564',  // MJ018834
-  '\u796C\uDB40\uDD01': '\uF565',  // MJ018836
-  '\u796E\uDB40\uDD01': '\uF566',  // MJ018839
-  '\u7971\uDB40\uDD01': '\uF567',  // MJ018846
-  '\u7972\uDB40\uDD01': '\uF568',  // MJ018849
-  '\u7973\uDB40\uDD01': '\uF569',  // MJ018851
-  '\u7974\uDB40\uDD01': '\uF56A',  // MJ018852
-  '\u797A\uDB40\uDD01': '\uF56B',  // MJ018858
-  '\u797B\uDB40\uDD01': '\uF56C',  // MJ018860
-  '\u797C\uDB40\uDD01': '\uF56D',  // MJ018862
-  '\u797E\uDB40\uDD01': '\uF56E',  // MJ018865
-  '\u797F\uDB40\uDD01': '\uF56F',  // MJ018867
-  '\u7980\uDB40\uDD01': '\uF570',  // MJ018869
-  '\u7982\uDB40\uDD01': '\uF571',  // MJ018873
-  '\u7984\uDB40\uDD01': '\uF572',  // MJ018878
-  '\u7985\uDB40\uDD01': '\uF573',  // MJ018881
-  '\u798A\uDB40\uDD01': '\uF574',  // MJ018887
-  '\u798B\uDB40\uDD01': '\uF575',  // MJ018891
-  '\u7991\uDB40\uDD01': '\uF576',  // MJ018901
-  '\u7992\uDB40\uDD01': '\uF577',  // MJ018903
-  '\u7993\uDB40\uDD01': '\uF578',  // MJ018906
-  '\u7994\uDB40\uDD01': '\uF579',  // MJ018908
-  '\u7995\uDB40\uDD01': '\uF57A',  // MJ018912
-  '\u7996\uDB40\uDD01': '\uF57B',  // MJ018915
-  '\u7997\uDB40\uDD01': '\uF57C',  // MJ018917
-  '\u7998\uDB40\uDD01': '\uF57D',  // MJ018919
-  '\u799A\uDB40\uDD01': '\uF57E',  // MJ018921
-  '\u799D\uDB40\uDD01': '\uF57F',  // MJ018928
-  '\u79A0\uDB40\uDD01': '\uF580',  // MJ018935
-  '\u79A1\uDB40\uDD01': '\uF581',  // MJ018938
-  '\u79A6\uDB40\uDD01': '\uF582',  // MJ018943
-  '\u79A8\uDB40\uDD01': '\uF583',  // MJ018949
-  '\u79A9\uDB40\uDD01': '\uF584',  // MJ018952
-  '\u79AA\uDB40\uDD01': '\uF585',  // MJ018954
-  '\u79AB\uDB40\uDD01': '\uF586',  // MJ018957
-  '\u79AC\uDB40\uDD01': '\uF587',  // MJ018960
-  '\u79AD\uDB40\uDD01': '\uF588',  // MJ018962
-  '\u79B3\uDB40\uDD01': '\uF589',  // MJ018975
-  '\u79B4\uDB40\uDD01': '\uF58A',  // MJ018977
-  '\u79B8\uDB40\uDD01': '\uF58B',  // MJ018981
-  '\u79BB\uDB40\uDD01': '\uF58C',  // MJ018985
-  '\u79BD\uDB40\uDD01': '\uF58D',  // MJ018988
-  '\u79F0\uDB40\uDD01': '\uF58E',  // MJ019047
-  '\u7A05\uDB40\uDD01': '\uF58F',  // MJ019067
-  '\u7A09\uDB40\uDD01': '\uF590',  // MJ019071
-  '\u7A0D\uDB40\uDD01': '\uF591',  // MJ019077
-  '\u7A1C\uDB40\uDD01': '\uF592',  // MJ019095
-  '\u7A20\uDB40\uDD01': '\uF593',  // MJ019099
-  '\u7A27\uDB40\uDD01': '\uF594',  // MJ019105
-  '\u7A35\uDB40\uDD01': '\uF595',  // MJ019122
-  '\u7A3B\uDB40\uDD01': '\uF596',  // MJ019130
-  '\u7A3C\uDB40\uDD01': '\uF597',  // MJ019133
-  '\u7A3D\uDB40\uDD01': '\uF598',  // MJ019135
-  '\u7A3F\uDB40\uDD01': '\uF599',  // MJ019138
-  '\u7A42\uDB40\uDD01': '\uF59A',  // MJ019142
-  '\u7A49\uDB40\uDD01': '\uF59B',  // MJ019151
-  '\u7A4B\uDB40\uDD01': '\uF59C',  // MJ019154
-  '\u7A4F\uDB40\uDD01': '\uF59D',  // MJ019160
-  '\u7A50\uDB40\uDD01': '\uF59E',  // MJ019161
-  '\u7A57\uDB40\uDD01': '\uF59F',  // MJ019167
-  '\u7A5C\uDB40\uDD01': '\uF5A0',  // MJ019175
-  '\u7A5F\uDB40\uDD01': '\uF5A1',  // MJ019179
-  '\u7A61\uDB40\uDD01': '\uF5A2',  // MJ019181
-  '\u7A62\uDB40\uDD01': '\uF5A3',  // MJ019182
-  '\u7A69\uDB40\uDD01': '\uF5A4',  // MJ019191
-  '\u7A6B\uDB40\uDD01': '\uF5A5',  // MJ019194
-  '\u7A70\uDB40\uDD01': '\uF5A6',  // MJ019199
-  '\u7A8A\uDB40\uDD01': '\uF5A7',  // MJ019231
-  '\u7A96\uDB40\uDD01': '\uF5A8',  // MJ019242
-  '\u7A99\uDB40\uDD01': '\uF5A9',  // MJ019249
-  '\u7AA8\uDB40\uDD01': '\uF5AA',  // MJ019263
-  '\u7AAB\uDB40\uDD01': '\uF5AB',  // MJ019267
-  '\u7AAC\uDB40\uDD01': '\uF5AC',  // MJ019268
-  '\u7AB3\uDB40\uDD01': '\uF5AD',  // MJ019279
-  '\u7AB4\uDB40\uDD01': '\uF5AE',  // MJ019281
-  '\u7ABB\uDB40\uDD01': '\uF5AF',  // MJ019288
-  '\u7ABF\uDB40\uDD01': '\uF5B0',  // MJ019293
-  '\u7AC4\uDB40\uDD01': '\uF5B1',  // MJ019299
-  '\u7AD5\uDB40\uDD01': '\uF5B2',  // MJ019320
-  '\u7ADF\uDB40\uDD01': '\uF5B3',  // MJ019330
-  '\u7AE0\uDB40\uDD01': '\uF5B4',  // MJ019332
-  '\u7AE3\uDB40\uDD01': '\uF5B5',  // MJ019337
-  '\u7AE5\uDB40\uDD01': '\uF5B6',  // MJ019339
-  '\u7AEB\uDB40\uDD01': '\uF5B7',  // MJ019346
-  '\u7AED\uDB40\uDD01': '\uF5B8',  // MJ019349
-  '\u7AEE\uDB40\uDD01': '\uF5B9',  // MJ019352
-  '\u7AF1\uDB40\uDD01': '\uF5BA',  // MJ019355
-  '\u7B11\uDB40\uDD01': '\uF5BB',  // MJ019391
-  '\u7B4C\uDB40\uDD01': '\uF5BC',  // MJ019450
-  '\u7B6C\uDB40\uDD01': '\uF5BD',  // MJ019482
-  '\u7B6D\uDB40\uDD01': '\uF5BE',  // MJ019484
-  '\u7B72\uDB40\uDD01': '\uF5BF',  // MJ019490
-  '\u7B8F\uDB40\uDD01': '\uF5C0',  // MJ019518
-  '\u7B90\uDB40\uDD01': '\uF5C1',  // MJ019520
-  '\u7B92\uDB40\uDD01': '\uF5C2',  // MJ019523
-  '\u7B9B\uDB40\uDD01': '\uF5C3',  // MJ019535
-  '\u7B9C\uDB40\uDD01': '\uF5C4',  // MJ019536
-  '\u7B9E\uDB40\uDD01': '\uF5C5',  // MJ019539
-  '\uD878\uDD52\uDB40\uDD01': '\uF5C6',  // MJ058266
-  '\u7BA0\uDB40\uDD01': '\uF5C7',  // MJ019545
-  '\u7BAC\uDB40\uDD01': '\uF5C8',  // MJ019553
-  '\u7BC4\uDB40\uDD01': '\uF5C9',  // MJ019582
-  '\u7BC6\uDB40\uDD01': '\uF5CA',  // MJ019586
-  '\u7BE3\uDB40\uDD01': '\uF5CB',  // MJ019619
-  '\u7BE6\uDB40\uDD01': '\uF5CC',  // MJ019622
-  '\u7BF3\uDB40\uDD01': '\uF5CD',  // MJ019635
-  '\u7BF4\uDB40\uDD01': '\uF5CE',  // MJ019637
-  '\u7BF7\uDB40\uDD01': '\uF5CF',  // MJ019641
-  '\u7BFE\uDB40\uDD01': '\uF5D0',  // MJ019649
-  '\u7C09\uDB40\uDD01': '\uF5D1',  // MJ019662
-  '\u7C13\uDB40\uDD01': '\uF5D2',  // MJ019673
-  '\u7C1F\uDB40\uDD01': '\uF5D3',  // MJ019686
-  '\u7C27\uDB40\uDD01': '\uF5D4',  // MJ019694
-  '\u7C2A\uDB40\uDD01': '\uF5D5',  // MJ019700
-  '\u7C34\uDB40\uDD01': '\uF5D6',  // MJ019707
-  '\u7C36\uDB40\uDD01': '\uF5D7',  // MJ019711
-  '\u7C3B\uDB40\uDD01': '\uF5D8',  // MJ019718
-  '\u7C46\uDB40\uDD01': '\uF5D9',  // MJ019730
-  '\u7C4F\uDB40\uDD01': '\uF5DA',  // MJ019740
-  '\u7C51\uDB40\uDD01': '\uF5DB',  // MJ019744
-  '\u7C5C\uDB40\uDD01': '\uF5DC',  // MJ019759
-  '\u7C5F\uDB40\uDD01': '\uF5DD',  // MJ019763
-  '\u7C60\uDB40\uDD01': '\uF5DE',  // MJ019765
-  '\u7C67\uDB40\uDD01': '\uF5DF',  // MJ019776
-  '\u7C6A\uDB40\uDD01': '\uF5E0',  // MJ019782
-  '\u7C6C\uDB40\uDD01': '\uF5E1',  // MJ019784
-  '\u7C6F\uDB40\uDD01': '\uF5E2',  // MJ019788
-  '\u7C7B\uDB40\uDD01': '\uF5E3',  // MJ019801
-  '\u7C94\uDB40\uDD01': '\uF5E4',  // MJ019832
-  '\u7CA4\uDB40\uDD01': '\uF5E5',  // MJ019849
-  '\u7CA6\uDB40\uDD01': '\uF5E6',  // MJ019852
-  '\u7CB3\uDB40\uDD01': '\uF5E7',  // MJ019864
-  '\u7CC0\uDB40\uDD01': '\uF5E8',  // MJ019877
-  '\u7CC2\uDB40\uDD01': '\uF5E9',  // MJ019880
-  '\u7CD8\uDB40\uDD01': '\uF5EA',  // MJ019906
-  '\u7CD9\uDB40\uDD01': '\uF5EB',  // MJ019909
-  '\u7CDA\uDB40\uDD01': '\uF5EC',  // MJ019910
-  '\u7CDC\uDB40\uDD01': '\uF5ED',  // MJ019914
-  '\u7CE1\uDB40\uDD01': '\uF5EE',  // MJ019921
-  '\u7CE2\uDB40\uDD01': '\uF5EF',  // MJ019922
-  '\u7CF4\uDB40\uDD01': '\uF5F0',  // MJ019940
-  '\u7CF5\uDB40\uDD01': '\uF5F1',  // MJ019942
-  '\u7CF6\uDB40\uDD01': '\uF5F2',  // MJ019944
-  '\u7CFE\uDB40\uDD01': '\uF5F3',  // MJ019953
-  '\u7D00\uDB40\uDD01': '\uF5F4',  // MJ019955
-  '\u7D08\uDB40\uDD01': '\uF5F5',  // MJ019971
-  '\u7D0A\uDB40\uDD01': '\uF5F6',  // MJ019975
-  '\u7D14\uDB40\uDD01': '\uF5F7',  // MJ019990
-  '\u7D2B\uDB40\uDD01': '\uF5F8',  // MJ020018
-  '\u7D58\uDB40\uDD01': '\uF5F9',  // MJ020076
-  '\u7D5A\uDB40\uDD01': '\uF5FA',  // MJ020078
-  '\u7D5D\uDB40\uDD01': '\uF5FB',  // MJ020084
-  '\u7D6F\uDB40\uDD01': '\uF5FC',  // MJ020105
-  '\u7D71\uDB40\uDD01': '\uF5FD',  // MJ020108
-  '\u7D79\uDB40\uDD01': '\uF5FE',  // MJ020118
-  '\u7D81\uDB40\uDD01': '\uF5FF',  // MJ020127
-  '\u7D86\uDB40\uDD01': '\uF600',  // MJ020133
-  '\u7D8F\uDB40\uDD01': '\uF601',  // MJ020144
-  '\u7D93\uDB40\uDD01': '\uF602',  // MJ020150
-  '\u7D9E\uDB40\uDD01': '\uF603',  // MJ020167
-  '\u7DA0\uDB40\uDD01': '\uF604',  // MJ020170
-  '\u7DA2\uDB40\uDD01': '\uF605',  // MJ020173
-  '\u7DA3\uDB40\uDD01': '\uF606',  // MJ020175
-  '\u7DAA\uDB40\uDD01': '\uF607',  // MJ020183
-  '\u7DAF\uDB40\uDD01': '\uF608',  // MJ020191
-  '\u7DB1\uDB40\uDD01': '\uF609',  // MJ020193
-  '\u7DB5\uDB40\uDD01': '\uF60A',  // MJ020199
-  '\u7DB9\uDB40\uDD01': '\uF60B',  // MJ020204
-  '\u7DBE\uDB40\uDD01': '\uF60C',  // MJ020212
-  '\u7DC7\uDB40\uDD01': '\uF60D',  // MJ020223
-  '\u7DE0\uDB40\uDD01': '\uF60E',  // MJ020250
-  '\u7DE2\uDB40\uDD01': '\uF60F',  // MJ020253
-  '\u7DE3\uDB40\uDD01': '\uF610',  // MJ020255
-  '\u7DF0\uDB40\uDD01': '\uF611',  // MJ020273
-  '\u7E01\uDB40\uDD01': '\uF612',  // MJ020289
-  '\u7E02\uDB40\uDD01': '\uF613',  // MJ020292
-  '\u7E0A\uDB40\uDD01': '\uF614',  // MJ020298
-  '\u7E0B\uDB40\uDD01': '\uF615',  // MJ020302
-  '\u7E0C\uDB40\uDD01': '\uF616',  // MJ020304
-  '\u7E1D\uDB40\uDD01': '\uF617',  // MJ020322
-  '\u7E1F\uDB40\uDD01': '\uF618',  // MJ020326
-  '\u7E27\uDB40\uDD01': '\uF619',  // MJ020339
-  '\u7E2C\uDB40\uDD01': '\uF61A',  // MJ020346
-  '\u7E2D\uDB40\uDD01': '\uF61B',  // MJ020348
-  '\u7E36\uDB40\uDD01': '\uF61C',  // MJ020360
-  '\u7E37\uDB40\uDD01': '\uF61D',  // MJ020362
-  '\u7E3A\uDB40\uDD01': '\uF61E',  // MJ020366
-  '\u7E3B\uDB40\uDD01': '\uF61F',  // MJ020367
-  '\u7E3D\uDB40\uDD01': '\uF620',  // MJ020370
-  '\u7E44\uDB40\uDD01': '\uF621',  // MJ020381
-  '\u7E45\uDB40\uDD01': '\uF622',  // MJ020383
-  '\u7E46\uDB40\uDD01': '\uF623',  // MJ020385
-  '\u7E52\uDB40\uDD01': '\uF624',  // MJ020398
-  '\u7E54\uDB40\uDD01': '\uF625',  // MJ020401
-  '\u7E68\uDB40\uDD01': '\uF626',  // MJ020424
-  '\u7E69\uDB40\uDD01': '\uF627',  // MJ020426
-  '\u7E6A\uDB40\uDD01': '\uF628',  // MJ020427
-  '\u7E76\uDB40\uDD01': '\uF629',  // MJ020443
-  '\u7E78\uDB40\uDD01': '\uF62A',  // MJ020446
-  '\u7E79\uDB40\uDD01': '\uF62B',  // MJ020447
-  '\u7E7C\uDB40\uDD01': '\uF62C',  // MJ020451
-  '\u7E7D\uDB40\uDD01': '\uF62D',  // MJ020453
-  '\u7E7E\uDB40\uDD01': '\uF62E',  // MJ020457
-  '\u7E7F\uDB40\uDD01': '\uF62F',  // MJ020458
-  '\u7E8A\uDB40\uDD01': '\uF630',  // MJ020469
-  '\u7E92\uDB40\uDD01': '\uF631',  // MJ020478
-  '\u7F3A\uDB40\uDD01': '\uF632',  // MJ020502
-  '\u7F3C\uDB40\uDD01': '\uF633',  // MJ020504
-  '\u7F48\uDB40\uDD01': '\uF634',  // MJ020518
-  '\u7F54\uDB40\uDD01': '\uF635',  // MJ020530
-  '\u7F5B\uDB40\uDD01': '\uF636',  // MJ020540
-  '\u7F76\uDB40\uDD01': '\uF637',  // MJ020568
-  '\u7F7A\uDB40\uDD01': '\uF638',  // MJ020573
-  '\u7F7F\uDB40\uDD01': '\uF639',  // MJ020578
-  '\u7F83\uDB40\uDD01': '\uF63A',  // MJ020582
-  '\u7F8F\uDB40\uDD01': '\uF63B',  // MJ020595
-  '\u7F95\uDB40\uDD01': '\uF63C',  // MJ020605
-  '\u7F9E\uDB40\uDD01': '\uF63D',  // MJ020616
-  '\u7FAD\uDB40\uDD01': '\uF63E',  // MJ020632
-  '\u7FAF\uDB40\uDD01': '\uF63F',  // MJ020636
-  '\u7FB5\uDB40\uDD01': '\uF640',  // MJ020644
-  '\u7FB8\uDB40\uDD01': '\uF641',  // MJ020647
-  '\u7FBB\uDB40\uDD01': '\uF642',  // MJ020651
-  '\u7FCA\uDB40\uDD01': '\uF643',  // MJ020672
-  '\u7FCF\uDB40\uDD01': '\uF644',  // MJ020679
-  '\u7FD5\uDB40\uDD01': '\uF645',  // MJ020687
-  '\u7FDF\uDB40\uDD01': '\uF646',  // MJ020695
-  '\u7FE6\uDB40\uDD01': '\uF647',  // MJ020707
-  '\u7FF3\uDB40\uDD01': '\uF648',  // MJ020730
-  '\u7FF9\uDB40\uDD01': '\uF649',  // MJ020736
-  '\u7FFE\uDB40\uDD01': '\uF64A',  // MJ020746
-  '\u8018\uDB40\uDD01': '\uF64B',  // MJ020778
-  '\u8019\uDB40\uDD01': '\uF64C',  // MJ020780
-  '\u801C\uDB40\uDD01': '\uF64D',  // MJ020784
-  '\u8021\uDB40\uDD01': '\uF64E',  // MJ020791
-  '\u8028\uDB40\uDD01': '\uF64F',  // MJ020796
-  '\u8037\uDB40\uDD01': '\uF650',  // MJ020818
-  '\u803D\uDB40\uDD01': '\uF651',  // MJ020825
-  '\u8060\uDB40\uDD01': '\uF652',  // MJ020858
-  '\u8072\uDB40\uDD01': '\uF653',  // MJ020876
-  '\u8079\uDB40\uDD01': '\uF654',  // MJ020889
-  '\u807C\uDB40\uDD01': '\uF655',  // MJ020893
-  '\u807D\uDB40\uDD01': '\uF656',  // MJ020895
-  '\u8085\uDB40\uDD01': '\uF657',  // MJ020905
-  '\u808E\uDB40\uDD01': '\uF658',  // MJ020917
-  '\u8093\uDB40\uDD01': '\uF659',  // MJ020923
-  '\u80A8\uDB40\uDD01': '\uF65A',  // MJ020946
-  '\u80AD\uDB40\uDD01': '\uF65B',  // MJ020953
-  '\u80B2\uDB40\uDD01': '\uF65C',  // MJ020960
-  '\u80B4\uDB40\uDD01': '\uF65D',  // MJ020962
-  '\u80CD\uDB40\uDD01': '\uF65E',  // MJ020983
-  '\u80EE\uDB40\uDD01': '\uF65F',  // MJ021013
-  '\u80F2\uDB40\uDD01': '\uF660',  // MJ021018
-  '\u812B\uDB40\uDD01': '\uF661',  // MJ021075
-  '\u8160\uDB40\uDD01': '\uF662',  // MJ021132
-  '\u8164\uDB40\uDD01': '\uF663',  // MJ021139
-  '\u8166\uDB40\uDD01': '\uF664',  // MJ021141
-  '\u8173\uDB40\uDD01': '\uF665',  // MJ021156
-  '\u8174\uDB40\uDD01': '\uF666',  // MJ021158
-  '\u8179\uDB40\uDD01': '\uF667',  // MJ021164
-  '\u8180\uDB40\uDD01': '\uF668',  // MJ021170
-  '\u8184\uDB40\uDD01': '\uF669',  // MJ021175
-  '\u8187\uDB40\uDD01': '\uF66A',  // MJ021181
-  '\u8188\uDB40\uDD01': '\uF66B',  // MJ021182
-  '\u818B\uDB40\uDD01': '\uF66C',  // MJ021186
-  '\u819C\uDB40\uDD01': '\uF66D',  // MJ021203
-  '\u819E\uDB40\uDD01': '\uF66E',  // MJ021206
-  '\u81A0\uDB40\uDD01': '\uF66F',  // MJ021209
-  '\u81A4\uDB40\uDD01': '\uF670',  // MJ021214
-  '\u81A7\uDB40\uDD01': '\uF671',  // MJ058400
-  '\u81B1\uDB40\uDD01': '\uF672',  // MJ021228
-  '\u81B8\uDB40\uDD01': '\uF673',  // MJ021237
-  '\u81B9\uDB40\uDD01': '\uF674',  // MJ021239
-  '\u81C6\uDB40\uDD01': '\uF675',  // MJ021253
-  '\u81C8\uDB40\uDD01': '\uF676',  // MJ021256
-  '\u81D7\uDB40\uDD01': '\uF677',  // MJ021273
-  '\u81DF\uDB40\uDD01': '\uF678',  // MJ021282
-  '\u81E7\uDB40\uDD01': '\uF679',  // MJ021291
-  '\u81E8\uDB40\uDD01': '\uF67A',  // MJ021294
-  '\u81EE\uDB40\uDD01': '\uF67B',  // MJ045921
-  '\u81F1\uDB40\uDD01': '\uF67C',  // MJ021303
-  '\u81F4\uDB40\uDD01': '\uF67D',  // MJ021307
-  '\u81F9\uDB40\uDD01': '\uF67E',  // MJ021312
-  '\u81FD\uDB40\uDD01': '\uF67F',  // MJ021317
-  '\u81FE\uDB40\uDD01': '\uF680',  // MJ021320
-  '\u81FF\uDB40\uDD01': '\uF681',  // MJ021321
-  '\u8201\uDB40\uDD01': '\uF682',  // MJ021326
-  '\u8202\uDB40\uDD01': '\uF683',  // MJ021329
-  '\u8204\uDB40\uDD01': '\uF684',  // MJ021332
-  '\uD86D\uDFCB\uDB40\uDD01': '\uF685',  // MJ060090
-  '\u8208\uDB40\uDD01': '\uF686',  // MJ021338
-  '\u820A\uDB40\uDD01': '\uF687',  // MJ021340
-  '\u820B\uDB40\uDD01': '\uF688',  // MJ021342
-  '\u820E\uDB40\uDD01': '\uF689',  // MJ021346
-  '\u8211\uDB40\uDD01': '\uF68A',  // MJ021352
-  '\u8212\uDB40\uDD01': '\uF68B',  // MJ021354
-  '\u821D\uDB40\uDD01': '\uF68C',  // MJ021373
-  '\u821E\uDB40\uDD01': '\uF68D',  // MJ021375
-  '\u8229\uDB40\uDD01': '\uF68E',  // MJ021384
-  '\u8238\uDB40\uDD01': '\uF68F',  // MJ021398
-  '\u8255\uDB40\uDD01': '\uF690',  // MJ021428
-  '\u8257\uDB40\uDD01': '\uF691',  // MJ021430
-  '\u825D\uDB40\uDD01': '\uF692',  // MJ021440
-  '\u825F\uDB40\uDD01': '\uF693',  // MJ021443
-  '\u8265\uDB40\uDD01': '\uF694',  // MJ021451
-  '\u8267\uDB40\uDD01': '\uF695',  // MJ021454
-  '\u8268\uDB40\uDD01': '\uF696',  // MJ021456
-  '\u826D\uDB40\uDD01': '\uF697',  // MJ021463
-  '\u826E\uDB40\uDD01': '\uF698',  // MJ021465
-  '\u8271\uDB40\uDD01': '\uF699',  // MJ021468
-  '\u8275\uDB40\uDD01': '\uF69A',  // MJ021476
-  '\u827B\uDB40\uDD01': '\uF69B',  // MJ021483
-  '\u827D\uDB40\uDD01': '\uF69C',  // MJ021487
-  '\u827F\uDB40\uDD01': '\uF69D',  // MJ021492
-  '\u8280\uDB40\uDD01': '\uF69E',  // MJ021494
-  '\u8281\uDB40\uDD01': '\uF69F',  // MJ021496
-  '\u8283\uDB40\uDD01': '\uF6A0',  // MJ021498
-  '\u8284\uDB40\uDD01': '\uF6A1',  // MJ021501
-  '\u8287\uDB40\uDD01': '\uF6A2',  // MJ021505
-  '\u8289\uDB40\uDD01': '\uF6A3',  // MJ021507
-  '\u828A\uDB40\uDD01': '\uF6A4',  // MJ021509
-  '\u828B\uDB40\uDD01': '\uF6A5',  // MJ021511
-  '\u828C\uDB40\uDD01': '\uF6A6',  // MJ021514
-  '\u828E\uDB40\uDD01': '\uF6A7',  // MJ021518
-  '\u8291\uDB40\uDD01': '\uF6A8',  // MJ021522
-  '\uD85A\uDF0A\uDB40\uDD01': '\uF6A9',  // MJ046292
-  '\u8293\uDB40\uDD01': '\uF6AA',  // MJ021528
-  '\u8294\uDB40\uDD01': '\uF6AB',  // MJ021530
-  '\u8296\uDB40\uDD01': '\uF6AC',  // MJ021533
-  '\u8298\uDB40\uDD01': '\uF6AD',  // MJ021535
-  '\u8299\uDB40\uDD01': '\uF6AE',  // MJ021537
-  '\u829A\uDB40\uDD01': '\uF6AF',  // MJ021540
-  '\u829B\uDB40\uDD01': '\uF6B0',  // MJ021541
-  '\u829D\uDB40\uDD01': '\uF6B1',  // MJ021544
-  '\u829F\uDB40\uDD01': '\uF6B2',  // MJ021547
-  '\u82A0\uDB40\uDD01': '\uF6B3',  // MJ021550
-  '\u82A1\uDB40\uDD01': '\uF6B4',  // MJ021551
-  '\u82A3\uDB40\uDD01': '\uF6B5',  // MJ021555
-  '\u82A4\uDB40\uDD01': '\uF6B6',  // MJ021557
-  '\u82A5\uDB40\uDD01': '\uF6B7',  // MJ021559
-  '\u82A7\uDB40\uDD01': '\uF6B8',  // MJ021569
-  '\u82A8\uDB40\uDD01': '\uF6B9',  // MJ021572
-  '\u82A9\uDB40\uDD01': '\uF6BA',  // MJ021573
-  '\u82AA\uDB40\uDD01': '\uF6BB',  // MJ021575
-  '\u82AB\uDB40\uDD01': '\uF6BC',  // MJ021577
-  '\u82AC\uDB40\uDD01': '\uF6BD',  // MJ021579
-  '\u82AD\uDB40\uDD01': '\uF6BE',  // MJ021582
-  '\u82AE\uDB40\uDD01': '\uF6BF',  // MJ021585
-  '\u82AF\uDB40\uDD01': '\uF6C0',  // MJ021587
-  '\u82B0\uDB40\uDD01': '\uF6C1',  // MJ021590
-  '\u82B2\uDB40\uDD01': '\uF6C2',  // MJ021597
-  '\u82B3\uDB40\uDD01': '\uF6C3',  // MJ021598
-  '\u82B4\uDB40\uDD01': '\uF6C4',  // MJ021600
-  '\u82B7\uDB40\uDD01': '\uF6C5',  // MJ021604
-  '\u82B8\uDB40\uDD01': '\uF6C6',  // MJ021606
-  '\u82B9\uDB40\uDD01': '\uF6C7',  // MJ021608
-  '\u82BA\uDB40\uDD01': '\uF6C8',  // MJ021610
-  '\u82BC\uDB40\uDD01': '\uF6C9',  // MJ021613
-  '\u82BE\uDB40\uDD01': '\uF6CA',  // MJ021618
-  '\u82BF\uDB40\uDD01': '\uF6CB',  // MJ021620
-  '\u82C6\uDB40\uDD01': '\uF6CC',  // MJ021629
-  '\u82D0\uDB40\uDD01': '\uF6CD',  // MJ021632
-  '\u82D1\uDB40\uDD01': '\uF6CE',  // MJ021634
-  '\u82D3\uDB40\uDD01': '\uF6CF',  // MJ021640
-  '\u82D4\uDB40\uDD01': '\uF6D0',  // MJ021642
-  '\u82D5\uDB40\uDD01': '\uF6D1',  // MJ021644
-  '\u82D6\uDB40\uDD01': '\uF6D2',  // MJ021647
-  '\u82D7\uDB40\uDD01': '\uF6D3',  // MJ021648
-  '\u82D9\uDB40\uDD01': '\uF6D4',  // MJ021651
-  '\u82DA\uDB40\uDD01': '\uF6D5',  // MJ021653
-  '\u82DB\uDB40\uDD01': '\uF6D6',  // MJ021655
-  '\u82DC\uDB40\uDD01': '\uF6D7',  // MJ021657
-  '\u82DE\uDB40\uDD01': '\uF6D8',  // MJ021660
-  '\u82DF\uDB40\uDD01': '\uF6D9',  // MJ021663
-  '\u82E0\uDB40\uDD01': '\uF6DA',  // MJ021666
-  '\u82E1\uDB40\uDD01': '\uF6DB',  // MJ021668
-  '\u82E2\uDB40\uDD01': '\uF6DC',  // MJ021670
-  '\u82E4\uDB40\uDD01': '\uF6DD',  // MJ021675
-  '\u82E5\uDB40\uDD01': '\uF6DE',  // MJ021677
-  '\u82E6\uDB40\uDD01': '\uF6DF',  // MJ021681
-  '\u82E7\uDB40\uDD01': '\uF6E0',  // MJ021683
-  '\u82E8\uDB40\uDD01': '\uF6E1',  // MJ021685
-  '\u82EA\uDB40\uDD01': '\uF6E2',  // MJ021688
-  '\u82EB\uDB40\uDD01': '\uF6E3',  // MJ021690
-  '\u82ED\uDB40\uDD01': '\uF6E4',  // MJ021693
-  '\u82EF\uDB40\uDD01': '\uF6E5',  // MJ021696
-  '\u82F1\uDB40\uDD01': '\uF6E6',  // MJ021700
-  '\u82F3\uDB40\uDD01': '\uF6E7',  // MJ021706
-  '\u82F4\uDB40\uDD01': '\uF6E8',  // MJ021709
-  '\u82F6\uDB40\uDD01': '\uF6E9',  // MJ021712
-  '\u82F7\uDB40\uDD01': '\uF6EA',  // MJ021714
-  '\u82F9\uDB40\uDD01': '\uF6EB',  // MJ021717
-  '\u82FA\uDB40\uDD01': '\uF6EC',  // MJ021720
-  '\u82FB\uDB40\uDD01': '\uF6ED',  // MJ021722
-  '\u82FD\uDB40\uDD01': '\uF6EE',  // MJ021727
-  '\u82FE\uDB40\uDD01': '\uF6EF',  // MJ021729
-  '\u8300\uDB40\uDD01': '\uF6F0',  // MJ021732
-  '\u8301\uDB40\uDD01': '\uF6F1',  // MJ021734
-  '\u8302\uDB40\uDD01': '\uF6F2',  // MJ021736
-  '\u8303\uDB40\uDD01': '\uF6F3',  // MJ021739
-  '\u8304\uDB40\uDD01': '\uF6F4',  // MJ021743
-  '\u8305\uDB40\uDD01': '\uF6F5',  // MJ021745
-  '\u8306\uDB40\uDD01': '\uF6F6',  // MJ021747
-  '\u8307\uDB40\uDD01': '\uF6F7',  // MJ021750
-  '\u8308\uDB40\uDD01': '\uF6F8',  // MJ021752
-  '\u8309\uDB40\uDD01': '\uF6F9',  // MJ021753
-  '\u830A\uDB40\uDD01': '\uF6FA',  // MJ021756
-  '\u830B\uDB40\uDD01': '\uF6FB',  // MJ021757
-  '\u830C\uDB40\uDD01': '\uF6FC',  // MJ021759
-  '\u8316\uDB40\uDD01': '\uF6FD',  // MJ021764
-  '\u8317\uDB40\uDD01': '\uF6FE',  // MJ021766
-  '\u8318\uDB40\uDD01': '\uF6FF',  // MJ021768
-  '\u831B\uDB40\uDD01': '\uF700',  // MJ021772
-  '\u831C\uDB40\uDD01': '\uF701',  // MJ021774
-  '\u831D\uDB40\uDD01': '\uF702',  // MJ021776
-  '\u831E\uDB40\uDD01': '\uF703',  // MJ021778
-  '\u831F\uDB40\uDD01': '\uF704',  // MJ021780
-  '\u8321\uDB40\uDD01': '\uF705',  // MJ021783
-  '\u8322\uDB40\uDD01': '\uF706',  // MJ021785
-  '\u8326\uDB40\uDD01': '\uF707',  // MJ021797
-  '\u8327\uDB40\uDD01': '\uF708',  // MJ021799
-  '\u832B\uDB40\uDD01': '\uF709',  // MJ021808
-  '\u832C\uDB40\uDD01': '\uF70A',  // MJ021811
-  '\u832D\uDB40\uDD01': '\uF70B',  // MJ021814
-  '\u832F\uDB40\uDD01': '\uF70C',  // MJ021817
-  '\u8330\uDB40\uDD01': '\uF70D',  // MJ021822
-  '\u8331\uDB40\uDD01': '\uF70E',  // MJ021824
-  '\u8332\uDB40\uDD01': '\uF70F',  // MJ021826
-  '\u8333\uDB40\uDD01': '\uF710',  // MJ021828
-  '\u8334\uDB40\uDD01': '\uF711',  // MJ021830
-  '\u8335\uDB40\uDD01': '\uF712',  // MJ021832
-  '\u8336\uDB40\uDD01': '\uF713',  // MJ021834
-  '\u8337\uDB40\uDD01': '\uF714',  // MJ021836
-  '\u8338\uDB40\uDD01': '\uF715',  // MJ021838
-  '\u8339\uDB40\uDD01': '\uF716',  // MJ021841
-  '\u833A\uDB40\uDD01': '\uF717',  // MJ021843
-  '\u833C\uDB40\uDD01': '\uF718',  // MJ021846
-  '\u833D\uDB40\uDD01': '\uF719',  // MJ021848
-  '\u8340\uDB40\uDD01': '\uF71A',  // MJ021852
-  '\u8342\uDB40\uDD01': '\uF71B',  // MJ021855
-  '\u8343\uDB40\uDD01': '\uF71C',  // MJ021859
-  '\u8344\uDB40\uDD01': '\uF71D',  // MJ021862
-  '\u8345\uDB40\uDD01': '\uF71E',  // MJ021865
-  '\u8346\uDB40\uDD01': '\uF71F',  // MJ021868
-  '\u8347\uDB40\uDD01': '\uF720',  // MJ021872
-  '\u8349\uDB40\uDD01': '\uF721',  // MJ021875
-  '\u834A\uDB40\uDD01': '\uF722',  // MJ021877
-  '\u834D\uDB40\uDD01': '\uF723',  // MJ021885
-  '\u834E\uDB40\uDD01': '\uF724',  // MJ021887
-  '\u834F\uDB40\uDD01': '\uF725',  // MJ021889
-  '\u8350\uDB40\uDD01': '\uF726',  // MJ021892
-  '\u8351\uDB40\uDD01': '\uF727',  // MJ021894
-  '\u8353\uDB40\uDD01': '\uF728',  // MJ021902
-  '\u8354\uDB40\uDD01': '\uF729',  // MJ021904
-  '\u8355\uDB40\uDD01': '\uF72A',  // MJ021906
-  '\u8356\uDB40\uDD01': '\uF72B',  // MJ021908
-  '\u8357\uDB40\uDD01': '\uF72C',  // MJ021910
-  '\uD85A\uDFA0\uDB40\uDD01': '\uF72D',  // MJ058465
-  '\u8362\uDB40\uDD01': '\uF72E',  // MJ021917
-  '\u8370\uDB40\uDD01': '\uF72F',  // MJ021920
-  '\u8373\uDB40\uDD01': '\uF730',  // MJ021926
-  '\u8377\uDB40\uDD01': '\uF731',  // MJ021934
-  '\u8378\uDB40\uDD01': '\uF732',  // MJ021936
-  '\u837B\uDB40\uDD01': '\uF733',  // MJ021940
-  '\u837C\uDB40\uDD01': '\uF734',  // MJ021943
-  '\u837D\uDB40\uDD01': '\uF735',  // MJ021945
-  '\u837E\uDB40\uDD01': '\uF736',  // MJ021948
-  '\u837F\uDB40\uDD01': '\uF737',  // MJ021952
-  '\u8380\uDB40\uDD01': '\uF738',  // MJ021954
-  '\u8382\uDB40\uDD01': '\uF739',  // MJ021957
-  '\u8384\uDB40\uDD01': '\uF73A',  // MJ021960
-  '\u8385\uDB40\uDD01': '\uF73B',  // MJ021962
-  '\u8386\uDB40\uDD01': '\uF73C',  // MJ021964
-  '\u8387\uDB40\uDD01': '\uF73D',  // MJ021966
-  '\u8389\uDB40\uDD01': '\uF73E',  // MJ021969
-  '\u838A\uDB40\uDD01': '\uF73F',  // MJ021972
-  '\u838D\uDB40\uDD01': '\uF740',  // MJ021976
-  '\u838E\uDB40\uDD01': '\uF741',  // MJ021978
-  '\u8391\uDB40\uDD01': '\uF742',  // MJ021983
-  '\u8392\uDB40\uDD01': '\uF743',  // MJ021984
-  '\u8393\uDB40\uDD01': '\uF744',  // MJ021986
-  '\u8394\uDB40\uDD01': '\uF745',  // MJ021989
-  '\u8395\uDB40\uDD01': '\uF746',  // MJ021991
-  '\u8396\uDB40\uDD01': '\uF747',  // MJ021993
-  '\u8398\uDB40\uDD01': '\uF748',  // MJ021997
-  '\u8399\uDB40\uDD01': '\uF749',  // MJ021999
-  '\u839A\uDB40\uDD01': '\uF74A',  // MJ022001
-  '\u839B\uDB40\uDD01': '\uF74B',  // MJ022005
-  '\u839C\uDB40\uDD01': '\uF74C',  // MJ022007
-  '\u839D\uDB40\uDD01': '\uF74D',  // MJ022009
-  '\u839E\uDB40\uDD01': '\uF74E',  // MJ022011
-  '\u839F\uDB40\uDD01': '\uF74F',  // MJ022013
-  '\u83A0\uDB40\uDD01': '\uF750',  // MJ022015
-  '\u83A2\uDB40\uDD01': '\uF751',  // MJ022018
-  '\u83A4\uDB40\uDD01': '\uF752',  // MJ022022
-  '\u83A6\uDB40\uDD01': '\uF753',  // MJ022024
-  '\u83A7\uDB40\uDD01': '\uF754',  // MJ022026
-  '\u83A8\uDB40\uDD01': '\uF755',  // MJ022028
-  '\u83A9\uDB40\uDD01': '\uF756',  // MJ022030
-  '\u83AA\uDB40\uDD01': '\uF757',  // MJ022032
-  '\u83AB\uDB40\uDD01': '\uF758',  // MJ022034
-  '\u83AC\uDB40\uDD01': '\uF759',  // MJ022036
-  '\u83AD\uDB40\uDD01': '\uF75A',  // MJ022038
-  '\u83B5\uDB40\uDD01': '\uF75B',  // MJ022046
-  '\u83BE\uDB40\uDD01': '\uF75C',  // MJ022055
-  '\u83BF\uDB40\uDD01': '\uF75D',  // MJ022057
-  '\u83C0\uDB40\uDD01': '\uF75E',  // MJ022059
-  '\u83C1\uDB40\uDD01': '\uF75F',  // MJ022061
-  '\u83C5\uDB40\uDD01': '\uF760',  // MJ022070
-  '\u83C6\uDB40\uDD01': '\uF761',  // MJ022074
-  '\u83C7\uDB40\uDD01': '\uF762',  // MJ022075
-  '\u83C9\uDB40\uDD01': '\uF763',  // MJ022078
-  '\u83CA\uDB40\uDD01': '\uF764',  // MJ022080
-  '\u83CC\uDB40\uDD01': '\uF765',  // MJ022083
-  '\u83CE\uDB40\uDD01': '\uF766',  // MJ022086
-  '\u83CF\uDB40\uDD01': '\uF767',  // MJ022088
-  '\u83D1\uDB40\uDD01': '\uF768',  // MJ022091
-  '\u83D2\uDB40\uDD01': '\uF769',  // MJ022094
-  '\u83D6\uDB40\uDD01': '\uF76A',  // MJ022100
-  '\u83D8\uDB40\uDD01': '\uF76B',  // MJ022103
-  '\u83DD\uDB40\uDD01': '\uF76C',  // MJ022113
-  '\uD86D\uDFCF\uDB40\uDD01': '\uF76D',  // MJ058460
-  '\u83E0\uDB40\uDD01': '\uF76E',  // MJ022126
-  '\u83E1\uDB40\uDD01': '\uF76F',  // MJ022128
-  '\u83E5\uDB40\uDD01': '\uF770',  // MJ022133
-  '\u83E8\uDB40\uDD01': '\uF771',  // MJ022137
-  '\u83E9\uDB40\uDD01': '\uF772',  // MJ022139
-  '\u83EA\uDB40\uDD01': '\uF773',  // MJ022141
-  '\u83EB\uDB40\uDD01': '\uF774',  // MJ022143
-  '\u83EF\uDB40\uDD01': '\uF775',  // MJ022150
-  '\u83F0\uDB40\uDD01': '\uF776',  // MJ022154
-  '\u83F1\uDB40\uDD01': '\uF777',  // MJ022157
-  '\u83F3\uDB40\uDD01': '\uF778',  // MJ022165
-  '\u83F4\uDB40\uDD01': '\uF779',  // MJ022166
-  '\u83F6\uDB40\uDD01': '\uF77A',  // MJ022169
-  '\u83F7\uDB40\uDD01': '\uF77B',  // MJ022171
-  '\u83F8\uDB40\uDD01': '\uF77C',  // MJ022175
-  '\u83F9\uDB40\uDD01': '\uF77D',  // MJ022177
-  '\u83FB\uDB40\uDD01': '\uF77E',  // MJ022180
-  '\u83FC\uDB40\uDD01': '\uF77F',  // MJ022182
-  '\u83FD\uDB40\uDD01': '\uF780',  // MJ022184
-  '\u8401\uDB40\uDD01': '\uF781',  // MJ022191
-  '\u8403\uDB40\uDD01': '\uF782',  // MJ022194
-  '\u8404\uDB40\uDD01': '\uF783',  // MJ022198
-  '\u8406\uDB40\uDD01': '\uF784',  // MJ022201
-  '\u8407\uDB40\uDD01': '\uF785',  // MJ022203
-  '\u840A\uDB40\uDD01': '\uF786',  // MJ022207
-  '\u840B\uDB40\uDD01': '\uF787',  // MJ022209
-  '\u840D\uDB40\uDD01': '\uF788',  // MJ022214
-  '\u840E\uDB40\uDD01': '\uF789',  // MJ022217
-  '\u8411\uDB40\uDD01': '\uF78A',  // MJ022222
-  '\u8413\uDB40\uDD01': '\uF78B',  // MJ022225
-  '\u8415\uDB40\uDD01': '\uF78C',  // MJ022229
-  '\u8419\uDB40\uDD01': '\uF78D',  // MJ022234
-  '\u841E\uDB40\uDD01': '\uF78E',  // MJ022237
-  '\u8429\uDB40\uDD01': '\uF78F',  // MJ022248
-  '\u842A\uDB40\uDD01': '\uF790',  // MJ022250
-  '\u842B\uDB40\uDD01': '\uF791',  // MJ022253
-  '\u842C\uDB40\uDD01': '\uF792',  // MJ022254
-  '\u842F\uDB40\uDD01': '\uF793',  // MJ022260
-  '\u8431\uDB40\uDD01': '\uF794',  // MJ022263
-  '\u8435\uDB40\uDD01': '\uF795',  // MJ022268
-  '\u8438\uDB40\uDD01': '\uF796',  // MJ022273
-  '\u8439\uDB40\uDD01': '\uF797',  // MJ022275
-  '\u843B\uDB40\uDD01': '\uF798',  // MJ022279
-  '\u843C\uDB40\uDD01': '\uF799',  // MJ022280
-  '\u843D\uDB40\uDD01': '\uF79A',  // MJ022282
-  '\u8441\uDB40\uDD01': '\uF79B',  // MJ022289
-  '\u8445\uDB40\uDD01': '\uF79C',  // MJ022293
-  '\u8446\uDB40\uDD01': '\uF79D',  // MJ022295
-  '\u8447\uDB40\uDD01': '\uF79E',  // MJ022297
-  '\u8448\uDB40\uDD01': '\uF79F',  // MJ022299
-  '\u8449\uDB40\uDD01': '\uF7A0',  // MJ022301
-  '\u844A\uDB40\uDD01': '\uF7A1',  // MJ022305
-  '\u844D\uDB40\uDD01': '\uF7A2',  // MJ022309
-  '\u844E\uDB40\uDD01': '\uF7A3',  // MJ022311
-  '\u844F\uDB40\uDD01': '\uF7A4',  // MJ022313
-  '\u8451\uDB40\uDD01': '\uF7A5',  // MJ022316
-  '\u8452\uDB40\uDD01': '\uF7A6',  // MJ022318
-  '\u8456\uDB40\uDD01': '\uF7A7',  // MJ022324
-  '\u8458\uDB40\uDD01': '\uF7A8',  // MJ022328
-  '\u8459\uDB40\uDD01': '\uF7A9',  // MJ022330
-  '\u845A\uDB40\uDD01': '\uF7AA',  // MJ022332
-  '\u845F\uDB40\uDD01': '\uF7AB',  // MJ022347
-  '\u8460\uDB40\uDD01': '\uF7AC',  // MJ022349
-  '\u8461\uDB40\uDD01': '\uF7AD',  // MJ022351
-  '\u8462\uDB40\uDD01': '\uF7AE',  // MJ022353
-  '\u8463\uDB40\uDD01': '\uF7AF',  // MJ022356
-  '\u8464\uDB40\uDD01': '\uF7B0',  // MJ022359
-  '\u8465\uDB40\uDD01': '\uF7B1',  // MJ022361
-  '\u8466\uDB40\uDD01': '\uF7B2',  // MJ022364
-  '\u8467\uDB40\uDD01': '\uF7B3',  // MJ022369
-  '\u8469\uDB40\uDD01': '\uF7B4',  // MJ022372
-  '\u846A\uDB40\uDD01': '\uF7B5',  // MJ022374
-  '\u846B\uDB40\uDD01': '\uF7B6',  // MJ022376
-  '\u846C\uDB40\uDD01': '\uF7B7',  // MJ022378
-  '\u846D\uDB40\uDD01': '\uF7B8',  // MJ022380
-  '\u846E\uDB40\uDD01': '\uF7B9',  // MJ022382
-  '\u846F\uDB40\uDD01': '\uF7BA',  // MJ022384
-  '\u8470\uDB40\uDD01': '\uF7BB',  // MJ022386
-  '\u8471\uDB40\uDD01': '\uF7BC',  // MJ022388
-  '\u8473\uDB40\uDD01': '\uF7BD',  // MJ022391
-  '\u8474\uDB40\uDD01': '\uF7BE',  // MJ022393
-  '\u8475\uDB40\uDD01': '\uF7BF',  // MJ022395
-  '\u8476\uDB40\uDD01': '\uF7C0',  // MJ022397
-  '\u8477\uDB40\uDD01': '\uF7C1',  // MJ022399
-  '\u8478\uDB40\uDD01': '\uF7C2',  // MJ022401
-  '\u8479\uDB40\uDD01': '\uF7C3',  // MJ022403
-  '\u847B\uDB40\uDD01': '\uF7C4',  // MJ022409
-  '\u847C\uDB40\uDD01': '\uF7C5',  // MJ022410
-  '\u847D\uDB40\uDD01': '\uF7C6',  // MJ022412
-  '\u8481\uDB40\uDD01': '\uF7C7',  // MJ022421
-  '\u8482\uDB40\uDD01': '\uF7C8',  // MJ022424
-  '\u8484\uDB40\uDD01': '\uF7C9',  // MJ022428
-  '\u8485\uDB40\uDD01': '\uF7CA',  // MJ022430
-  '\u848B\uDB40\uDD01': '\uF7CB',  // MJ022433
-  '\u8490\uDB40\uDD01': '\uF7CC',  // MJ022437
-  '\u8492\uDB40\uDD01': '\uF7CD',  // MJ022440
-  '\u8493\uDB40\uDD01': '\uF7CE',  // MJ022442
-  '\u8494\uDB40\uDD01': '\uF7CF',  // MJ022444
-  '\u8495\uDB40\uDD01': '\uF7D0',  // MJ022446
-  '\u8497\uDB40\uDD01': '\uF7D1',  // MJ022449
-  '\u8499\uDB40\uDD01': '\uF7D2',  // MJ022452
-  '\u849C\uDB40\uDD01': '\uF7D3',  // MJ022459
-  '\u849E\uDB40\uDD01': '\uF7D4',  // MJ022463
-  '\u849F\uDB40\uDD01': '\uF7D5',  // MJ022465
-  '\u84A1\uDB40\uDD01': '\uF7D6',  // MJ022468
-  '\u84A6\uDB40\uDD01': '\uF7D7',  // MJ022475
-  '\u84A7\uDB40\uDD01': '\uF7D8',  // MJ022479
-  '\u84A8\uDB40\uDD01': '\uF7D9',  // MJ022480
-  '\u84A9\uDB40\uDD01': '\uF7DA',  // MJ022484
-  '\u84AA\uDB40\uDD01': '\uF7DB',  // MJ022486
-  '\u84AD\uDB40\uDD01': '\uF7DC',  // MJ022490
-  '\u84AF\uDB40\uDD01': '\uF7DD',  // MJ022493
-  '\u84B1\uDB40\uDD01': '\uF7DE',  // MJ022496
-  '\u84B2\uDB40\uDD01': '\uF7DF',  // MJ022498
-  '\u84B4\uDB40\uDD01': '\uF7E0',  // MJ022501
-  '\u84B8\uDB40\uDD01': '\uF7E1',  // MJ022506
-  '\u84B9\uDB40\uDD01': '\uF7E2',  // MJ022508
-  '\u84BA\uDB40\uDD01': '\uF7E3',  // MJ022511
-  '\u84BB\uDB40\uDD01': '\uF7E4',  // MJ022513
-  '\u84BC\uDB40\uDD01': '\uF7E5',  // MJ022516
-  '\u84BD\uDB40\uDD01': '\uF7E6',  // MJ022518
-  '\u84BE\uDB40\uDD01': '\uF7E7',  // MJ022520
-  '\u84BF\uDB40\uDD01': '\uF7E8',  // MJ022522
-  '\u84C0\uDB40\uDD01': '\uF7E9',  // MJ022525
-  '\u84C1\uDB40\uDD01': '\uF7EA',  // MJ022527
-  '\u84C2\uDB40\uDD01': '\uF7EB',  // MJ022529
-  '\u84C4\uDB40\uDD01': '\uF7EC',  // MJ022532
-  '\u84C5\uDB40\uDD01': '\uF7ED',  // MJ022535
-  '\u84C6\uDB40\uDD01': '\uF7EE',  // MJ022536
-  '\u84C7\uDB40\uDD01': '\uF7EF',  // MJ022538
-  '\u84C8\uDB40\uDD01': '\uF7F0',  // MJ022540
-  '\u84C9\uDB40\uDD01': '\uF7F1',  // MJ022543
-  '\u84CA\uDB40\uDD01': '\uF7F2',  // MJ022545
-  '\u84CB\uDB40\uDD01': '\uF7F3',  // MJ022549
-  '\u84CC\uDB40\uDD01': '\uF7F4',  // MJ022551
-  '\u84CD\uDB40\uDD01': '\uF7F5',  // MJ022553
-  '\u84CE\uDB40\uDD01': '\uF7F6',  // MJ022555
-  '\u84CF\uDB40\uDD01': '\uF7F7',  // MJ022558
-  '\u84D0\uDB40\uDD01': '\uF7F8',  // MJ022561
-  '\u84D1\uDB40\uDD01': '\uF7F9',  // MJ022564
-  '\u84D3\uDB40\uDD01': '\uF7FA',  // MJ022568
-  '\u84D6\uDB40\uDD01': '\uF7FB',  // MJ022572
-  '\u84D9\uDB40\uDD01': '\uF7FC',  // MJ022576
-  '\u84DA\uDB40\uDD01': '\uF7FD',  // MJ022579
-  '\u84DC\uDB40\uDD01': '\uF7FE',  // MJ022582
-  '\u84E7\uDB40\uDD01': '\uF7FF',  // MJ022590
-  '\u84EB\uDB40\uDD01': '\uF800',  // MJ022595
-  '\u84EF\uDB40\uDD01': '\uF801',  // MJ022609
-  '\u84F0\uDB40\uDD01': '\uF802',  // MJ022612
-  '\u84F1\uDB40\uDD01': '\uF803',  // MJ022614
-  '\u84F2\uDB40\uDD01': '\uF804',  // MJ022616
-  '\u84F7\uDB40\uDD01': '\uF805',  // MJ022624
-  '\u84FB\uDB40\uDD01': '\uF806',  // MJ022629
-  '\u84FC\uDB40\uDD01': '\uF807',  // MJ022631
-  '\u84FD\uDB40\uDD01': '\uF808',  // MJ022634
-  '\u84FF\uDB40\uDD01': '\uF809',  // MJ022638
-  '\u8500\uDB40\uDD01': '\uF80A',  // MJ022640
-  '\u8502\uDB40\uDD01': '\uF80B',  // MJ022644
-  '\u8503\uDB40\uDD01': '\uF80C',  // MJ022646
-  '\u8506\uDB40\uDD01': '\uF80D',  // MJ022650
-  '\u8507\uDB40\uDD01': '\uF80E',  // MJ022652
-  '\u850C\uDB40\uDD01': '\uF80F',  // MJ022659
-  '\u850E\uDB40\uDD01': '\uF810',  // MJ022662
-  '\u8510\uDB40\uDD01': '\uF811',  // MJ022665
-  '\u8512\uDB40\uDD01': '\uF812',  // MJ022672
-  '\u8513\uDB40\uDD01': '\uF813',  // MJ022673
-  '\u8514\uDB40\uDD01': '\uF814',  // MJ022677
-  '\u8515\uDB40\uDD01': '\uF815',  // MJ022679
-  '\u8518\uDB40\uDD01': '\uF816',  // MJ022686
-  '\u851A\uDB40\uDD01': '\uF817',  // MJ022689
-  '\u851B\uDB40\uDD01': '\uF818',  // MJ022691
-  '\u851C\uDB40\uDD01': '\uF819',  // MJ022693
-  '\u851E\uDB40\uDD01': '\uF81A',  // MJ022696
-  '\u851F\uDB40\uDD01': '\uF81B',  // MJ022698
-  '\u8521\uDB40\uDD01': '\uF81C',  // MJ022701
-  '\u8522\uDB40\uDD01': '\uF81D',  // MJ022703
-  '\u8523\uDB40\uDD01': '\uF81E',  // MJ022706
-  '\u8524\uDB40\uDD01': '\uF81F',  // MJ022708
-  '\u8525\uDB40\uDD01': '\uF820',  // MJ022711
-  '\u8526\uDB40\uDD01': '\uF821',  // MJ022713
-  '\u8527\uDB40\uDD01': '\uF822',  // MJ022715
-  '\u852A\uDB40\uDD01': '\uF823',  // MJ022719
-  '\u852B\uDB40\uDD01': '\uF824',  // MJ022721
-  '\u852C\uDB40\uDD01': '\uF825',  // MJ022723
-  '\u852D\uDB40\uDD01': '\uF826',  // MJ022725
-  '\u852F\uDB40\uDD01': '\uF827',  // MJ022728
-  '\u8532\uDB40\uDD01': '\uF828',  // MJ022732
-  '\u8533\uDB40\uDD01': '\uF829',  // MJ022734
-  '\u8534\uDB40\uDD01': '\uF82A',  // MJ022738
-  '\u8536\uDB40\uDD01': '\uF82B',  // MJ022742
-  '\u853E\uDB40\uDD01': '\uF82C',  // MJ022748
-  '\u853F\uDB40\uDD01': '\uF82D',  // MJ022750
-  '\u8540\uDB40\uDD01': '\uF82E',  // MJ022752
-  '\u8541\uDB40\uDD01': '\uF82F',  // MJ022754
-  '\u8546\uDB40\uDD01': '\uF830',  // MJ022764
-  '\u8548\uDB40\uDD01': '\uF831',  // MJ022767
-  '\u8549\uDB40\uDD01': '\uF832',  // MJ022770
-  '\u854A\uDB40\uDD01': '\uF833',  // MJ022772
-  '\u854B\uDB40\uDD01': '\uF834',  // MJ022774
-  '\u854E\uDB40\uDD01': '\uF835',  // MJ022778
-  '\u854F\uDB40\uDD01': '\uF836',  // MJ022780
-  '\u8550\uDB40\uDD01': '\uF837',  // MJ022782
-  '\u8552\uDB40\uDD01': '\uF838',  // MJ022786
-  '\u8553\uDB40\uDD01': '\uF839',  // MJ022788
-  '\u8556\uDB40\uDD01': '\uF83A',  // MJ022796
-  '\u8557\uDB40\uDD01': '\uF83B',  // MJ022800
-  '\u8558\uDB40\uDD01': '\uF83C',  // MJ022801
-  '\u8559\uDB40\uDD01': '\uF83D',  // MJ022803
-  '\u855A\uDB40\uDD01': '\uF83E',  // MJ022807
-  '\u855C\uDB40\uDD01': '\uF83F',  // MJ022810
-  '\u855E\uDB40\uDD01': '\uF840',  // MJ022815
-  '\u855F\uDB40\uDD01': '\uF841',  // MJ022817
-  '\u8560\uDB40\uDD01': '\uF842',  // MJ022819
-  '\u8561\uDB40\uDD01': '\uF843',  // MJ022821
-  '\u8562\uDB40\uDD01': '\uF844',  // MJ022823
-  '\u8564\uDB40\uDD01': '\uF845',  // MJ022830
-  '\u8568\uDB40\uDD01': '\uF846',  // MJ022836
-  '\u8569\uDB40\uDD01': '\uF847',  // MJ022838
-  '\u856A\uDB40\uDD01': '\uF848',  // MJ022840
-  '\u856B\uDB40\uDD01': '\uF849',  // MJ022842
-  '\u856C\uDB40\uDD01': '\uF84A',  // MJ022846
-  '\u856D\uDB40\uDD01': '\uF84B',  // MJ022847
-  '\u856F\uDB40\uDD01': '\uF84C',  // MJ022850
-  '\u8570\uDB40\uDD01': '\uF84D',  // MJ022855
-  '\u8573\uDB40\uDD01': '\uF84E',  // MJ022857
-  '\u8577\uDB40\uDD01': '\uF84F',  // MJ022859
-  '\u8578\uDB40\uDD01': '\uF850',  // MJ022861
-  '\u8579\uDB40\uDD01': '\uF851',  // MJ022864
-  '\u857A\uDB40\uDD01': '\uF852',  // MJ022866
-  '\u857B\uDB40\uDD01': '\uF853',  // MJ022868
-  '\u857D\uDB40\uDD01': '\uF854',  // MJ022871
-  '\u857E\uDB40\uDD01': '\uF855',  // MJ022873
-  '\u857F\uDB40\uDD01': '\uF856',  // MJ022875
-  '\u8580\uDB40\uDD01': '\uF857',  // MJ022877
-  '\u8581\uDB40\uDD01': '\uF858',  // MJ022880
-  '\u8585\uDB40\uDD01': '\uF859',  // MJ022891
-  '\u8586\uDB40\uDD01': '\uF85A',  // MJ022893
-  '\u8588\uDB40\uDD01': '\uF85B',  // MJ022900
-  '\u8589\uDB40\uDD01': '\uF85C',  // MJ022902
-  '\u858A\uDB40\uDD01': '\uF85D',  // MJ022905
-  '\u858B\uDB40\uDD01': '\uF85E',  // MJ022907
-  '\u858C\uDB40\uDD01': '\uF85F',  // MJ022909
-  '\u858F\uDB40\uDD01': '\uF860',  // MJ022916
-  '\u8590\uDB40\uDD01': '\uF861',  // MJ022919
-  '\u8591\uDB40\uDD01': '\uF862',  // MJ022921
-  '\u8593\uDB40\uDD01': '\uF863',  // MJ022924
-  '\u8594\uDB40\uDD01': '\uF864',  // MJ022926
-  '\u8595\uDB40\uDD01': '\uF865',  // MJ022929
-  '\u8596\uDB40\uDD01': '\uF866',  // MJ022930
-  '\u8597\uDB40\uDD01': '\uF867',  // MJ022932
-  '\u8598\uDB40\uDD01': '\uF868',  // MJ022935
-  '\u8599\uDB40\uDD01': '\uF869',  // MJ022937
-  '\u859B\uDB40\uDD01': '\uF86A',  // MJ022940
-  '\u859C\uDB40\uDD01': '\uF86B',  // MJ022942
-  '\u859D\uDB40\uDD01': '\uF86C',  // MJ022944
-  '\u859F\uDB40\uDD01': '\uF86D',  // MJ022947
-  '\u85A0\uDB40\uDD01': '\uF86E',  // MJ022949
-  '\u85A2\uDB40\uDD01': '\uF86F',  // MJ022952
-  '\u85A4\uDB40\uDD01': '\uF870',  // MJ022955
-  '\u85A5\uDB40\uDD01': '\uF871',  // MJ022957
-  '\u85A6\uDB40\uDD01': '\uF872',  // MJ022959
-  '\u85A7\uDB40\uDD01': '\uF873',  // MJ022961
-  '\u85A8\uDB40\uDD01': '\uF874',  // MJ022963
-  '\u85AA\uDB40\uDD01': '\uF875',  // MJ022969
-  '\u85AB\uDB40\uDD01': '\uF876',  // MJ022971
-  '\u85AD\uDB40\uDD01': '\uF877',  // MJ022977
-  '\u85B0\uDB40\uDD01': '\uF878',  // MJ022986
-  '\u85B3\uDB40\uDD01': '\uF879',  // MJ022992
-  '\u85B4\uDB40\uDD01': '\uF87A',  // MJ022994
-  '\u85B5\uDB40\uDD01': '\uF87B',  // MJ022997
-  '\u85B6\uDB40\uDD01': '\uF87C',  // MJ022998
-  '\u85B7\uDB40\uDD01': '\uF87D',  // MJ023000
-  '\u85B8\uDB40\uDD01': '\uF87E',  // MJ023002
-  '\u85B9\uDB40\uDD01': '\uF87F',  // MJ023004
-  '\u85BA\uDB40\uDD01': '\uF880',  // MJ023006
-  '\u85BC\uDB40\uDD01': '\uF881',  // MJ023009
-  '\u85BD\uDB40\uDD01': '\uF882',  // MJ023011
-  '\u85BE\uDB40\uDD01': '\uF883',  // MJ023013
-  '\u85BF\uDB40\uDD01': '\uF884',  // MJ023015
-  '\u85C1\uDB40\uDD01': '\uF885',  // MJ023018
-  '\u85C2\uDB40\uDD01': '\uF886',  // MJ023022
-  '\u85C7\uDB40\uDD01': '\uF887',  // MJ023028
-  '\u85C9\uDB40\uDD01': '\uF888',  // MJ023031
-  '\u85CA\uDB40\uDD01': '\uF889',  // MJ023034
-  '\u85CB\uDB40\uDD01': '\uF88A',  // MJ023036
-  '\u85CD\uDB40\uDD01': '\uF88B',  // MJ023040
-  '\u85CE\uDB40\uDD01': '\uF88C',  // MJ023042
-  '\u85D0\uDB40\uDD01': '\uF88D',  // MJ023049
-  '\u85D8\uDB40\uDD01': '\uF88E',  // MJ023058
-  '\u85D9\uDB40\uDD01': '\uF88F',  // MJ023060
-  '\u85DA\uDB40\uDD01': '\uF890',  // MJ023063
-  '\u85DC\uDB40\uDD01': '\uF891',  // MJ023066
-  '\u85DD\uDB40\uDD01': '\uF892',  // MJ023068
-  '\u85DF\uDB40\uDD01': '\uF893',  // MJ023070
-  '\u85E0\uDB40\uDD01': '\uF894',  // MJ023072
-  '\u85E1\uDB40\uDD01': '\uF895',  // MJ023075
-  '\u85E5\uDB40\uDD01': '\uF896',  // MJ023086
-  '\u85E6\uDB40\uDD01': '\uF897',  // MJ023089
-  '\u85E8\uDB40\uDD01': '\uF898',  // MJ023094
-  '\u85E9\uDB40\uDD01': '\uF899',  // MJ023096
-  '\u85EA\uDB40\uDD01': '\uF89A',  // MJ023098
-  '\u85EB\uDB40\uDD01': '\uF89B',  // MJ058562
-  '\u85ED\uDB40\uDD01': '\uF89C',  // MJ023104
-  '\u85F3\uDB40\uDD01': '\uF89D',  // MJ023111
-  '\u85F4\uDB40\uDD01': '\uF89E',  // MJ023113
-  '\u85F6\uDB40\uDD01': '\uF89F',  // MJ023114
-  '\u85F9\uDB40\uDD01': '\uF8A0',  // MJ023120
-  '\u85FA\uDB40\uDD01': '\uF8A1',  // MJ023123
-  '\u85FB\uDB40\uDD01': '\uF8A2',  // MJ023125
-  '\u85FC\uDB40\uDD01': '\uF8A3',  // MJ023127
-  '\u85FE\uDB40\uDD01': '\uF8A4',  // MJ023132
-  '\u85FF\uDB40\uDD01': '\uF8A5',  // MJ023135
-  '\u8600\uDB40\uDD01': '\uF8A6',  // MJ023137
-  '\u8602\uDB40\uDD01': '\uF8A7',  // MJ023140
-  '\u8604\uDB40\uDD01': '\uF8A8',  // MJ023143
-  '\u8605\uDB40\uDD01': '\uF8A9',  // MJ023145
-  '\u8606\uDB40\uDD01': '\uF8AA',  // MJ023147
-  '\u8607\uDB40\uDD01': '\uF8AB',  // MJ023150
-  '\u860A\uDB40\uDD01': '\uF8AC',  // MJ023155
-  '\u860B\uDB40\uDD01': '\uF8AD',  // MJ023157
-  '\u860D\uDB40\uDD01': '\uF8AE',  // MJ023162
-  '\uD871\uDFD3\uDB40\uDD01': '\uF8AF',  // MJ023164
-  '\u860E\uDB40\uDD01': '\uF8B0',  // MJ023165
-  '\u8610\uDB40\uDD01': '\uF8B1',  // MJ023168
-  '\u8611\uDB40\uDD01': '\uF8B2',  // MJ023170
-  '\u8613\uDB40\uDD01': '\uF8B3',  // MJ023174
-  '\u8616\uDB40\uDD01': '\uF8B4',  // MJ023178
-  '\u8617\uDB40\uDD01': '\uF8B5',  // MJ023180
-  '\u8618\uDB40\uDD01': '\uF8B6',  // MJ023183
-  '\u8619\uDB40\uDD01': '\uF8B7',  // MJ023185
-  '\u861A\uDB40\uDD01': '\uF8B8',  // MJ023189
-  '\u861B\uDB40\uDD01': '\uF8B9',  // MJ023191
-  '\u861E\uDB40\uDD01': '\uF8BA',  // MJ023194
-  '\u8621\uDB40\uDD01': '\uF8BB',  // MJ023198
-  '\u8622\uDB40\uDD01': '\uF8BC',  // MJ023200
-  '\u8624\uDB40\uDD01': '\uF8BD',  // MJ023205
-  '\u8627\uDB40\uDD01': '\uF8BE',  // MJ023210
-  '\u8629\uDB40\uDD01': '\uF8BF',  // MJ023214
-  '\u862F\uDB40\uDD01': '\uF8C0',  // MJ023226
-  '\u8630\uDB40\uDD01': '\uF8C1',  // MJ023228
-  '\u8636\uDB40\uDD01': '\uF8C2',  // MJ023237
-  '\u8638\uDB40\uDD01': '\uF8C3',  // MJ023239
-  '\u8639\uDB40\uDD01': '\uF8C4',  // MJ023241
-  '\u863A\uDB40\uDD01': '\uF8C5',  // MJ023243
-  '\u863C\uDB40\uDD01': '\uF8C6',  // MJ023246
-  '\u863D\uDB40\uDD01': '\uF8C7',  // MJ023248
-  '\u863F\uDB40\uDD01': '\uF8C8',  // MJ023251
-  '\u8640\uDB40\uDD01': '\uF8C9',  // MJ023253
-  '\u8641\uDB40\uDD01': '\uF8CA',  // MJ023258
-  '\u8642\uDB40\uDD01': '\uF8CB',  // MJ023259
-  '\u8646\uDB40\uDD01': '\uF8CC',  // MJ023263
-  '\u864B\uDB40\uDD01': '\uF8CD',  // MJ058575
-  '\u8653\uDB40\uDD01': '\uF8CE',  // MJ023283
-  '\u8667\uDB40\uDD01': '\uF8CF',  // MJ023308
-  '\u866A\uDB40\uDD01': '\uF8D0',  // MJ023313
-  '\u867B\uDB40\uDD01': '\uF8D1',  // MJ023329
-  '\u8688\uDB40\uDD01': '\uF8D2',  // MJ023338
-  '\u8689\uDB40\uDD01': '\uF8D3',  // MJ023339
-  '\u868B\uDB40\uDD01': '\uF8D4',  // MJ023343
-  '\u868C\uDB40\uDD01': '\uF8D5',  // MJ023345
-  '\u869C\uDB40\uDD01': '\uF8D6',  // MJ023363
-  '\u86A3\uDB40\uDD01': '\uF8D7',  // MJ023370
-  '\u86A4\uDB40\uDD01': '\uF8D8',  // MJ023372
-  '\u86A9\uDB40\uDD01': '\uF8D9',  // MJ023377
-  '\u86AB\uDB40\uDD01': '\uF8DA',  // MJ023380
-  '\u86DF\uDB40\uDD01': '\uF8DB',  // MJ023431
-  '\u86E2\uDB40\uDD01': '\uF8DC',  // MJ023436
-  '\u86E7\uDB40\uDD01': '\uF8DD',  // MJ023441
-  '\u86E9\uDB40\uDD01': '\uF8DE',  // MJ023444
-  '\u86EA\uDB40\uDD01': '\uF8DF',  // MJ023448
-  '\u86EB\uDB40\uDD01': '\uF8E0',  // MJ023450
-  '\u86FB\uDB40\uDD01': '\uF8E1',  // MJ023462
-  '\u8708\uDB40\uDD01': '\uF8E2',  // MJ023477
-  '\u8709\uDB40\uDD01': '\uF8E3',  // MJ023479
-  '\u870E\uDB40\uDD01': '\uF8E4',  // MJ023485
-  '\u8711\uDB40\uDD01': '\uF8E5',  // MJ023488
-  '\u8712\uDB40\uDD01': '\uF8E6',  // MJ023490
-  '\u8729\uDB40\uDD01': '\uF8E7',  // MJ023514
-  '\u8739\uDB40\uDD01': '\uF8E8',  // MJ023533
-  '\u8744\uDB40\uDD01': '\uF8E9',  // MJ058634
-  '\u8745\uDB40\uDD01': '\uF8EA',  // MJ023547
-  '\u874D\uDB40\uDD01': '\uF8EB',  // MJ023554
-  '\u874E\uDB40\uDD01': '\uF8EC',  // MJ023556
-  '\u8750\uDB40\uDD01': '\uF8ED',  // MJ023560
-  '\u8753\uDB40\uDD01': '\uF8EE',  // MJ023563
-  '\u8758\uDB40\uDD01': '\uF8EF',  // MJ023570
-  '\u875D\uDB40\uDD01': '\uF8F0',  // MJ023577
-  '\u8771\uDB40\uDD01': '\uF8F1',  // MJ023599
-  '\u8773\uDB40\uDD01': '\uF8F2',  // MJ023603
-  '\u8777\uDB40\uDD01': '\uF8F3',  // MJ023609
-  '\u8779\uDB40\uDD01': '\uF8F4',  // MJ023611
-  '\u879B\uDB40\uDD01': '\uF8F5',  // MJ023647
-  '\u87AD\uDB40\uDD01': '\uF8F6',  // MJ023664
-  '\u87C0\uDB40\uDD01': '\uF8F7',  // MJ023684
-  '\u87C4\uDB40\uDD01': '\uF8F8',  // MJ023689
-  '\u87C6\uDB40\uDD01': '\uF8F9',  // MJ023692
-  '\u87C7\uDB40\uDD01': '\uF8FA',  // MJ023694
-  '\u87D9\uDB40\uDD01': '\uF8FB',  // MJ023714
-  '\u87E3\uDB40\uDD01': '\uF8FC',  // MJ023725
-  '\u87EB\uDB40\uDD01': '\uF8FD',  // MJ023734
-  '\u87F6\uDB40\uDD01': '\uF8FE',  // MJ023746
-  '\u8801\uDB40\uDD01': '\uF8FF',  // MJ023758
-  '\u8802\uDB40\uDD01': '\uDB80\uDC00',  // MJ023761
-  '\u8806\uDB40\uDD01': '\uDB80\uDC01',  // MJ023768
-  '\u8807\uDB40\uDD01': '\uDB80\uDC02',  // MJ023770
-  '\u880D\uDB40\uDD01': '\uDB80\uDC03',  // MJ023777
-  '\u8813\uDB40\uDD01': '\uDB80\uDC04',  // MJ023788
-  '\u8816\uDB40\uDD01': '\uDB80\uDC05',  // MJ023792
-  '\u881A\uDB40\uDD01': '\uDB80\uDC06',  // MJ023797
-  '\u881B\uDB40\uDD01': '\uDB80\uDC07',  // MJ023800
-  '\u881F\uDB40\uDD01': '\uDB80\uDC08',  // MJ023805
-  '\u8821\uDB40\uDD01': '\uDB80\uDC09',  // MJ023807
-  '\u8823\uDB40\uDD01': '\uDB80\uDC0A',  // MJ023811
-  '\u8828\uDB40\uDD01': '\uDB80\uDC0B',  // MJ023816
-  '\u882A\uDB40\uDD01': '\uDB80\uDC0C',  // MJ023820
-  '\u882B\uDB40\uDD01': '\uDB80\uDC0D',  // MJ023822
-  '\u882D\uDB40\uDD01': '\uDB80\uDC0E',  // MJ023825
-  '\u8841\uDB40\uDD01': '\uDB80\uDC0F',  // MJ023846
-  '\u884A\uDB40\uDD01': '\uDB80\uDC10',  // MJ023860
-  '\u886E\uDB40\uDD01': '\uDB80\uDC11',  // MJ023898
-  '\u8871\uDB40\uDD01': '\uDB80\uDC12',  // MJ023903
-  '\u8872\uDB40\uDD01': '\uDB80\uDC13',  // MJ023904
-  '\u888D\uDB40\uDD01': '\uDB80\uDC14',  // MJ023929
-  '\u889A\uDB40\uDD01': '\uDB80\uDC15',  // MJ023943
-  '\u88A2\uDB40\uDD01': '\uDB80\uDC16',  // MJ023953
-  '\u88A3\uDB40\uDD01': '\uDB80\uDC17',  // MJ023956
-  '\u88B4\uDB40\uDD01': '\uDB80\uDC18',  // MJ023971
-  '\u88D2\uDB40\uDD01': '\uDB80\uDC19',  // MJ023997
-  '\u88D7\uDB40\uDD01': '\uDB80\uDC1A',  // MJ024004
-  '\u88FA\uDB40\uDD01': '\uDB80\uDC1B',  // MJ024038
-  '\u8907\uDB40\uDD01': '\uDB80\uDC1C',  // MJ024052
-  '\u8912\uDB40\uDD01': '\uDB80\uDC1D',  // MJ024064
-  '\u8918\uDB40\uDD01': '\uDB80\uDC1E',  // MJ024072
-  '\u891E\uDB40\uDD01': '\uDB80\uDC1F',  // MJ024080
-  '\u8927\uDB40\uDD01': '\uDB80\uDC20',  // MJ024089
-  '\u892A\uDB40\uDD01': '\uDB80\uDC21',  // MJ024094
-  '\u8933\uDB40\uDD01': '\uDB80\uDC22',  // MJ024105
-  '\u8935\uDB40\uDD01': '\uDB80\uDC23',  // MJ024108
-  '\u8936\uDB40\uDD01': '\uDB80\uDC24',  // MJ024109
-  '\u893C\uDB40\uDD01': '\uDB80\uDC25',  // MJ024118
-  '\u8943\uDB40\uDD01': '\uDB80\uDC26',  // MJ024126
-  '\u8944\uDB40\uDD01': '\uDB80\uDC27',  // MJ024128
-  '\u894A\uDB40\uDD01': '\uDB80\uDC28',  // MJ024135
-  '\u895A\uDB40\uDD01': '\uDB80\uDC29',  // MJ024151
-  '\u8971\uDB40\uDD01': '\uDB80\uDC2A',  // MJ024177
-  '\u8972\uDB40\uDD01': '\uDB80\uDC2B',  // MJ024178
-  '\u8974\uDB40\uDD01': '\uDB80\uDC2C',  // MJ024181
-  '\u897A\uDB40\uDD01': '\uDB80\uDC2D',  // MJ024188
-  '\u897C\uDB40\uDD01': '\uDB80\uDC2E',  // MJ024191
-  '\u897D\uDB40\uDD01': '\uDB80\uDC2F',  // MJ024193
-  '\u897F\uDB40\uDD01': '\uDB80\uDC30',  // MJ024196
-  '\u8983\uDB40\uDD01': '\uDB80\uDC31',  // MJ024203
-  '\u8988\uDB40\uDD01': '\uDB80\uDC32',  // MJ024211
-  '\u8989\uDB40\uDD01': '\uDB80\uDC33',  // MJ024213
-  '\u898A\uDB40\uDD01': '\uDB80\uDC34',  // MJ024215
-  '\u898D\uDB40\uDD01': '\uDB80\uDC35',  // MJ024219
-  '\u8990\uDB40\uDD01': '\uDB80\uDC36',  // MJ024223
-  '\u89A6\uDB40\uDD01': '\uDB80\uDC37',  // MJ024246
-  '\u89A9\uDB40\uDD01': '\uDB80\uDC38',  // MJ024250
-  '\u89B2\uDB40\uDD01': '\uDB80\uDC39',  // MJ024261
-  '\u89B6\uDB40\uDD01': '\uDB80\uDC3A',  // MJ024266
-  '\u89C0\uDB40\uDD01': '\uDB80\uDC3B',  // MJ024278
-  '\u89D3\uDB40\uDD01': '\uDB80\uDC3C',  // MJ024285
-  '\u89DA\uDB40\uDD01': '\uDB80\uDC3D',  // MJ024293
-  '\u89E3\uDB40\uDD01': '\uDB80\uDC3E',  // MJ024302
-  '\u89E7\uDB40\uDD01': '\uDB80\uDC3F',  // MJ024307
-  '\u89F4\uDB40\uDD01': '\uDB80\uDC40',  // MJ024319
-  '\u8A18\uDB40\uDD01': '\uDB80\uDC41',  // MJ024357
-  '\u8A1B\uDB40\uDD01': '\uDB80\uDC42',  // MJ024360
-  '\u8A25\uDB40\uDD01': '\uDB80\uDC43',  // MJ024375
-  '\u8A4E\uDB40\uDD01': '\uDB80\uDC44',  // MJ024421
-  '\u8A60\uDB40\uDD01': '\uDB80\uDC45',  // MJ024440
-  '\u8A64\uDB40\uDD01': '\uDB80\uDC46',  // MJ024446
-  '\u8A6D\uDB40\uDD01': '\uDB80\uDC47',  // MJ024456
-  '\u8A72\uDB40\uDD01': '\uDB80\uDC48',  // MJ024463
-  '\u8A7C\uDB40\uDD01': '\uDB80\uDC49',  // MJ024474
-  '\u8A84\uDB40\uDD01': '\uDB80\uDC4A',  // MJ024483
-  '\u8A86\uDB40\uDD01': '\uDB80\uDC4B',  // MJ024486
-  '\u8A9A\uDB40\uDD01': '\uDB80\uDC4C',  // MJ024510
-  '\u8AA5\uDB40\uDD01': '\uDB80\uDC4D',  // MJ024525
-  '\u8AA8\uDB40\uDD01': '\uDB80\uDC4E',  // MJ024530
-  '\u8AAA\uDB40\uDD01': '\uDB80\uDC4F',  // MJ024533
-  '\u8AAE\uDB40\uDD01': '\uDB80\uDC50',  // MJ024537
-  '\u8AB7\uDB40\uDD01': '\uDB80\uDC51',  // MJ024547
-  '\u8ABE\uDB40\uDD01': '\uDB80\uDC52',  // MJ024556
-  '\u8AC4\uDB40\uDD01': '\uDB80\uDC53',  // MJ024564
-  '\u8ACD\uDB40\uDD01': '\uDB80\uDC54',  // MJ024574
-  '\u8AE1\uDB40\uDD01': '\uDB80\uDC55',  // MJ024603
-  '\u8AE4\uDB40\uDD01': '\uDB80\uDC56',  // MJ024607
-  '\u8AE6\uDB40\uDD01': '\uDB80\uDC57',  // MJ024610
-  '\u8AF1\uDB40\uDD01': '\uDB80\uDC58',  // MJ024627
-  '\u8AF3\uDB40\uDD01': '\uDB80\uDC59',  // MJ024631
-  '\u8AF6\uDB40\uDD01': '\uDB80\uDC5A',  // MJ024635
-  '\u8AFC\uDB40\uDD01': '\uDB80\uDC5B',  // MJ024643
-  '\u8AFE\uDB40\uDD01': '\uDB80\uDC5C',  // MJ024646
-  '\u8AFF\uDB40\uDD01': '\uDB80\uDC5D',  // MJ024648
-  '\u8B0A\uDB40\uDD01': '\uDB80\uDC5E',  // MJ024661
-  '\u8B0B\uDB40\uDD01': '\uDB80\uDC5F',  // MJ024666
-  '\u8B14\uDB40\uDD01': '\uDB80\uDC60',  // MJ024679
-  '\u8B17\uDB40\uDD01': '\uDB80\uDC61',  // MJ024683
-  '\u8B1A\uDB40\uDD01': '\uDB80\uDC62',  // MJ024690
-  '\u8B23\uDB40\uDD01': '\uDB80\uDC63',  // MJ058760
-  '\u8B28\uDB40\uDD01': '\uDB80\uDC64',  // MJ024708
-  '\u8B2B\uDB40\uDD01': '\uDB80\uDC65',  // MJ024712
-  '\u8B33\uDB40\uDD01': '\uDB80\uDC66',  // MJ024722
-  '\u8B37\uDB40\uDD01': '\uDB80\uDC67',  // MJ024727
-  '\u8B44\uDB40\uDD01': '\uDB80\uDC68',  // MJ024745
-  '\u8B45\uDB40\uDD01': '\uDB80\uDC69',  // MJ024750
-  '\u8B4C\uDB40\uDD01': '\uDB80\uDC6A',  // MJ024758
-  '\u8B4F\uDB40\uDD01': '\uDB80\uDC6B',  // MJ024765
-  '\u8B53\uDB40\uDD01': '\uDB80\uDC6C',  // MJ024769
-  '\u8B58\uDB40\uDD01': '\uDB80\uDC6D',  // MJ024776
-  '\u8B61\uDB40\uDD01': '\uDB80\uDC6E',  // MJ024789
-  '\u8B66\uDB40\uDD01': '\uDB80\uDC6F',  // MJ024795
-  '\u8B69\uDB40\uDD01': '\uDB80\uDC70',  // MJ024799
-  '\u8B6A\uDB40\uDD01': '\uDB80\uDC71',  // MJ024802
-  '\u8B6D\uDB40\uDD01': '\uDB80\uDC72',  // MJ024806
-  '\u8B71\uDB40\uDD01': '\uDB80\uDC73',  // MJ024811
-  '\u8B74\uDB40\uDD01': '\uDB80\uDC74',  // MJ024816
-  '\u8B77\uDB40\uDD01': '\uDB80\uDC75',  // MJ024819
-  '\u8B81\uDB40\uDD01': '\uDB80\uDC76',  // MJ024831
-  '\u8B89\uDB40\uDD01': '\uDB80\uDC77',  // MJ024839
-  '\u8B8A\uDB40\uDD01': '\uDB80\uDC78',  // MJ024841
-  '\u8B8B\uDB40\uDD01': '\uDB80\uDC79',  // MJ024842
-  '\u8B8C\uDB40\uDD01': '\uDB80\uDC7A',  // MJ024844
-  '\u8B99\uDB40\uDD01': '\uDB80\uDC7B',  // MJ024858
-  '\u8C3A\uDB40\uDD01': '\uDB80\uDC7C',  // MJ024870
-  '\u8C3E\uDB40\uDD01': '\uDB80\uDC7D',  // MJ024876
-  '\u8C3F\uDB40\uDD01': '\uDB80\uDC7E',  // MJ024878
-  '\u8C41\uDB40\uDD01': '\uDB80\uDC7F',  // MJ024882
-  '\u8C45\uDB40\uDD01': '\uDB80\uDC80',  // MJ024888
-  '\u8C53\uDB40\uDD01': '\uDB80\uDC81',  // MJ024902
-  '\u8C55\uDB40\uDD01': '\uDB80\uDC82',  // MJ024906
-  '\u8C57\uDB40\uDD01': '\uDB80\uDC83',  // MJ024909
-  '\u8C59\uDB40\uDD01': '\uDB80\uDC84',  // MJ024912
-  '\u8C5A\uDB40\uDD01': '\uDB80\uDC85',  // MJ024914
-  '\u8C61\uDB40\uDD01': '\uDB80\uDC86',  // MJ024924
-  '\u8C62\uDB40\uDD01': '\uDB80\uDC87',  // MJ024926
-  '\u8C66\uDB40\uDD01': '\uDB80\uDC88',  // MJ024931
-  '\u8C6B\uDB40\uDD01': '\uDB80\uDC89',  // MJ024939
-  '\u8C6C\uDB40\uDD01': '\uDB80\uDC8A',  // MJ024941
-  '\u8C76\uDB40\uDD01': '\uDB80\uDC8B',  // MJ024951
-  '\u8C93\uDB40\uDD01': '\uDB80\uDC8C',  // MJ024982
-  '\u8C98\uDB40\uDD01': '\uDB80\uDC8D',  // MJ024988
-  '\u8CBF\uDB40\uDD01': '\uDB80\uDC8E',  // MJ025035
-  '\u8CC1\uDB40\uDD01': '\uDB80\uDC8F',  // MJ025037
-  '\u8CC5\uDB40\uDD01': '\uDB80\uDC90',  // MJ025042
-  '\u8CCB\uDB40\uDD01': '\uDB80\uDC91',  // MJ025052
-  '\u8CD4\uDB40\uDD01': '\uDB80\uDC92',  // MJ058790
-  '\u8CF2\uDB40\uDD01': '\uDB80\uDC93',  // MJ025093
-  '\u8CFA\uDB40\uDD01': '\uDB80\uDC94',  // MJ025102
-  '\u8CFB\uDB40\uDD01': '\uDB80\uDC95',  // MJ025104
-  '\u8D09\uDB40\uDD01': '\uDB80\uDC96',  // MJ025123
-  '\u8D0A\uDB40\uDD01': '\uDB80\uDC97',  // MJ025125
-  '\u8D0E\uDB40\uDD01': '\uDB80\uDC98',  // MJ025129
-  '\u8D10\uDB40\uDD01': '\uDB80\uDC99',  // MJ025135
-  '\u8D11\uDB40\uDD01': '\uDB80\uDC9A',  // MJ025138
-  '\u8D13\uDB40\uDD01': '\uDB80\uDC9B',  // MJ025140
-  '\u8D1B\uDB40\uDD01': '\uDB80\uDC9C',  // MJ025149
-  '\u8D1C\uDB40\uDD01': '\uDB80\uDC9D',  // MJ025152
-  '\u8D6D\uDB40\uDD01': '\uDB80\uDC9E',  // MJ025165
-  '\u8D82\uDB40\uDD01': '\uDB80\uDC9F',  // MJ025190
-  '\u8DA9\uDB40\uDD01': '\uDB80\uDCA0',  // MJ025231
-  '\u8DAF\uDB40\uDD01': '\uDB80\uDCA1',  // MJ025237
-  '\u8DB9\uDB40\uDD01': '\uDB80\uDCA2',  // MJ025245
-  '\u8DBC\uDB40\uDD01': '\uDB80\uDCA3',  // MJ025250
-  '\u8DC7\uDB40\uDD01': '\uDB80\uDCA4',  // MJ025260
-  '\u8DCB\uDB40\uDD01': '\uDB80\uDCA5',  // MJ025265
-  '\u8DE4\uDB40\uDD01': '\uDB80\uDCA6',  // MJ025295
-  '\u8DE8\uDB40\uDD01': '\uDB80\uDCA7',  // MJ025300
-  '\u8DEB\uDB40\uDD01': '\uDB80\uDCA8',  // MJ025304
-  '\u8DF0\uDB40\uDD01': '\uDB80\uDCA9',  // MJ025310
-  '\u8E30\uDB40\uDD01': '\uDB80\uDCAA',  // MJ025364
-  '\u8E38\uDB40\uDD01': '\uDB80\uDCAB',  // MJ025373
-  '\u8E43\uDB40\uDD01': '\uDB80\uDCAC',  // MJ025386
-  '\u8E44\uDB40\uDD01': '\uDB80\uDCAD',  // MJ025387
-  '\u8E46\uDB40\uDD01': '\uDB80\uDCAE',  // MJ025391
-  '\u8E48\uDB40\uDD01': '\uDB80\uDCAF',  // MJ025393
-  '\u8E4B\uDB40\uDD01': '\uDB80\uDCB0',  // MJ025398
-  '\u8E55\uDB40\uDD01': '\uDB80\uDCB1',  // MJ025407
-  '\u8E5E\uDB40\uDD01': '\uDB80\uDCB2',  // MJ025417
-  '\u8E62\uDB40\uDD01': '\uDB80\uDCB3',  // MJ025422
-  '\u8E6E\uDB40\uDD01': '\uDB80\uDCB4',  // MJ058816
-  '\u8E71\uDB40\uDD01': '\uDB80\uDCB5',  // MJ025439
-  '\u8E72\uDB40\uDD01': '\uDB80\uDCB6',  // MJ025441
-  '\u8E77\uDB40\uDD01': '\uDB80\uDCB7',  // MJ025448
-  '\u8E87\uDB40\uDD01': '\uDB80\uDCB8',  // MJ025461
-  '\u8E89\uDB40\uDD01': '\uDB80\uDCB9',  // MJ025465
-  '\u8E9A\uDB40\uDD01': '\uDB80\uDCBA',  // MJ025485
-  '\u8EAA\uDB40\uDD01': '\uDB80\uDCBB',  // MJ025503
-  '\u8EAC\uDB40\uDD01': '\uDB80\uDCBC',  // MJ025506
-  '\u8EAF\uDB40\uDD01': '\uDB80\uDCBD',  // MJ025510
-  '\u8EB0\uDB40\uDD01': '\uDB80\uDCBE',  // MJ025512
-  '\u8EBD\uDB40\uDD01': '\uDB80\uDCBF',  // MJ025527
-  '\u8EBE\uDB40\uDD01': '\uDB80\uDCC0',  // MJ025528
-  '\u8EC0\uDB40\uDD01': '\uDB80\uDCC1',  // MJ025531
-  '\u8EC4\uDB40\uDD01': '\uDB80\uDCC2',  // MJ025536
-  '\u8EC5\uDB40\uDD01': '\uDB80\uDCC3',  // MJ025538
-  '\u8EC6\uDB40\uDD01': '\uDB80\uDCC4',  // MJ025540
-  '\u8EC8\uDB40\uDD01': '\uDB80\uDCC5',  // MJ025543
-  '\u8EF1\uDB40\uDD01': '\uDB80\uDCC6',  // MJ025587
-  '\u8F1D\uDB40\uDD01': '\uDB80\uDCC7',  // MJ025635
-  '\u8F1E\uDB40\uDD01': '\uDB80\uDCC8',  // MJ025637
-  '\u8F24\uDB40\uDD01': '\uDB80\uDCC9',  // MJ025644
-  '\u8F4C\uDB40\uDD01': '\uDB80\uDCCA',  // MJ025692
-  '\u8F52\uDB40\uDD01': '\uDB80\uDCCB',  // MJ025699
-  '\u8F54\uDB40\uDD01': '\uDB80\uDCCC',  // MJ025703
-  '\u8F55\uDB40\uDD01': '\uDB80\uDCCD',  // MJ025704
-  '\u8F65\uDB40\uDD01': '\uDB80\uDCCE',  // MJ025722
-  '\u8F9B\uDB40\uDD01': '\uDB80\uDCCF',  // MJ025725
-  '\u8FA5\uDB40\uDD01': '\uDB80\uDCD0',  // MJ025736
-  '\u8FA8\uDB40\uDD01': '\uDB80\uDCD1',  // MJ025739
-  '\u8FAC\uDB40\uDD01': '\uDB80\uDCD2',  // MJ025741
-  '\u8FAD\uDB40\uDD01': '\uDB80\uDCD3',  // MJ025742
-  '\u8FB1\uDB40\uDD01': '\uDB80\uDCD4',  // MJ025747
-  '\u8FB7\uDB40\uDD01': '\uDB80\uDCD5',  // MJ025755
-  '\u8FBA\uDB40\uDD01': '\uDB80\uDCD6',  // MJ025758
-  '\u8FBE\uDB40\uDD01': '\uDB80\uDCD7',  // MJ025766
-  '\u8FC3\uDB40\uDD01': '\uDB80\uDCD8',  // MJ025775
-  '\u8FCA\uDB40\uDD01': '\uDB80\uDCD9',  // MJ025787
-  '\u8FCB\uDB40\uDD01': '\uDB80\uDCDA',  // MJ025789
-  '\u8FCD\uDB40\uDD01': '\uDB80\uDCDB',  // MJ025792
-  '\u8FD2\uDB40\uDD01': '\uDB80\uDCDC',  // MJ025801
-  '\u8FD3\uDB40\uDD01': '\uDB80\uDCDD',  // MJ025804
-  '\u8FD5\uDB40\uDD01': '\uDB80\uDCDE',  // MJ025808
-  '\u8FDA\uDB40\uDD01': '\uDB80\uDCDF',  // MJ025813
-  '\u8FE0\uDB40\uDD01': '\uDB80\uDCE0',  // MJ025818
-  '\u8FE1\uDB40\uDD01': '\uDB80\uDCE1',  // MJ025820
-  '\u8FE2\uDB40\uDD01': '\uDB80\uDCE2',  // MJ025822
-  '\u8FE3\uDB40\uDD01': '\uDB80\uDCE3',  // MJ025824
-  '\u8FE4\uDB40\uDD01': '\uDB80\uDCE4',  // MJ025826
-  '\u8FE5\uDB40\uDD01': '\uDB80\uDCE5',  // MJ025828
-  '\u8FE8\uDB40\uDD01': '\uDB80\uDCE6',  // MJ025834
-  '\u8FEC\uDB40\uDD01': '\uDB80\uDCE7',  // MJ025842
-  '\u8FEE\uDB40\uDD01': '\uDB80\uDCE8',  // MJ025847
-  '\u8FF1\uDB40\uDD01': '\uDB80\uDCE9',  // MJ025854
-  '\u8FF4\uDB40\uDD01': '\uDB80\uDCEA',  // MJ025857
-  '\u8FF5\uDB40\uDD01': '\uDB80\uDCEB',  // MJ025859
-  '\u8FF8\uDB40\uDD01': '\uDB80\uDCEC',  // MJ025863
-  '\u8FF9\uDB40\uDD01': '\uDB80\uDCED',  // MJ025866
-  '\u8FFB\uDB40\uDD01': '\uDB80\uDCEE',  // MJ025870
-  '\u8FFE\uDB40\uDD01': '\uDB80\uDCEF',  // MJ025875
-  '\u8FFF\uDB40\uDD01': '\uDB80\uDCF0',  // MJ025877
-  '\u9002\uDB40\uDD01': '\uDB80\uDCF1',  // MJ025883
-  '\u9004\uDB40\uDD01': '\uDB80\uDCF2',  // MJ025888
-  '\u9005\uDB40\uDD01': '\uDB80\uDCF3',  // MJ025890
-  '\u9008\uDB40\uDD01': '\uDB80\uDCF4',  // MJ025894
-  '\u900B\uDB40\uDD01': '\uDB80\uDCF5',  // MJ025898
-  '\u900C\uDB40\uDD01': '\uDB80\uDCF6',  // MJ025900
-  '\u900D\uDB40\uDD01': '\uDB80\uDCF7',  // MJ025902
-  '\u9011\uDB40\uDD01': '\uDB80\uDCF8',  // MJ025914
-  '\u9013\uDB40\uDD01': '\uDB80\uDCF9',  // MJ025917
-  '\u9015\uDB40\uDD01': '\uDB80\uDCFA',  // MJ025922
-  '\u9016\uDB40\uDD01': '\uDB80\uDCFB',  // MJ025924
-  '\u9018\uDB40\uDD01': '\uDB80\uDCFC',  // MJ025928
-  '\u901B\uDB40\uDD01': '\uDB80\uDCFD',  // MJ025935
-  '\u9021\uDB40\uDD01': '\uDB80\uDCFE',  // MJ025950
-  '\u9024\uDB40\uDD01': '\uDB80\uDCFF',  // MJ025956
-  '\u9027\uDB40\uDD01': '\uDB80\uDD00',  // MJ025958
-  '\u9028\uDB40\uDD01': '\uDB80\uDD01',  // MJ025960
-  '\u9029\uDB40\uDD01': '\uDB80\uDD02',  // MJ025963
-  '\u902A\uDB40\uDD01': '\uDB80\uDD03',  // MJ025965
-  '\u902B\uDB40\uDD01': '\uDB80\uDD04',  // MJ025967
-  '\u902C\uDB40\uDD01': '\uDB80\uDD05',  // MJ025969
-  '\u902D\uDB40\uDD01': '\uDB80\uDD06',  // MJ025971
-  '\u902F\uDB40\uDD01': '\uDB80\uDD07',  // MJ025975
-  '\u9034\uDB40\uDD01': '\uDB80\uDD08',  // MJ025983
-  '\u9036\uDB40\uDD01': '\uDB80\uDD09',  // MJ025990
-  '\u9037\uDB40\uDD01': '\uDB80\uDD0A',  // MJ025992
-  '\u903E\uDB40\uDD01': '\uDB80\uDD0B',  // MJ026006
-  '\u903F\uDB40\uDD01': '\uDB80\uDD0C',  // MJ026009
-  '\u9040\uDB40\uDD01': '\uDB80\uDD0D',  // MJ026011
-  '\u9044\uDB40\uDD01': '\uDB80\uDD0E',  // MJ026022
-  '\u9045\uDB40\uDD01': '\uDB80\uDD0F',  // MJ026023
-  '\u9049\uDB40\uDD01': '\uDB80\uDD10',  // MJ026031
-  '\u904C\uDB40\uDD01': '\uDB80\uDD11',  // MJ026037
-  '\u904F\uDB40\uDD01': '\uDB80\uDD12',  // MJ026045
-  '\u9051\uDB40\uDD01': '\uDB80\uDD13',  // MJ026051
-  '\u9056\uDB40\uDD01': '\uDB80\uDD14',  // MJ026068
-  '\u9059\uDB40\uDD01': '\uDB80\uDD15',  // MJ026074
-  '\u905B\uDB40\uDD01': '\uDB80\uDD16',  // MJ026077
-  '\u905D\uDB40\uDD01': '\uDB80\uDD17',  // MJ026081
-  '\u905E\uDB40\uDD01': '\uDB80\uDD18',  // MJ026083
-  '\u905F\uDB40\uDD01': '\uDB80\uDD19',  // MJ026085
-  '\u9062\uDB40\uDD01': '\uDB80\uDD1A',  // MJ026092
-  '\u9065\uDB40\uDD01': '\uDB80\uDD1B',  // MJ026096
-  '\u9066\uDB40\uDD01': '\uDB80\uDD1C',  // MJ026098
-  '\u9067\uDB40\uDD01': '\uDB80\uDD1D',  // MJ026101
-  '\u9068\uDB40\uDD01': '\uDB80\uDD1E',  // MJ026103
-  '\u906C\uDB40\uDD01': '\uDB80\uDD1F',  // MJ026111
-  '\u906F\uDB40\uDD01': '\uDB80\uDD20',  // MJ026119
-  '\u9070\uDB40\uDD01': '\uDB80\uDD21',  // MJ026124
-  '\u9072\uDB40\uDD01': '\uDB80\uDD22',  // MJ026127
-  '\u9073\uDB40\uDD01': '\uDB80\uDD23',  // MJ026129
-  '\u9074\uDB40\uDD01': '\uDB80\uDD24',  // MJ026133
-  '\u9076\uDB40\uDD01': '\uDB80\uDD25',  // MJ026139
-  '\u9079\uDB40\uDD01': '\uDB80\uDD26',  // MJ026150
-  '\u907B\uDB40\uDD01': '\uDB80\uDD27',  // MJ026154
-  '\u907D\uDB40\uDD01': '\uDB80\uDD28',  // MJ026158
-  '\u9080\uDB40\uDD01': '\uDB80\uDD29',  // MJ026166
-  '\u9082\uDB40\uDD01': '\uDB80\uDD2A',  // MJ026173
-  '\u9085\uDB40\uDD01': '\uDB80\uDD2B',  // MJ026183
-  '\u9088\uDB40\uDD01': '\uDB80\uDD2C',  // MJ026189
-  '\u908B\uDB40\uDD01': '\uDB80\uDD2D',  // MJ026210
-  '\u908C\uDB40\uDD01': '\uDB80\uDD2E',  // MJ026212
-  '\u908D\uDB40\uDD01': '\uDB80\uDD2F',  // MJ026214
-  '\u908E\uDB40\uDD01': '\uDB80\uDD30',  // MJ026216
-  '\u908F\uDB40\uDD01': '\uDB80\uDD31',  // MJ026218
-  '\u9090\uDB40\uDD01': '\uDB80\uDD32',  // MJ026220
-  '\u9099\uDB40\uDD01': '\uDB80\uDD33',  // MJ026229
-  '\u90AB\uDB40\uDD01': '\uDB80\uDD34',  // MJ026258
-  '\u90B4\uDB40\uDD01': '\uDB80\uDD35',  // MJ026268
-  '\u90D2\uDB40\uDD01': '\uDB80\uDD36',  // MJ026296
-  '\u90DB\uDB40\uDD01': '\uDB80\uDD37',  // MJ026305
-  '\u90E2\uDB40\uDD01': '\uDB80\uDD38',  // MJ026313
-  '\u90E4\uDB40\uDD01': '\uDB80\uDD39',  // MJ026317
-  '\u90F1\uDB40\uDD01': '\uDB80\uDD3A',  // MJ026329
-  '\u9100\uDB40\uDD01': '\uDB80\uDD3B',  // MJ026344
-  '\u9102\uDB40\uDD01': '\uDB80\uDD3C',  // MJ026347
-  '\u9115\uDB40\uDD01': '\uDB80\uDD3D',  // MJ026367
-  '\u9119\uDB40\uDD01': '\uDB80\uDD3E',  // MJ026374
-  '\u911A\uDB40\uDD01': '\uDB80\uDD3F',  // MJ026375
-  '\u911B\uDB40\uDD01': '\uDB80\uDD40',  // MJ026378
-  '\u9123\uDB40\uDD01': '\uDB80\uDD41',  // MJ026387
-  '\u912E\uDB40\uDD01': '\uDB80\uDD42',  // MJ026400
-  '\u9137\uDB40\uDD01': '\uDB80\uDD43',  // MJ026412
-  '\u913D\uDB40\uDD01': '\uDB80\uDD44',  // MJ026419
-  '\u9145\uDB40\uDD01': '\uDB80\uDD45',  // MJ026428
-  '\u9152\uDB40\uDD01': '\uDB80\uDD46',  // MJ026447
-  '\u9162\uDB40\uDD01': '\uDB80\uDD47',  // MJ026462
-  '\u916A\uDB40\uDD01': '\uDB80\uDD48',  // MJ026470
-  '\u916C\uDB40\uDD01': '\uDB80\uDD49',  // MJ026473
-  '\u9175\uDB40\uDD01': '\uDB80\uDD4A',  // MJ026482
-  '\u9178\uDB40\uDD01': '\uDB80\uDD4B',  // MJ026488
-  '\u919A\uDB40\uDD01': '\uDB80\uDD4C',  // MJ026524
-  '\u919C\uDB40\uDD01': '\uDB80\uDD4D',  // MJ026527
-  '\u91A4\uDB40\uDD01': '\uDB80\uDD4E',  // MJ026535
-  '\u91A7\uDB40\uDD01': '\uDB80\uDD4F',  // MJ026540
-  '\u91A8\uDB40\uDD01': '\uDB80\uDD50',  // MJ026542
-  '\u91AB\uDB40\uDD01': '\uDB80\uDD51',  // MJ026547
-  '\u91AC\uDB40\uDD01': '\uDB80\uDD52',  // MJ026549
-  '\u91B0\uDB40\uDD01': '\uDB80\uDD53',  // MJ026554
-  '\u91B5\uDB40\uDD01': '\uDB80\uDD54',  // MJ026560
-  '\u91B7\uDB40\uDD01': '\uDB80\uDD55',  // MJ026565
-  '\u91C8\uDB40\uDD01': '\uDB80\uDD56',  // MJ026588
-  '\u91CB\uDB40\uDD01': '\uDB80\uDD57',  // MJ026590
-  '\u91CD\uDB40\uDD01': '\uDB80\uDD58',  // MJ026593
-  '\u91DF\uDB40\uDD01': '\uDB80\uDD59',  // MJ026611
-  '\u91E9\uDB40\uDD01': '\uDB80\uDD5A',  // MJ026623
-  '\u91EB\uDB40\uDD01': '\uDB80\uDD5B',  // MJ026627
-  '\u91EE\uDB40\uDD01': '\uDB80\uDD5C',  // MJ026630
-  '\u91EF\uDB40\uDD01': '\uDB80\uDD5D',  // MJ026632
-  '\u91F5\uDB40\uDD01': '\uDB80\uDD5E',  // MJ026639
-  '\u9210\uDB40\uDD01': '\uDB80\uDD5F',  // MJ026672
-  '\u9213\uDB40\uDD01': '\uDB80\uDD60',  // MJ026677
-  '\u9229\uDB40\uDD01': '\uDB80\uDD61',  // MJ026701
-  '\u9238\uDB40\uDD01': '\uDB80\uDD62',  // MJ026717
-  '\u9242\uDB40\uDD01': '\uDB80\uDD63',  // MJ026728
-  '\u9245\uDB40\uDD01': '\uDB80\uDD64',  // MJ026732
-  '\u924B\uDB40\uDD01': '\uDB80\uDD65',  // MJ026739
-  '\u9252\uDB40\uDD01': '\uDB80\uDD66',  // MJ026748
-  '\u9261\uDB40\uDD01': '\uDB80\uDD67',  // MJ026765
-  '\u9268\uDB40\uDD01': '\uDB80\uDD68',  // MJ026773
-  '\u9278\uDB40\uDD01': '\uDB80\uDD69',  // MJ026788
-  '\u927C\uDB40\uDD01': '\uDB80\uDD6A',  // MJ026793
-  '\u9283\uDB40\uDD01': '\uDB80\uDD6B',  // MJ026802
-  '\u928E\uDB40\uDD01': '\uDB80\uDD6C',  // MJ026815
-  '\u9293\uDB40\uDD01': '\uDB80\uDD6D',  // MJ026821
-  '\u92A2\uDB40\uDD01': '\uDB80\uDD6E',  // MJ026838
-  '\u92B7\uDB40\uDD01': '\uDB80\uDD6F',  // MJ026857
-  '\u92C6\uDB40\uDD01': '\uDB80\uDD70',  // MJ026873
-  '\u92CB\uDB40\uDD01': '\uDB80\uDD71',  // MJ026879
-  '\u92CC\uDB40\uDD01': '\uDB80\uDD72',  // MJ026881
-  '\u92D5\uDB40\uDD01': '\uDB80\uDD73',  // MJ026892
-  '\u92D7\uDB40\uDD01': '\uDB80\uDD74',  // MJ026896
-  '\u92D8\uDB40\uDD01': '\uDB80\uDD75',  // MJ026898
-  '\u92DD\uDB40\uDD01': '\uDB80\uDD76',  // MJ026903
-  '\u92E3\uDB40\uDD01': '\uDB80\uDD77',  // MJ026910
-  '\u92EE\uDB40\uDD01': '\uDB80\uDD78',  // MJ026923
-  '\u92FB\uDB40\uDD01': '\uDB80\uDD79',  // MJ026936
-  '\u9300\uDB40\uDD01': '\uDB80\uDD7A',  // MJ026942
-  '\u9302\uDB40\uDD01': '\uDB80\uDD7B',  // MJ026946
-  '\u931A\uDB40\uDD01': '\uDB80\uDD7C',  // MJ026973
-  '\u9328\uDB40\uDD01': '\uDB80\uDD7D',  // MJ026989
-  '\u933A\uDB40\uDD01': '\uDB80\uDD7E',  // MJ027008
-  '\u9348\uDB40\uDD01': '\uDB80\uDD7F',  // MJ027016
-  '\u9351\uDB40\uDD01': '\uDB80\uDD80',  // MJ027028
-  '\u9369\uDB40\uDD01': '\uDB80\uDD81',  // MJ027055
-  '\u936E\uDB40\uDD01': '\uDB80\uDD82',  // MJ027061
-  '\u9373\uDB40\uDD01': '\uDB80\uDD83',  // MJ027067
-  '\u93A6\uDB40\uDD01': '\uDB80\uDD84',  // MJ027123
-  '\u93AD\uDB40\uDD01': '\uDB80\uDD85',  // MJ027132
-  '\u93B0\uDB40\uDD01': '\uDB80\uDD86',  // MJ027136
-  '\u93B9\uDB40\uDD01': '\uDB80\uDD87',  // MJ027148
-  '\u93BA\uDB40\uDD01': '\uDB80\uDD88',  // MJ027153
-  '\u93C8\uDB40\uDD01': '\uDB80\uDD89',  // MJ027166
-  '\u93CC\uDB40\uDD01': '\uDB80\uDD8A',  // MJ027170
-  '\u93D0\uDB40\uDD01': '\uDB80\uDD8B',  // MJ027175
-  '\u93D1\uDB40\uDD01': '\uDB80\uDD8C',  // MJ027177
-  '\u93D3\uDB40\uDD01': '\uDB80\uDD8D',  // MJ027180
-  '\u93DE\uDB40\uDD01': '\uDB80\uDD8E',  // MJ027193
-  '\u93E0\uDB40\uDD01': '\uDB80\uDD8F',  // MJ027197
-  '\u93E1\uDB40\uDD01': '\uDB80\uDD90',  // MJ027198
-  '\u93F3\uDB40\uDD01': '\uDB80\uDD91',  // MJ027215
-  '\u93F5\uDB40\uDD01': '\uDB80\uDD92',  // MJ027218
-  '\u93FB\uDB40\uDD01': '\uDB80\uDD93',  // MJ027227
-  '\u9404\uDB40\uDD01': '\uDB80\uDD94',  // MJ027236
-  '\u9414\uDB40\uDD01': '\uDB80\uDD95',  // MJ027254
-  '\u9415\uDB40\uDD01': '\uDB80\uDD96',  // MJ027256
-  '\u9416\uDB40\uDD01': '\uDB80\uDD97',  // MJ027258
-  '\u9418\uDB40\uDD01': '\uDB80\uDD98',  // MJ027262
-  '\u9429\uDB40\uDD01': '\uDB80\uDD99',  // MJ027275
-  '\u942A\uDB40\uDD01': '\uDB80\uDD9A',  // MJ027278
-  '\u942F\uDB40\uDD01': '\uDB80\uDD9B',  // MJ027283
-  '\u9435\uDB40\uDD01': '\uDB80\uDD9C',  // MJ027290
-  '\u9439\uDB40\uDD01': '\uDB80\uDD9D',  // MJ027296
-  '\u943B\uDB40\uDD01': '\uDB80\uDD9E',  // MJ027298
-  '\u9441\uDB40\uDD01': '\uDB80\uDD9F',  // MJ027305
-  '\u944A\uDB40\uDD01': '\uDB80\uDDA0',  // MJ027314
-  '\u9452\uDB40\uDD01': '\uDB80\uDDA1',  // MJ027324
-  '\u945B\uDB40\uDD01': '\uDB80\uDDA2',  // MJ027334
-  '\u945F\uDB40\uDD01': '\uDB80\uDDA3',  // MJ027342
-  '\u946E\uDB40\uDD01': '\uDB80\uDDA4',  // MJ027358
-  '\u9471\uDB40\uDD01': '\uDB80\uDDA5',  // MJ027363
-  '\u9475\uDB40\uDD01': '\uDB80\uDDA6',  // MJ027369
-  '\u9476\uDB40\uDD01': '\uDB80\uDDA7',  // MJ027373
-  '\u9484\uDB40\uDD01': '\uDB80\uDDA8',  // MJ027389
-  '\u958B\uDB40\uDD01': '\uDB80\uDDA9',  // MJ027420
-  '\uD863\uDCDD\uDB40\uDD01': '\uDB80\uDDAA',  // MJ027427
-  '\u9594\uDB40\uDD01': '\uDB80\uDDAB',  // MJ027433
-  '\u95A1\uDB40\uDD01': '\uDB80\uDDAC',  // MJ027446
-  '\u95AD\uDB40\uDD01': '\uDB80\uDDAD',  // MJ027460
-  '\u95C7\uDB40\uDD01': '\uDB80\uDDAE',  // MJ027489
-  '\u95C8\uDB40\uDD01': '\uDB80\uDDAF',  // MJ027492
-  '\u95C9\uDB40\uDD01': '\uDB80\uDDB0',  // MJ027493
-  '\u95D0\uDB40\uDD01': '\uDB80\uDDB1',  // MJ027500
-  '\u95D2\uDB40\uDD01': '\uDB80\uDDB2',  // MJ027504
-  '\u95E4\uDB40\uDD01': '\uDB80\uDDB3',  // MJ027523
-  '\u95E5\uDB40\uDD01': '\uDB80\uDDB4',  // MJ027526
-  '\u9654\uDB40\uDD01': '\uDB80\uDDB5',  // MJ027583
-  '\u965F\uDB40\uDD01': '\uDB80\uDDB6',  // MJ027596
-  '\u9675\uDB40\uDD01': '\uDB80\uDDB7',  // MJ027617
-  '\u967B\uDB40\uDD01': '\uDB80\uDDB8',  // MJ027623
-  '\u967F\uDB40\uDD01': '\uDB80\uDDB9',  // MJ027628
-  '\u9681\uDB40\uDD01': '\uDB80\uDDBA',  // MJ027631
-  '\u9682\uDB40\uDD01': '\uDB80\uDDBB',  // MJ027633
-  '\u969C\uDB40\uDD01': '\uDB80\uDDBC',  // MJ027669
-  '\u96A0\uDB40\uDD01': '\uDB80\uDDBD',  // MJ027675
-  '\u96A8\uDB40\uDD01': '\uDB80\uDDBE',  // MJ027689
-  '\u96AA\uDB40\uDD01': '\uDB80\uDDBF',  // MJ027691
-  '\u96B1\uDB40\uDD01': '\uDB80\uDDC0',  // MJ027698
-  '\u96B4\uDB40\uDD01': '\uDB80\uDDC1',  // MJ027702
-  '\u96B6\uDB40\uDD01': '\uDB80\uDDC2',  // MJ027706
-  '\u96B9\uDB40\uDD01': '\uDB80\uDDC3',  // MJ027709
-  '\u96CC\uDB40\uDD01': '\uDB80\uDDC4',  // MJ027731
-  '\u96D5\uDB40\uDD01': '\uDB80\uDDC5',  // MJ027741
-  '\u96D8\uDB40\uDD01': '\uDB80\uDDC6',  // MJ027747
-  '\u96E2\uDB40\uDD01': '\uDB80\uDDC7',  // MJ027760
-  '\u96E9\uDB40\uDD01': '\uDB80\uDDC8',  // MJ027772
-  '\u96EF\uDB40\uDD01': '\uDB80\uDDC9',  // MJ027781
-  '\u96F9\uDB40\uDD01': '\uDB80\uDDCA',  // MJ027793
-  '\u9704\uDB40\uDD01': '\uDB80\uDDCB',  // MJ027803
-  '\u9707\uDB40\uDD01': '\uDB80\uDDCC',  // MJ027809
-  '\u9713\uDB40\uDD01': '\uDB80\uDDCD',  // MJ027822
-  '\u9719\uDB40\uDD01': '\uDB80\uDDCE',  // MJ027829
-  '\u972A\uDB40\uDD01': '\uDB80\uDDCF',  // MJ027850
-  '\u972E\uDB40\uDD01': '\uDB80\uDDD0',  // MJ027855
-  '\u9736\uDB40\uDD01': '\uDB80\uDDD1',  // MJ027863
-  '\u9744\uDB40\uDD01': '\uDB80\uDDD2',  // MJ027880
-  '\u9746\uDB40\uDD01': '\uDB80\uDDD3',  // MJ027883
-  '\u9749\uDB40\uDD01': '\uDB80\uDDD4',  // MJ027887
-  '\u9757\uDB40\uDD01': '\uDB80\uDDD5',  // MJ027902
-  '\u9758\uDB40\uDD01': '\uDB80\uDDD6',  // MJ027904
-  '\u975A\uDB40\uDD01': '\uDB80\uDDD7',  // MJ027909
-  '\u975B\uDB40\uDD01': '\uDB80\uDDD8',  // MJ027911
-  '\u975D\uDB40\uDD01': '\uDB80\uDDD9',  // MJ027918
-  '\u975E\uDB40\uDD01': '\uDB80\uDDDA',  // MJ027920
-  '\u9761\uDB40\uDD01': '\uDB80\uDDDB',  // MJ027927
-  '\u9764\uDB40\uDD01': '\uDB80\uDDDC',  // MJ027931
-  '\u9769\uDB40\uDD01': '\uDB80\uDDDD',  // MJ027936
-  '\u976B\uDB40\uDD01': '\uDB80\uDDDE',  // MJ027938
-  '\u9779\uDB40\uDD01': '\uDB80\uDDDF',  // MJ027957
-  '\u977E\uDB40\uDD01': '\uDB80\uDDE0',  // MJ027964
-  '\u9786\uDB40\uDD01': '\uDB80\uDDE1',  // MJ027973
-  '\u978F\uDB40\uDD01': '\uDB80\uDDE2',  // MJ027983
-  '\u979A\uDB40\uDD01': '\uDB80\uDDE3',  // MJ027994
-  '\u97A8\uDB40\uDD01': '\uDB80\uDDE4',  // MJ028008
-  '\u97B3\uDB40\uDD01': '\uDB80\uDDE5',  // MJ028021
-  '\u97B8\uDB40\uDD01': '\uDB80\uDDE6',  // MJ028027
-  '\u97BE\uDB40\uDD01': '\uDB80\uDDE7',  // MJ028033
-  '\u97BF\uDB40\uDD01': '\uDB80\uDDE8',  // MJ028035
-  '\u97C3\uDB40\uDD01': '\uDB80\uDDE9',  // MJ028041
-  '\u97C4\uDB40\uDD01': '\uDB80\uDDEA',  // MJ028042
-  '\u97C6\uDB40\uDD01': '\uDB80\uDDEB',  // MJ028047
-  '\u97C8\uDB40\uDD01': '\uDB80\uDDEC',  // MJ028051
-  '\u97C9\uDB40\uDD01': '\uDB80\uDDED',  // MJ028055
-  '\u97CA\uDB40\uDD01': '\uDB80\uDDEE',  // MJ028057
-  '\u97CB\uDB40\uDD01': '\uDB80\uDDEF',  // MJ028060
-  '\u97CC\uDB40\uDD01': '\uDB80\uDDF0',  // MJ028064
-  '\u97CD\uDB40\uDD01': '\uDB80\uDDF1',  // MJ028067
-  '\u97CE\uDB40\uDD01': '\uDB80\uDDF2',  // MJ028069
-  '\u97D0\uDB40\uDD01': '\uDB80\uDDF3',  // MJ028072
-  '\u97D1\uDB40\uDD01': '\uDB80\uDDF4',  // MJ028074
-  '\u97D4\uDB40\uDD01': '\uDB80\uDDF5',  // MJ028081
-  '\u97D7\uDB40\uDD01': '\uDB80\uDDF6',  // MJ028085
-  '\u97D8\uDB40\uDD01': '\uDB80\uDDF7',  // MJ028087
-  '\u97D9\uDB40\uDD01': '\uDB80\uDDF8',  // MJ028089
-  '\u97DB\uDB40\uDD01': '\uDB80\uDDF9',  // MJ028092
-  '\u97DC\uDB40\uDD01': '\uDB80\uDDFA',  // MJ028094
-  '\u97DD\uDB40\uDD01': '\uDB80\uDDFB',  // MJ028098
-  '\u97E0\uDB40\uDD01': '\uDB80\uDDFC',  // MJ028104
-  '\u97E1\uDB40\uDD01': '\uDB80\uDDFD',  // MJ028105
-  '\u97E4\uDB40\uDD01': '\uDB80\uDDFE',  // MJ028111
-  '\u97EE\uDB40\uDD01': '\uDB80\uDDFF',  // MJ028116
-  '\u97F0\uDB40\uDD01': '\uDB80\uDE00',  // MJ059020
-  '\u97F1\uDB40\uDD01': '\uDB80\uDE01',  // MJ028120
-  '\u97F5\uDB40\uDD01': '\uDB80\uDE02',  // MJ028125
-  '\u97F6\uDB40\uDD01': '\uDB80\uDE03',  // MJ028127
-  '\u97F9\uDB40\uDD01': '\uDB80\uDE04',  // MJ028132
-  '\u97FA\uDB40\uDD01': '\uDB80\uDE05',  // MJ028133
-  '\u97FB\uDB40\uDD01': '\uDB80\uDE06',  // MJ028138
-  '\u9800\uDB40\uDD01': '\uDB80\uDE07',  // MJ028146
-  '\u9803\uDB40\uDD01': '\uDB80\uDE08',  // MJ028151
-  '\u9804\uDB40\uDD01': '\uDB80\uDE09',  // MJ028153
-  '\u980B\uDB40\uDD01': '\uDB80\uDE0A',  // MJ028162
-  '\u9819\uDB40\uDD01': '\uDB80\uDE0B',  // MJ028182
-  '\u9820\uDB40\uDD01': '\uDB80\uDE0C',  // MJ028190
-  '\u9829\uDB40\uDD01': '\uDB80\uDE0D',  // MJ028202
-  '\u9832\uDB40\uDD01': '\uDB80\uDE0E',  // MJ028211
-  '\u9844\uDB40\uDD01': '\uDB80\uDE0F',  // MJ028232
-  '\u984E\uDB40\uDD01': '\uDB80\uDE10',  // MJ028244
-  '\u985B\uDB40\uDD01': '\uDB80\uDE11',  // MJ028260
-  '\u9870\uDB40\uDD01': '\uDB80\uDE12',  // MJ028282
-  '\u9874\uDB40\uDD01': '\uDB80\uDE13',  // MJ028289
-  '\u98B6\uDB40\uDD01': '\uDB80\uDE14',  // MJ028308
-  '\u98BE\uDB40\uDD01': '\uDB80\uDE15',  // MJ028318
-  '\u98E3\uDB40\uDD01': '\uDB80\uDE16',  // MJ028346
-  '\u98E4\uDB40\uDD01': '\uDB80\uDE17',  // MJ028348
-  '\u98E6\uDB40\uDD01': '\uDB80\uDE18',  // MJ028351
-  '\u98E9\uDB40\uDD01': '\uDB80\uDE19',  // MJ028355
-  '\u98EA\uDB40\uDD01': '\uDB80\uDE1A',  // MJ028357
-  '\u98ED\uDB40\uDD01': '\uDB80\uDE1B',  // MJ028362
-  '\u98F5\uDB40\uDD01': '\uDB80\uDE1C',  // MJ028372
-  '\u98F6\uDB40\uDD01': '\uDB80\uDE1D',  // MJ028374
-  '\u98FB\uDB40\uDD01': '\uDB80\uDE1E',  // MJ028380
-  '\u9901\uDB40\uDD01': '\uDB80\uDE1F',  // MJ028389
-  '\u9902\uDB40\uDD01': '\uDB80\uDE20',  // MJ028392
-  '\u9911\uDB40\uDD01': '\uDB80\uDE21',  // MJ028417
-  '\u9912\uDB40\uDD01': '\uDB80\uDE22',  // MJ028419
-  '\u9914\uDB40\uDD01': '\uDB80\uDE23',  // MJ028424
-  '\u9915\uDB40\uDD01': '\uDB80\uDE24',  // MJ028426
-  '\u9916\uDB40\uDD01': '\uDB80\uDE25',  // MJ028429
-  '\u9917\uDB40\uDD01': '\uDB80\uDE26',  // MJ028431
-  '\u9918\uDB40\uDD01': '\uDB80\uDE27',  // MJ028433
-  '\u991A\uDB40\uDD01': '\uDB80\uDE28',  // MJ028435
-  '\u991B\uDB40\uDD01': '\uDB80\uDE29',  // MJ028437
-  '\u991C\uDB40\uDD01': '\uDB80\uDE2A',  // MJ028439
-  '\u991D\uDB40\uDD01': '\uDB80\uDE2B',  // MJ028441
-  '\u991E\uDB40\uDD01': '\uDB80\uDE2C',  // MJ028444
-  '\u991F\uDB40\uDD01': '\uDB80\uDE2D',  // MJ028446
-  '\u9920\uDB40\uDD01': '\uDB80\uDE2E',  // MJ028448
-  '\u9922\uDB40\uDD01': '\uDB80\uDE2F',  // MJ028453
-  '\u9923\uDB40\uDD01': '\uDB80\uDE30',  // MJ028455
-  '\u9924\uDB40\uDD01': '\uDB80\uDE31',  // MJ028457
-  '\u9926\uDB40\uDD01': '\uDB80\uDE32',  // MJ028460
-  '\u9927\uDB40\uDD01': '\uDB80\uDE33',  // MJ028462
-  '\u9929\uDB40\uDD01': '\uDB80\uDE34',  // MJ028466
-  '\u992A\uDB40\uDD01': '\uDB80\uDE35',  // MJ028469
-  '\u992B\uDB40\uDD01': '\uDB80\uDE36',  // MJ028471
-  '\u992C\uDB40\uDD01': '\uDB80\uDE37',  // MJ028473
-  '\u992D\uDB40\uDD01': '\uDB80\uDE38',  // MJ028475
-  '\u992E\uDB40\uDD01': '\uDB80\uDE39',  // MJ028476
-  '\u9930\uDB40\uDD01': '\uDB80\uDE3A',  // MJ028480
-  '\u9931\uDB40\uDD01': '\uDB80\uDE3B',  // MJ028482
-  '\u9932\uDB40\uDD01': '\uDB80\uDE3C',  // MJ028484
-  '\u9933\uDB40\uDD01': '\uDB80\uDE3D',  // MJ028486
-  '\u9934\uDB40\uDD01': '\uDB80\uDE3E',  // MJ028487
-  '\u9936\uDB40\uDD01': '\uDB80\uDE3F',  // MJ028492
-  '\u9939\uDB40\uDD01': '\uDB80\uDE40',  // MJ028494
-  '\u993A\uDB40\uDD01': '\uDB80\uDE41',  // MJ028497
-  '\u993B\uDB40\uDD01': '\uDB80\uDE42',  // MJ028499
-  '\u993C\uDB40\uDD01': '\uDB80\uDE43',  // MJ028501
-  '\u993D\uDB40\uDD01': '\uDB80\uDE44',  // MJ028503
-  '\u993E\uDB40\uDD01': '\uDB80\uDE45',  // MJ028505
-  '\u993F\uDB40\uDD01': '\uDB80\uDE46',  // MJ028506
-  '\u9940\uDB40\uDD01': '\uDB80\uDE47',  // MJ028509
-  '\u9941\uDB40\uDD01': '\uDB80\uDE48',  // MJ028515
-  '\u9942\uDB40\uDD01': '\uDB80\uDE49',  // MJ028519
-  '\u9944\uDB40\uDD01': '\uDB80\uDE4A',  // MJ028521
-  '\u9946\uDB40\uDD01': '\uDB80\uDE4B',  // MJ028527
-  '\u9947\uDB40\uDD01': '\uDB80\uDE4C',  // MJ028530
-  '\u9948\uDB40\uDD01': '\uDB80\uDE4D',  // MJ028533
-  '\u9949\uDB40\uDD01': '\uDB80\uDE4E',  // MJ028535
-  '\u994A\uDB40\uDD01': '\uDB80\uDE4F',  // MJ028538
-  '\u994C\uDB40\uDD01': '\uDB80\uDE50',  // MJ028542
-  '\u994D\uDB40\uDD01': '\uDB80\uDE51',  // MJ028545
-  '\u994E\uDB40\uDD01': '\uDB80\uDE52',  // MJ028547
-  '\u9950\uDB40\uDD01': '\uDB80\uDE53',  // MJ028550
-  '\u9951\uDB40\uDD01': '\uDB80\uDE54',  // MJ028552
-  '\u9952\uDB40\uDD01': '\uDB80\uDE55',  // MJ028556
-  '\u9955\uDB40\uDD01': '\uDB80\uDE56',  // MJ028560
-  '\u9956\uDB40\uDD01': '\uDB80\uDE57',  // MJ028563
-  '\u9958\uDB40\uDD01': '\uDB80\uDE58',  // MJ028572
-  '\u9959\uDB40\uDD01': '\uDB80\uDE59',  // MJ028574
-  '\u995B\uDB40\uDD01': '\uDB80\uDE5A',  // MJ028577
-  '\u995C\uDB40\uDD01': '\uDB80\uDE5B',  // MJ028582
-  '\u995D\uDB40\uDD01': '\uDB80\uDE5C',  // MJ028585
-  '\u995E\uDB40\uDD01': '\uDB80\uDE5D',  // MJ028587
-  '\u995F\uDB40\uDD01': '\uDB80\uDE5E',  // MJ028588
-  '\u9960\uDB40\uDD01': '\uDB80\uDE5F',  // MJ028591
-  '\u9961\uDB40\uDD01': '\uDB80\uDE60',  // MJ028593
-  '\u99A7\uDB40\uDD01': '\uDB80\uDE61',  // MJ028613
-  '\u99B0\uDB40\uDD01': '\uDB80\uDE62',  // MJ028623
-  '\u99B7\uDB40\uDD01': '\uDB80\uDE63',  // MJ028632
-  '\u99BA\uDB40\uDD01': '\uDB80\uDE64',  // MJ028635
-  '\u99BC\uDB40\uDD01': '\uDB80\uDE65',  // MJ028638
-  '\u99DB\uDB40\uDD01': '\uDB80\uDE66',  // MJ028671
-  '\u99ED\uDB40\uDD01': '\uDB80\uDE67',  // MJ028692
-  '\u99EE\uDB40\uDD01': '\uDB80\uDE68',  // MJ028694
-  '\u99F8\uDB40\uDD01': '\uDB80\uDE69',  // MJ028705
-  '\u99FF\uDB40\uDD01': '\uDB80\uDE6A',  // MJ028714
-  '\u9A15\uDB40\uDD01': '\uDB80\uDE6B',  // MJ028737
-  '\u9A1E\uDB40\uDD01': '\uDB80\uDE6C',  // MJ028748
-  '\u9A2F\uDB40\uDD01': '\uDB80\uDE6D',  // MJ028768
-  '\u9A40\uDB40\uDD01': '\uDB80\uDE6E',  // MJ028786
-  '\u9A41\uDB40\uDD01': '\uDB80\uDE6F',  // MJ028788
-  '\u9A44\uDB40\uDD01': '\uDB80\uDE70',  // MJ028792
-  '\u9A4E\uDB40\uDD01': '\uDB80\uDE71',  // MJ028805
-  '\u9A54\uDB40\uDD01': '\uDB80\uDE72',  // MJ028812
-  '\u9A56\uDB40\uDD01': '\uDB80\uDE73',  // MJ028815
-  '\u9A58\uDB40\uDD01': '\uDB80\uDE74',  // MJ028819
-  '\u9A5A\uDB40\uDD01': '\uDB80\uDE75',  // MJ028823
-  '\u9A5B\uDB40\uDD01': '\uDB80\uDE76',  // MJ028825
-  '\u9A69\uDB40\uDD01': '\uDB80\uDE77',  // MJ028842
-  '\u9AA8\uDB40\uDD01': '\uDB80\uDE78',  // MJ028848
-  '\u9AB8\uDB40\uDD01': '\uDB80\uDE79',  // MJ028864
-  '\u9ABE\uDB40\uDD01': '\uDB80\uDE7A',  // MJ028871
-  '\u9ABF\uDB40\uDD01': '\uDB80\uDE7B',  // MJ028874
-  '\u9AC8\uDB40\uDD01': '\uDB80\uDE7C',  // MJ028882
-  '\u9AD2\uDB40\uDD01': '\uDB80\uDE7D',  // MJ028891
-  '\u9AD3\uDB40\uDD01': '\uDB80\uDE7E',  // MJ028893
-  '\u9AD6\uDB40\uDD01': '\uDB80\uDE7F',  // MJ028898
-  '\u9ADF\uDB40\uDD01': '\uDB80\uDE80',  // MJ028910
-  '\u9AEE\uDB40\uDD01': '\uDB80\uDE81',  // MJ028925
-  '\u9AF1\uDB40\uDD01': '\uDB80\uDE82',  // MJ028929
-  '\u9B06\uDB40\uDD01': '\uDB80\uDE83',  // MJ028951
-  '\u9B12\uDB40\uDD01': '\uDB80\uDE84',  // MJ028963
-  '\u9B1B\uDB40\uDD01': '\uDB80\uDE85',  // MJ028973
-  '\u9B23\uDB40\uDD01': '\uDB80\uDE86',  // MJ028982
-  '\u9B32\uDB40\uDD01': '\uDB80\uDE87',  // MJ029004
-  '\u9B3C\uDB40\uDD01': '\uDB80\uDE88',  // MJ029013
-  '\u9B43\uDB40\uDD01': '\uDB80\uDE89',  // MJ029020
-  '\u9B4F\uDB40\uDD01': '\uDB80\uDE8A',  // MJ029032
-  '\u9B51\uDB40\uDD01': '\uDB80\uDE8B',  // MJ029035
-  '\u9B75\uDB40\uDD01': '\uDB80\uDE8C',  // MJ029073
-  '\u9B83\uDB40\uDD01': '\uDB80\uDE8D',  // MJ029090
-  '\u9B8E\uDB40\uDD01': '\uDB80\uDE8E',  // MJ029104
-  '\u9B91\uDB40\uDD01': '\uDB80\uDE8F',  // MJ029108
-  '\u9B92\uDB40\uDD01': '\uDB80\uDE90',  // MJ029111
-  '\u9BA0\uDB40\uDD01': '\uDB80\uDE91',  // MJ029128
-  '\u9BAC\uDB40\uDD01': '\uDB80\uDE92',  // MJ029144
-  '\u9BB1\uDB40\uDD01': '\uDB80\uDE93',  // MJ029152
-  '\u9BBC\uDB40\uDD01': '\uDB80\uDE94',  // MJ029165
-  '\u9BC1\uDB40\uDD01': '\uDB80\uDE95',  // MJ029171
-  '\u9BC9\uDB40\uDD01': '\uDB80\uDE96',  // MJ029180
-  '\u9BCE\uDB40\uDD01': '\uDB80\uDE97',  // MJ029185
-  '\u9BD4\uDB40\uDD01': '\uDB80\uDE98',  // MJ029191
-  '\u9BE8\uDB40\uDD01': '\uDB80\uDE99',  // MJ029217
-  '\u9BEB\uDB40\uDD01': '\uDB80\uDE9A',  // MJ029221
-  '\u9BF0\uDB40\uDD01': '\uDB80\uDE9B',  // MJ029228
-  '\u9BF5\uDB40\uDD01': '\uDB80\uDE9C',  // MJ029236
-  '\u9BFD\uDB40\uDD01': '\uDB80\uDE9D',  // MJ029245
-  '\u9C00\uDB40\uDD01': '\uDB80\uDE9E',  // MJ029249
-  '\u9C04\uDB40\uDD01': '\uDB80\uDE9F',  // MJ029255
-  '\u9C0B\uDB40\uDD01': '\uDB80\uDEA0',  // MJ029263
-  '\u9C0C\uDB40\uDD01': '\uDB80\uDEA1',  // MJ029265
-  '\u9C10\uDB40\uDD01': '\uDB80\uDEA2',  // MJ029272
-  '\u9C19\uDB40\uDD01': '\uDB80\uDEA3',  // MJ029282
-  '\u9C1F\uDB40\uDD01': '\uDB80\uDEA4',  // MJ029291
-  '\u9C21\uDB40\uDD01': '\uDB80\uDEA5',  // MJ029293
-  '\u9C22\uDB40\uDD01': '\uDB80\uDEA6',  // MJ029296
-  '\u9C26\uDB40\uDD01': '\uDB80\uDEA7',  // MJ029300
-  '\u9C27\uDB40\uDD01': '\uDB80\uDEA8',  // MJ029302
-  '\u9C2D\uDB40\uDD01': '\uDB80\uDEA9',  // MJ029309
-  '\u9C30\uDB40\uDD01': '\uDB80\uDEAA',  // MJ029316
-  '\u9C31\uDB40\uDD01': '\uDB80\uDEAB',  // MJ029318
-  '\u9C39\uDB40\uDD01': '\uDB80\uDEAC',  // MJ029327
-  '\u9C3A\uDB40\uDD01': '\uDB80\uDEAD',  // MJ029329
-  '\u9C41\uDB40\uDD01': '\uDB80\uDEAE',  // MJ029339
-  '\u9C4F\uDB40\uDD01': '\uDB80\uDEAF',  // MJ029355
-  '\u9C5D\uDB40\uDD01': '\uDB80\uDEB0',  // MJ029375
-  '\u9C74\uDB40\uDD01': '\uDB80\uDEB1',  // MJ029401
-  '\u9C76\uDB40\uDD01': '\uDB80\uDEB2',  // MJ029403
-  '\u9CFD\uDB40\uDD01': '\uDB80\uDEB3',  // MJ029437
-  '\u9D2A\uDB40\uDD01': '\uDB80\uDEB4',  // MJ029486
-  '\u9D2E\uDB40\uDD01': '\uDB80\uDEB5',  // MJ029492
-  '\u9D43\uDB40\uDD01': '\uDB80\uDEB6',  // MJ029513
-  '\u9D47\uDB40\uDD01': '\uDB80\uDEB7',  // MJ029518
-  '\u9D55\uDB40\uDD01': '\uDB80\uDEB8',  // MJ029535
-  '\u9D65\uDB40\uDD01': '\uDB80\uDEB9',  // MJ029553
-  '\u9D70\uDB40\uDD01': '\uDB80\uDEBA',  // MJ029567
-  '\u9D7C\uDB40\uDD01': '\uDB80\uDEBB',  // MJ029580
-  '\u9D84\uDB40\uDD01': '\uDB80\uDEBC',  // MJ029589
-  '\u9D93\uDB40\uDD01': '\uDB80\uDEBD',  // MJ029604
-  '\u9DA1\uDB40\uDD01': '\uDB80\uDEBE',  // MJ029619
-  '\u9DB2\uDB40\uDD01': '\uDB80\uDEBF',  // MJ029636
-  '\u9DB7\uDB40\uDD01': '\uDB80\uDEC0',  // MJ029644
-  '\u9DB8\uDB40\uDD01': '\uDB80\uDEC1',  // MJ029645
-  '\u9DB9\uDB40\uDD01': '\uDB80\uDEC2',  // MJ029647
-  '\u9DC1\uDB40\uDD01': '\uDB80\uDEC3',  // MJ029663
-  '\u9DC4\uDB40\uDD01': '\uDB80\uDEC4',  // MJ029668
-  '\u9DCA\uDB40\uDD01': '\uDB80\uDEC5',  // MJ029675
-  '\u9DD6\uDB40\uDD01': '\uDB80\uDEC6',  // MJ029688
-  '\u9DD7\uDB40\uDD01': '\uDB80\uDEC7',  // MJ029690
-  '\u9DE3\uDB40\uDD01': '\uDB80\uDEC8',  // MJ029705
-  '\u9DFE\uDB40\uDD01': '\uDB80\uDEC9',  // MJ029732
-  '\u9E17\uDB40\uDD01': '\uDB80\uDECA',  // MJ029760
-  '\u9E1B\uDB40\uDD01': '\uDB80\uDECB',  // MJ029764
-  '\u9E80\uDB40\uDD01': '\uDB80\uDECC',  // MJ029779
-  '\u9E81\uDB40\uDD01': '\uDB80\uDECD',  // MJ029781
-  '\u9E8C\uDB40\uDD01': '\uDB80\uDECE',  // MJ029793
-  '\u9E9E\uDB40\uDD01': '\uDB80\uDECF',  // MJ029814
-  '\u9EA8\uDB40\uDD01': '\uDB80\uDED0',  // MJ029828
-  '\u9EA9\uDB40\uDD01': '\uDB80\uDED1',  // MJ029830
-  '\u9EAC\uDB40\uDD01': '\uDB80\uDED2',  // MJ029835
-  '\u9EAE\uDB40\uDD01': '\uDB80\uDED3',  // MJ029840
-  '\u9EB0\uDB40\uDD01': '\uDB80\uDED4',  // MJ029843
-  '\u9EBC\uDB40\uDD01': '\uDB80\uDED5',  // MJ029856
-  '\u9EBD\uDB40\uDD01': '\uDB80\uDED6',  // MJ029858
-  '\u9EBE\uDB40\uDD01': '\uDB80\uDED7',  // MJ029860
-  '\u9EC2\uDB40\uDD01': '\uDB80\uDED8',  // MJ029867
-  '\u9EC4\uDB40\uDD01': '\uDB80\uDED9',  // MJ029870
-  '\u9EC8\uDB40\uDD01': '\uDB80\uDEDA',  // MJ029878
-  '\u9ECB\uDB40\uDD01': '\uDB80\uDEDB',  // MJ029882
-  '\u9ECE\uDB40\uDD01': '\uDB80\uDEDC',  // MJ029888
-  '\u9ED0\uDB40\uDD01': '\uDB80\uDEDD',  // MJ029891
-  '\u9ED4\uDB40\uDD01': '\uDB80\uDEDE',  // MJ029896
-  '\u9ED8\uDB40\uDD01': '\uDB80\uDEDF',  // MJ029901
-  '\u9EDC\uDB40\uDD01': '\uDB80\uDEE0',  // MJ029907
-  '\u9EDD\uDB40\uDD01': '\uDB80\uDEE1',  // MJ029909
-  '\u9EDE\uDB40\uDD01': '\uDB80\uDEE2',  // MJ029911
-  '\u9EE0\uDB40\uDD01': '\uDB80\uDEE3',  // MJ029914
-  '\u9EE5\uDB40\uDD01': '\uDB80\uDEE4',  // MJ029919
-  '\u9EE8\uDB40\uDD01': '\uDB80\uDEE5',  // MJ029923
-  '\u9EEF\uDB40\uDD01': '\uDB80\uDEE6',  // MJ029929
-  '\u9EF3\uDB40\uDD01': '\uDB80\uDEE7',  // MJ029936
-  '\u9EF4\uDB40\uDD01': '\uDB80\uDEE8',  // MJ029937
-  '\u9EF7\uDB40\uDD01': '\uDB80\uDEE9',  // MJ029941
-  '\u9EF9\uDB40\uDD01': '\uDB80\uDEEA',  // MJ029944
-  '\u9EFB\uDB40\uDD01': '\uDB80\uDEEB',  // MJ029947
-  '\u9EFC\uDB40\uDD01': '\uDB80\uDEEC',  // MJ029949
-  '\u9EFD\uDB40\uDD01': '\uDB80\uDEED',  // MJ029951
-  '\u9F02\uDB40\uDD01': '\uDB80\uDEEE',  // MJ029957
-  '\u9F03\uDB40\uDD01': '\uDB80\uDEEF',  // MJ029959
-  '\u9F05\uDB40\uDD01': '\uDB80\uDEF0',  // MJ029963
-  '\u9F07\uDB40\uDD01': '\uDB80\uDEF1',  // MJ029965
-  '\u9F0F\uDB40\uDD01': '\uDB80\uDEF2',  // MJ029976
-  '\u9F10\uDB40\uDD01': '\uDB80\uDEF3',  // MJ029979
-  '\u9F12\uDB40\uDD01': '\uDB80\uDEF4',  // MJ029982
-  '\u9F15\uDB40\uDD01': '\uDB80\uDEF5',  // MJ029986
-  '\u9F16\uDB40\uDD01': '\uDB80\uDEF6',  // MJ029988
-  '\u9F1B\uDB40\uDD01': '\uDB80\uDEF7',  // MJ029994
-  '\u9F22\uDB40\uDD01': '\uDB80\uDEF8',  // MJ030004
-  '\u9F25\uDB40\uDD01': '\uDB80\uDEF9',  // MJ030009
-  '\u9F28\uDB40\uDD01': '\uDB80\uDEFA',  // MJ030013
-  '\u9F29\uDB40\uDD01': '\uDB80\uDEFB',  // MJ030015
-  '\u9F2C\uDB40\uDD01': '\uDB80\uDEFC',  // MJ030018
-  '\u9F2E\uDB40\uDD01': '\uDB80\uDEFD',  // MJ030022
-  '\u9F31\uDB40\uDD01': '\uDB80\uDEFE',  // MJ030025
-  '\u9F32\uDB40\uDD01': '\uDB80\uDEFF',  // MJ030028
-  '\u9F34\uDB40\uDD01': '\uDB80\uDF00',  // MJ030031
-  '\u9F39\uDB40\uDD01': '\uDB80\uDF01',  // MJ030037
-  '\u9F3A\uDB40\uDD01': '\uDB80\uDF02',  // MJ030039
-  '\u9F3E\uDB40\uDD01': '\uDB80\uDF03',  // MJ030045
-  '\u9F4D\uDB40\uDD01': '\uDB80\uDF04',  // MJ030066
-  '\u9F4F\uDB40\uDD01': '\uDB80\uDF05',  // MJ030069
-  '\u9F56\uDB40\uDD01': '\uDB80\uDF06',  // MJ030077
-  '\u9F60\uDB40\uDD01': '\uDB80\uDF07',  // MJ030088
-  '\u9F76\uDB40\uDD01': '\uDB80\uDF08',  // MJ030113
-  '\u9F8F\uDB40\uDD01': '\uDB80\uDF09',  // MJ030132
-  '\u9F90\uDB40\uDD01': '\uDB80\uDF0A',  // MJ030135
-  '\u9F91\uDB40\uDD01': '\uDB80\uDF0B',  // MJ030138
-  '\u9F93\uDB40\uDD01': '\uDB80\uDF0C',  // MJ030142
-  '\u9F94\uDB40\uDD01': '\uDB80\uDF0D',  // MJ030143
-  '\u9F95\uDB40\uDD01': '\uDB80\uDF0E',  // MJ030145
-  '\u9F98\uDB40\uDD01': '\uDB80\uDF0F',  // MJ030151
-  '\u9FAC\uDB40\uDD01': '\uDB80\uDF10',  // MJ030172
-  '\uFA0E\uDB40\uDD01': '\uDB80\uDF11',  // MJ030191
-  '\uFA13\uDB40\uDD01': '\uDB80\uDF12',  // MJ030200
-  '\uFA1F\uDB40\uDD01': '\uDB80\uDF13',  // MJ030217
-  '\uFA27\uDB40\uDD01': '\uDB80\uDF14',  // MJ030236
-  '\uD840\uDC00\uDB40\uDD01': '\uDB80\uDF15',  // MJ030313
-  '\uD840\uDC0B\uDB40\uDD01': '\uDB80\uDF16',  // MJ030320
-  '\uD840\uDCA2\uDB40\uDD01': '\uDB80\uDF17',  // MJ030387
-  '\uD840\uDCE4\uDB40\uDD01': '\uDB80\uDF18',  // MJ057398
-  '\uD840\uDD0C\uDB40\uDD01': '\uDB80\uDF19',  // MJ030447
-  '\uD840\uDD22\uDB40\uDD01': '\uDB80\uDF1A',  // MJ030467
-  '\uD840\uDD5E\uDB40\uDD01': '\uDB80\uDF1B',  // MJ030497
-  '\uD840\uDDBB\uDB40\uDD01': '\uDB80\uDF1C',  // MJ030550
-  '\uD840\uDDFE\uDB40\uDD01': '\uDB80\uDF1D',  // MJ056920
-  '\uD840\uDE37\uDB40\uDD01': '\uDB80\uDF1E',  // MJ030614
-  '\uD840\uDE55\uDB40\uDD01': '\uDB80\uDF1F',  // MJ030630
-  '\uD840\uDEEC\uDB40\uDD01': '\uDB80\uDF20',  // MJ030706
-  '\uD840\uDF18\uDB40\uDD01': '\uDB80\uDF21',  // MJ030731
-  '\uD840\uDF2B\uDB40\uDD01': '\uDB80\uDF22',  // MJ030742
-  '\uD840\uDFB9\uDB40\uDD01': '\uDB80\uDF23',  // MJ030812
-  '\uD840\uDFF9\uDB40\uDD01': '\uDB80\uDF24',  // MJ030848
-  '\uD841\uDC57\uDB40\uDD01': '\uDB80\uDF25',  // MJ056959
-  '\uD841\uDC96\uDB40\uDD01': '\uDB80\uDF26',  // MJ030927
-  '\uD841\uDD09\uDB40\uDD01': '\uDB80\uDF27',  // MJ030984
-  '\uD841\uDD25\uDB40\uDD01': '\uDB80\uDF28',  // MJ056992
-  '\uD841\uDD40\uDB40\uDD01': '\uDB80\uDF29',  // MJ031029
-  '\uD841\uDD4B\uDB40\uDD01': '\uDB80\uDF2A',  // MJ057002
-  '\uD841\uDE2F\uDB40\uDD01': '\uDB80\uDF2B',  // MJ031965
-  '\uD841\uDEA3\uDB40\uDD01': '\uDB80\uDF2C',  // MJ031236
-  '\uD841\uDEC9\uDB40\uDD01': '\uDB80\uDF2D',  // MJ031265
-  '\uD841\uDEEE\uDB40\uDD01': '\uDB80\uDF2E',  // MJ031295
-  '\uD841\uDEF9\uDB40\uDD01': '\uDB80\uDF2F',  // MJ031303
-  '\uD842\uDC07\uDB40\uDD01': '\uDB80\uDF30',  // MJ031473
-  '\uD842\uDCE5\uDB40\uDD01': '\uDB80\uDF31',  // MJ031619
-  '\uD842\uDD84\uDB40\uDD01': '\uDB80\uDF32',  // MJ031728
-  '\uD842\uDE27\uDB40\uDD01': '\uDB80\uDF33',  // MJ057416
-  '\uD842\uDED3\uDB40\uDD01': '\uDB80\uDF34',  // MJ031960
-  '\uD842\uDEE4\uDB40\uDD01': '\uDB80\uDF35',  // MJ057125
-  '\uD842\uDF63\uDB40\uDD01': '\uDB80\uDF36',  // MJ032064
-  '\uD842\uDF6F\uDB40\uDD01': '\uDB80\uDF37',  // MJ032070
-  '\uD842\uDF93\uDB40\uDD01': '\uDB80\uDF38',  // MJ032098
-  '\uD842\uDFB1\uDB40\uDD01': '\uDB80\uDF39',  // MJ032124
-  '\uD842\uDFCC\uDB40\uDD01': '\uDB80\uDF3A',  // MJ057146
-  '\uD843\uDC50\uDB40\uDD01': '\uDB80\uDF3B',  // MJ057161
-  '\uD843\uDD45\uDB40\uDD01': '\uDB80\uDF3C',  // MJ032336
-  '\uD843\uDD4A\uDB40\uDD01': '\uDB80\uDF3D',  // MJ032337
-  '\uD843\uDDAE\uDB40\uDD01': '\uDB80\uDF3E',  // MJ032369
-  '\uD843\uDDB7\uDB40\uDD01': '\uDB80\uDF3F',  // MJ032377
-  '\uD843\uDDB8\uDB40\uDD01': '\uDB80\uDF40',  // MJ032379
-  '\uD843\uDDD4\uDB40\uDD01': '\uDB80\uDF41',  // MJ057185
-  '\uD843\uDEDB\uDB40\uDD01': '\uDB80\uDF42',  // MJ032503
-  '\uD843\uDFCB\uDB40\uDD01': '\uDB80\uDF43',  // MJ032604
-  '\uD843\uDFD5\uDB40\uDD01': '\uDB80\uDF44',  // MJ032672
-  '\uD844\uDD3B\uDB40\uDD01': '\uDB80\uDF45',  // MJ032762
-  '\uD844\uDE74\uDB40\uDD01': '\uDB80\uDF46',  // MJ032959
-  '\uD844\uDE75\uDB40\uDD01': '\uDB80\uDF47',  // MJ032961
-  '\uD844\uDE8F\uDB40\uDD01': '\uDB80\uDF48',  // MJ032981
-  '\uD844\uDEA5\uDB40\uDD01': '\uDB80\uDF49',  // MJ032991
-  '\uD844\uDEF3\uDB40\uDD01': '\uDB80\uDF4A',  // MJ033027
-  '\uD844\uDF1B\uDB40\uDD01': '\uDB80\uDF4B',  // MJ033042
-  '\uD844\uDF28\uDB40\uDD01': '\uDB80\uDF4C',  // MJ033052
-  '\uD844\uDF69\uDB40\uDD01': '\uDB80\uDF4D',  // MJ057235
-  '\uD844\uDF6E\uDB40\uDD01': '\uDB80\uDF4E',  // MJ033089
-  '\uD845\uDC5E\uDB40\uDD01': '\uDB80\uDF4F',  // MJ033194
-  '\uD845\uDC5F\uDB40\uDD01': '\uDB80\uDF50',  // MJ033196
-  '\uD845\uDC6D\uDB40\uDD01': '\uDB80\uDF51',  // MJ033205
-  '\uD845\uDCE4\uDB40\uDD01': '\uDB80\uDF52',  // MJ033255
-  '\uD845\uDD52\uDB40\uDD01': '\uDB80\uDF53',  // MJ033318
-  '\uD845\uDD56\uDB40\uDD01': '\uDB80\uDF54',  // MJ057252
-  '\uD845\uDD69\uDB40\uDD01': '\uDB80\uDF55',  // MJ033337
-  '\uD845\uDDD2\uDB40\uDD01': '\uDB80\uDF56',  // MJ057270
-  '\uD845\uDE06\uDB40\uDD01': '\uDB80\uDF57',  // MJ033441
-  '\uD845\uDF06\uDB40\uDD01': '\uDB80\uDF58',  // MJ033579
-  '\uD845\uDF64\uDB40\uDD01': '\uDB80\uDF59',  // MJ057303
-  '\uD846\uDC98\uDB40\uDD01': '\uDB80\uDF5A',  // MJ033774
-  '\uD846\uDCEA\uDB40\uDD01': '\uDB80\uDF5B',  // MJ033817
-  '\uD846\uDDC8\uDB40\uDD01': '\uDB80\uDF5C',  // MJ033943
-  '\uD846\uDDF1\uDB40\uDD01': '\uDB80\uDF5D',  // MJ057330
-  '\uD846\uDE0B\uDB40\uDD01': '\uDB80\uDF5E',  // MJ057336
-  '\uD846\uDEA2\uDB40\uDD01': '\uDB80\uDF5F',  // MJ034080
-  '\uD846\uDF4E\uDB40\uDD01': '\uDB80\uDF60',  // MJ034186
-  '\uD846\uDFED\uDB40\uDD01': '\uDB80\uDF61',  // MJ034267
-  '\uD847\uDC12\uDB40\uDD01': '\uDB80\uDF62',  // MJ034293
-  '\uD847\uDC31\uDB40\uDD01': '\uDB80\uDF63',  // MJ034313
-  '\uD847\uDDA1\uDB40\uDD01': '\uDB80\uDF64',  // MJ034543
-  '\uD847\uDDE4\uDB40\uDD01': '\uDB80\uDF65',  // MJ034585
-  '\uD847\uDDE6\uDB40\uDD01': '\uDB80\uDF66',  // MJ034589
-  '\uD847\uDF19\uDB40\uDD01': '\uDB80\uDF67',  // MJ034774
-  '\uD847\uDF76\uDB40\uDD01': '\uDB80\uDF68',  // MJ034827
-  '\uD847\uDFD6\uDB40\uDD01': '\uDB80\uDF69',  // MJ034887
-  '\uD847\uDFE7\uDB40\uDD01': '\uDB80\uDF6A',  // MJ034901
-  '\uD847\uDFE9\uDB40\uDD01': '\uDB80\uDF6B',  // MJ034904
-  '\u5DDF\uDB40\uDD01': '\uDB80\uDF6C',  // MJ034907
-  '\uD847\uDFEE\uDB40\uDD01': '\uDB80\uDF6D',  // MJ034912
-  '\uD848\uDC29\uDB40\uDD01': '\uDB80\uDF6E',  // MJ034954
-  '\uD848\uDC37\uDB40\uDD01': '\uDB80\uDF6F',  // MJ034960
-  '\uD848\uDD9F\uDB40\uDD01': '\uDB80\uDF70',  // MJ035227
-  '\uD848\uDDB0\uDB40\uDD01': '\uDB80\uDF71',  // MJ056823
-  '\uD848\uDE3B\uDB40\uDD01': '\uDB80\uDF72',  // MJ057443
-  '\uD848\uDE56\uDB40\uDD01': '\uDB80\uDF73',  // MJ059250
-  '\uD848\uDEF1\uDB40\uDD01': '\uDB80\uDF74',  // MJ058011
-  '\uD848\uDEFF\uDB40\uDD01': '\uDB80\uDF75',  // MJ035454
-  '\uD848\uDF1B\uDB40\uDD01': '\uDB80\uDF76',  // MJ035471
-  '\uD848\uDF31\uDB40\uDD01': '\uDB80\uDF77',  // MJ035484
-  '\uD848\uDF41\uDB40\uDD01': '\uDB80\uDF78',  // MJ035498
-  '\uD849\uDCED\uDB40\uDD01': '\uDB80\uDF79',  // MJ035828
-  '\uD849\uDD37\uDB40\uDD01': '\uDB80\uDF7A',  // MJ068075
-  '\uD849\uDD52\uDB40\uDD01': '\uDB80\uDF7B',  // MJ035902
-  '\uD849\uDED4\uDB40\uDD01': '\uDB80\uDF7C',  // MJ036143
-  '\uD849\uDFFA\uDB40\uDD01': '\uDB80\uDF7D',  // MJ057520
-  '\uD84A\uDC35\uDB40\uDD01': '\uDB80\uDF7E',  // MJ036334
-  '\uD84A\uDC43\uDB40\uDD01': '\uDB80\uDF7F',  // MJ036351
-  '\uD84A\uDC5A\uDB40\uDD01': '\uDB80\uDF80',  // MJ036373
-  '\uD84A\uDC94\uDB40\uDD01': '\uDB80\uDF81',  // MJ036396
-  '\uD84A\uDD26\uDB40\uDD01': '\uDB80\uDF82',  // MJ036477
-  '\uD84A\uDD85\uDB40\uDD01': '\uDB80\uDF83',  // MJ036533
-  '\uD84A\uDFF1\uDB40\uDD01': '\uDB80\uDF84',  // MJ057562
-  '\uD84B\uDC1D\uDB40\uDD01': '\uDB80\uDF85',  // MJ036909
-  '\uD84B\uDC72\uDB40\uDD01': '\uDB80\uDF86',  // MJ057566
-  '\uD84B\uDD3C\uDB40\uDD01': '\uDB80\uDF87',  // MJ037022
-  '\uD84B\uDD8A\uDB40\uDD01': '\uDB80\uDF88',  // MJ037047
-  '\uD84B\uDDD0\uDB40\uDD01': '\uDB80\uDF89',  // MJ068076
-  '\uD84B\uDE09\uDB40\uDD01': '\uDB80\uDF8A',  // MJ057578
-  '\uD84B\uDE2D\uDB40\uDD01': '\uDB80\uDF8B',  // MJ037128
-  '\uD84B\uDEEC\uDB40\uDD01': '\uDB80\uDF8C',  // MJ037220
-  '\uD84B\uDF22\uDB40\uDD01': '\uDB80\uDF8D',  // MJ057595
-  '\uD84B\uDFCC\uDB40\uDD01': '\uDB80\uDF8E',  // MJ057615
-  '\uD84B\uDFD8\uDB40\uDD01': '\uDB80\uDF8F',  // MJ037377
-  '\uD84B\uDFD9\uDB40\uDD01': '\uDB80\uDF90',  // MJ037379
-  '\uD84B\uDFE0\uDB40\uDD01': '\uDB80\uDF91',  // MJ057618
-  '\uD84C\uDC5D\uDB40\uDD01': '\uDB80\uDF92',  // MJ037453
-  '\uD84C\uDCB0\uDB40\uDD01': '\uDB80\uDF93',  // MJ057626
-  '\uD84C\uDCD4\uDB40\uDD01': '\uDB80\uDF94',  // MJ037541
-  '\uD84C\uDD06\uDB40\uDD01': '\uDB80\uDF95',  // MJ057642
-  '\uD84C\uDD1E\uDB40\uDD01': '\uDB80\uDF96',  // MJ037587
-  '\uD84C\uDD22\uDB40\uDD01': '\uDB80\uDF97',  // MJ037592
-  '\uD84C\uDD4D\uDB40\uDD01': '\uDB80\uDF98',  // MJ037625
-  '\uD84C\uDEB8\uDB40\uDD01': '\uDB80\uDF99',  // MJ037806
-  '\uD84C\uDF5F\uDB40\uDD01': '\uDB80\uDF9A',  // MJ037877
-  '\uD84C\uDF6E\uDB40\uDD01': '\uDB80\uDF9B',  // MJ037889
-  '\uD84C\uDFB5\uDB40\uDD01': '\uDB80\uDF9C',  // MJ068078
-  '\uD84C\uDFD2\uDB40\uDD01': '\uDB80\uDF9D',  // MJ037939
-  '\uD84C\uDFE0\uDB40\uDD01': '\uDB80\uDF9E',  // MJ037954
-  '\uD84D\uDC6D\uDB40\uDD01': '\uDB80\uDF9F',  // MJ038011
-  '\uD84D\uDCC9\uDB40\uDD01': '\uDB80\uDFA0',  // MJ038052
-  '\uD84D\uDD31\uDB40\uDD01': '\uDB80\uDFA1',  // MJ057773
-  '\uD84D\uDD5A\uDB40\uDD01': '\uDB80\uDFA2',  // MJ038132
-  '\uD84D\uDE26\uDB40\uDD01': '\uDB80\uDFA3',  // MJ038208
-  '\uD84D\uDE38\uDB40\uDD01': '\uDB80\uDFA4',  // MJ038223
-  '\uD84D\uDEA3\uDB40\uDD01': '\uDB80\uDFA5',  // MJ038279
-  '\uD84D\uDF1C\uDB40\uDD01': '\uDB80\uDFA6',  // MJ038318
-  '\uD84D\uDF3F\uDB40\uDD01': '\uDB80\uDFA7',  // MJ038332
-  '\uD84D\uDF4B\uDB40\uDD01': '\uDB80\uDFA8',  // MJ038344
-  '\uD84D\uDF64\uDB40\uDD01': '\uDB80\uDFA9',  // MJ038365
-  '\uD84D\uDF80\uDB40\uDD01': '\uDB80\uDFAA',  // MJ038377
-  '\uD84D\uDFE7\uDB40\uDD01': '\uDB80\uDFAB',  // MJ038420
-  '\uD84D\uDFF3\uDB40\uDD01': '\uDB80\uDFAC',  // MJ038425
-  '\uD84E\uDCA7\uDB40\uDD01': '\uDB80\uDFAD',  // MJ038533
-  '\uD84E\uDD69\uDB40\uDD01': '\uDB80\uDFAE',  // MJ057892
-  '\uD84E\uDE63\uDB40\uDD01': '\uDB80\uDFAF',  // MJ038876
-  '\uD84E\uDE74\uDB40\uDD01': '\uDB80\uDFB0',  // MJ038889
-  '\uD84E\uDE8D\uDB40\uDD01': '\uDB80\uDFB1',  // MJ038909
-  '\uD84E\uDFAC\uDB40\uDD01': '\uDB80\uDFB2',  // MJ057931
-  '\uD84F\uDC10\uDB40\uDD01': '\uDB80\uDFB3',  // MJ068080
-  '\uD84F\uDC75\uDB40\uDD01': '\uDB80\uDFB4',  // MJ057939
-  '\uD84F\uDCA8\uDB40\uDD01': '\uDB80\uDFB5',  // MJ039218
-  '\uD84F\uDCFE\uDB40\uDD01': '\uDB80\uDFB6',  // MJ039272
-  '\uD84F\uDD7D\uDB40\uDD01': '\uDB80\uDFB7',  // MJ057954
-  '\uD84F\uDDF9\uDB40\uDD01': '\uDB80\uDFB8',  // MJ039398
-  '\uD84F\uDE32\uDB40\uDD01': '\uDB80\uDFB9',  // MJ039442
-  '\uD84F\uDF1B\uDB40\uDD01': '\uDB80\uDFBA',  // MJ059816
-  '\uD850\uDCA3\uDB40\uDD01': '\uDB80\uDFBB',  // MJ039727
-  '\uD850\uDD38\uDB40\uDD01': '\uDB80\uDFBC',  // MJ068081
-  '\uD850\uDE63\uDB40\uDD01': '\uDB80\uDFBD',  // MJ039932
-  '\uD850\uDE85\uDB40\uDD01': '\uDB80\uDFBE',  // MJ039947
-  '\uD850\uDFC1\uDB40\uDD01': '\uDB80\uDFBF',  // MJ059876
-  '\uD851\uDD10\uDB40\uDD01': '\uDB80\uDFC0',  // MJ040230
-  '\uD851\uDD14\uDB40\uDD01': '\uDB80\uDFC1',  // MJ040234
-  '\uD851\uDD64\uDB40\uDD01': '\uDB80\uDFC2',  // MJ040284
-  '\uD851\uDD68\uDB40\uDD01': '\uDB80\uDFC3',  // MJ058021
-  '\uD851\uDF35\uDB40\uDD01': '\uDB80\uDFC4',  // MJ040624
-  '\uD853\uDC1E\uDB40\uDD01': '\uDB80\uDFC5',  // MJ057095
-  '\uD853\uDC6B\uDB40\uDD01': '\uDB80\uDFC6',  // MJ068083
-  '\uD853\uDC83\uDB40\uDD01': '\uDB80\uDFC7',  // MJ041409
-  '\uD853\uDCFF\uDB40\uDD01': '\uDB80\uDFC8',  // MJ068084
-  '\uD853\uDD21\uDB40\uDD01': '\uDB80\uDFC9',  // MJ058117
-  '\uD853\uDE84\uDB40\uDD01': '\uDB80\uDFCA',  // MJ041756
-  '\uD854\uDC44\uDB40\uDD01': '\uDB80\uDFCB',  // MJ042064
-  '\uD854\uDCF2\uDB40\uDD01': '\uDB80\uDFCC',  // MJ042171
-  '\uD854\uDCF3\uDB40\uDD01': '\uDB80\uDFCD',  // MJ042173
-  '\uD854\uDD02\uDB40\uDD01': '\uDB80\uDFCE',  // MJ042187
-  '\uD854\uDD92\uDB40\uDD01': '\uDB80\uDFCF',  // MJ042289
-  '\uD854\uDE4C\uDB40\uDD01': '\uDB80\uDFD0',  // MJ042408
-  '\uD854\uDE4F\uDB40\uDD01': '\uDB80\uDFD1',  // MJ058180
-  '\uD855\uDE07\uDB40\uDD01': '\uDB80\uDFD2',  // MJ042964
-  '\uD855\uDE26\uDB40\uDD01': '\uDB80\uDFD3',  // MJ042970
-  '\uD855\uDE2C\uDB40\uDD01': '\uDB80\uDFD4',  // MJ042975
-  '\uD855\uDE30\uDB40\uDD01': '\uDB80\uDFD5',  // MJ042980
-  '\uD855\uDE6E\uDB40\uDD01': '\uDB80\uDFD6',  // MJ043007
-  '\uD855\uDEC6\uDB40\uDD01': '\uDB80\uDFD7',  // MJ043035
-  '\uD855\uDED9\uDB40\uDD01': '\uDB80\uDFD8',  // MJ043047
-  '\uD855\uDEDC\uDB40\uDD01': '\uDB80\uDFD9',  // MJ043051
-  '\uD855\uDEF2\uDB40\uDD01': '\uDB80\uDFDA',  // MJ043063
-  '\uD855\uDF05\uDB40\uDD01': '\uDB80\uDFDB',  // MJ043075
-  '\uD855\uDF12\uDB40\uDD01': '\uDB80\uDFDC',  // MJ043079
-  '\uD855\uDF26\uDB40\uDD01': '\uDB80\uDFDD',  // MJ043092
-  '\uD855\uDFA9\uDB40\uDD01': '\uDB80\uDFDE',  // MJ043175
-  '\uD855\uDFB4\uDB40\uDD01': '\uDB80\uDFDF',  // MJ043184
-  '\uD856\uDC35\uDB40\uDD01': '\uDB80\uDFE0',  // MJ043243
-  '\uD856\uDE2B\uDB40\uDD01': '\uDB80\uDFE1',  // MJ043547
-  '\uD856\uDEA7\uDB40\uDD01': '\uDB80\uDFE2',  // MJ043614
-  '\uD856\uDED4\uDB40\uDD01': '\uDB80\uDFE3',  // MJ043639
-  '\uD856\uDEE1\uDB40\uDD01': '\uDB80\uDFE4',  // MJ058258
-  '\uD856\uDF5F\uDB40\uDD01': '\uDB80\uDFE5',  // MJ043732
-  '\uD856\uDFAB\uDB40\uDD01': '\uDB80\uDFE6',  // MJ043780
-  '\uD856\uDFFF\uDB40\uDD01': '\uDB80\uDFE7',  // MJ068086
-  '\uD857\uDC4B\uDB40\uDD01': '\uDB80\uDFE8',  // MJ043882
-  '\uD857\uDC80\uDB40\uDD01': '\uDB80\uDFE9',  // MJ043900
-  '\uD857\uDE4F\uDB40\uDD01': '\uDB80\uDFEA',  // MJ058287
-  '\uD857\uDE9B\uDB40\uDD01': '\uDB80\uDFEB',  // MJ044247
-  '\uD857\uDF86\uDB40\uDD01': '\uDB80\uDFEC',  // MJ044397
-  '\uD857\uDF9E\uDB40\uDD01': '\uDB80\uDFED',  // MJ044414
-  '\uD858\uDCC8\uDB40\uDD01': '\uDB80\uDFEE',  // MJ044582
-  '\uD858\uDDA2\uDB40\uDD01': '\uDB80\uDFEF',  // MJ058330
-  '\uD858\uDDD7\uDB40\uDD01': '\uDB80\uDFF0',  // MJ044738
-  '\uD858\uDDDA\uDB40\uDD01': '\uDB80\uDFF1',  // MJ044743
-  '\uD858\uDE22\uDB40\uDD01': '\uDB80\uDFF2',  // MJ057891
-  '\uD858\uDE28\uDB40\uDD01': '\uDB80\uDFF3',  // MJ044779
-  '\uD858\uDE47\uDB40\uDD01': '\uDB80\uDFF4',  // MJ044802
-  '\uD858\uDE73\uDB40\uDD01': '\uDB80\uDFF5',  // MJ044830
-  '\uD858\uDE8B\uDB40\uDD01': '\uDB80\uDFF6',  // MJ057703
-  '\uD858\uDED9\uDB40\uDD01': '\uDB80\uDFF7',  // MJ044888
-  '\uD858\uDFB1\uDB40\uDD01': '\uDB80\uDFF8',  // MJ045040
-  '\uD858\uDFC1\uDB40\uDD01': '\uDB80\uDFF9',  // MJ045051
-  '\uD859\uDC07\uDB40\uDD01': '\uDB80\uDFFA',  // MJ045110
-  '\uD859\uDC08\uDB40\uDD01': '\uDB80\uDFFB',  // MJ045111
-  '\uD859\uDC62\uDB40\uDD01': '\uDB80\uDFFC',  // MJ045177
-  '\uD859\uDCB3\uDB40\uDD01': '\uDB80\uDFFD',  // MJ045235
-  '\uD859\uDD18\uDB40\uDD01': '\uDB80\uDFFE',  // MJ045304
-  '\uD859\uDDA2\uDB40\uDD01': '\uDB80\uDFFF',  // MJ045381
-  '\uD859\uDEA8\uDB40\uDD01': '\uDB81\uDC00',  // MJ045550
-  '\uD859\uDEAF\uDB40\uDD01': '\uDB81\uDC01',  // MJ045558
-  '\uD859\uDF6B\uDB40\uDD01': '\uDB81\uDC02',  // MJ045673
-  '\uD85A\uDC73\uDB40\uDD01': '\uDB81\uDC03',  // MJ058403
-  '\uD85A\uDCAA\uDB40\uDD01': '\uDB81\uDC04',  // MJ045851
-  '\uD85A\uDCAB\uDB40\uDD01': '\uDB81\uDC05',  // MJ045854
-  '\uD85A\uDCBC\uDB40\uDD01': '\uDB81\uDC06',  // MJ045863
-  '\uD85A\uDD1D\uDB40\uDD01': '\uDB81\uDC07',  // MJ045933
-  '\uD85A\uDD3C\uDB40\uDD01': '\uDB81\uDC08',  // MJ060086
-  '\uD85A\uDD5B\uDB40\uDD01': '\uDB81\uDC09',  // MJ045973
-  '\uD85A\uDD73\uDB40\uDD01': '\uDB81\uDC0A',  // MJ058418
-  '\uD85A\uDD77\uDB40\uDD01': '\uDB81\uDC0B',  // MJ045996
-  '\uD85A\uDDE0\uDB40\uDD01': '\uDB81\uDC0C',  // MJ046075
-  '\uD85A\uDEAD\uDB40\uDD01': '\uDB81\uDC0D',  // MJ046224
-  '\uD85A\uDF1E\uDB40\uDD01': '\uDB81\uDC0E',  // MJ046309
-  '\uD85A\uDF20\uDB40\uDD01': '\uDB81\uDC0F',  // MJ046313
-  '\uD85A\uDFCC\uDB40\uDD01': '\uDB81\uDC10',  // MJ060109
-  '\uD85B\uDC29\uDB40\uDD01': '\uDB81\uDC11',  // MJ046464
-  '\uD85B\uDC64\uDB40\uDD01': '\uDB81\uDC12',  // MJ046523
-  '\uD85B\uDC73\uDB40\uDD01': '\uDB81\uDC13',  // MJ046537
-  '\uD85B\uDCDD\uDB40\uDD01': '\uDB81\uDC14',  // MJ046585
-  '\uD85B\uDE11\uDB40\uDD01': '\uDB81\uDC15',  // MJ046773
-  '\uD85B\uDE40\uDB40\uDD01': '\uDB81\uDC16',  // MJ046814
-  '\uD85B\uDE47\uDB40\uDD01': '\uDB81\uDC17',  // MJ046819
-  '\uD85B\uDF2C\uDB40\uDD01': '\uDB81\uDC18',  // MJ046951
-  '\uD85B\uDF2F\uDB40\uDD01': '\uDB81\uDC19',  // MJ046954
-  '\uD85B\uDF8F\uDB40\uDD01': '\uDB81\uDC1A',  // MJ047028
-  '\uD85B\uDF94\uDB40\uDD01': '\uDB81\uDC1B',  // MJ047032
-  '\uD85B\uDFB1\uDB40\uDD01': '\uDB81\uDC1C',  // MJ047042
-  '\uD85B\uDFD4\uDB40\uDD01': '\uDB81\uDC1D',  // MJ047080
-  '\uD85B\uDFF8\uDB40\uDD01': '\uDB81\uDC1E',  // MJ047097
-  '\uD85C\uDC39\uDB40\uDD01': '\uDB81\uDC1F',  // MJ047141
-  '\uD85C\uDCF4\uDB40\uDD01': '\uDB81\uDC20',  // MJ047259
-  '\uD85C\uDD0D\uDB40\uDD01': '\uDB81\uDC21',  // MJ047264
-  '\uD85C\uDD39\uDB40\uDD01': '\uDB81\uDC22',  // MJ047295
-  '\uD85C\uDD71\uDB40\uDD01': '\uDB81\uDC23',  // MJ058573
-  '\uD85C\uDDFD\uDB40\uDD01': '\uDB81\uDC24',  // MJ047434
-  '\uD85C\uDE2A\uDB40\uDD01': '\uDB81\uDC25',  // MJ047464
-  '\uD85C\uDE9C\uDB40\uDD01': '\uDB81\uDC26',  // MJ047542
-  '\uD85C\uDEB7\uDB40\uDD01': '\uDB81\uDC27',  // MJ047565
-  '\uD85C\uDEDD\uDB40\uDD01': '\uDB81\uDC28',  // MJ058636
-  '\uD85C\uDF0A\uDB40\uDD01': '\uDB81\uDC29',  // MJ047614
-  '\uD85C\uDF69\uDB40\uDD01': '\uDB81\uDC2A',  // MJ047772
-  '\uD85C\uDFCA\uDB40\uDD01': '\uDB81\uDC2B',  // MJ047758
-  '\uD85C\uDFFE\uDB40\uDD01': '\uDB81\uDC2C',  // MJ047790
-  '\uD85D\uDC02\uDB40\uDD01': '\uDB81\uDC2D',  // MJ058653
-  '\uD85D\uDD25\uDB40\uDD01': '\uDB81\uDC2E',  // MJ047986
-  '\uD85D\uDE02\uDB40\uDD01': '\uDB81\uDC2F',  // MJ048162
-  '\uD85D\uDE0E\uDB40\uDD01': '\uDB81\uDC30',  // MJ058686
-  '\uD85D\uDE19\uDB40\uDD01': '\uDB81\uDC31',  // MJ048182
-  '\uD85D\uDE67\uDB40\uDD01': '\uDB81\uDC32',  // MJ048246
-  '\uD85D\uDED4\uDB40\uDD01': '\uDB81\uDC33',  // MJ048322
-  '\uD85D\uDF01\uDB40\uDD01': '\uDB81\uDC34',  // MJ048359
-  '\uD85D\uDF05\uDB40\uDD01': '\uDB81\uDC35',  // MJ058705
-  '\uD85D\uDF0F\uDB40\uDD01': '\uDB81\uDC36',  // MJ048374
-  '\uD85D\uDF53\uDB40\uDD01': '\uDB81\uDC37',  // MJ058708
-  '\uD85D\uDF71\uDB40\uDD01': '\uDB81\uDC38',  // MJ058710
-  '\uD85D\uDFAA\uDB40\uDD01': '\uDB81\uDC39',  // MJ068088
-  '\uD85D\uDFB8\uDB40\uDD01': '\uDB81\uDC3A',  // MJ048486
-  '\uD85D\uDFE8\uDB40\uDD01': '\uDB81\uDC3B',  // MJ048522
-  '\uD85E\uDD66\uDB40\uDD01': '\uDB81\uDC3C',  // MJ048810
-  '\uD85E\uDDDA\uDB40\uDD01': '\uDB81\uDC3D',  // MJ048895
-  '\uD85E\uDE6E\uDB40\uDD01': '\uDB81\uDC3E',  // MJ058750
-  '\uD85E\uDE7B\uDB40\uDD01': '\uDB81\uDC3F',  // MJ049029
-  '\uD85E\uDEAE\uDB40\uDD01': '\uDB81\uDC40',  // MJ058758
-  '\uD85E\uDEE2\uDB40\uDD01': '\uDB81\uDC41',  // MJ049105
-  '\uD85E\uDF2F\uDB40\uDD01': '\uDB81\uDC42',  // MJ049169
-  '\uD85E\uDF87\uDB40\uDD01': '\uDB81\uDC43',  // MJ049239
-  '\uD85E\uDFC6\uDB40\uDD01': '\uDB81\uDC44',  // MJ049294
-  '\uD85E\uDFCC\uDB40\uDD01': '\uDB81\uDC45',  // MJ049301
-  '\uD85E\uDFFE\uDB40\uDD01': '\uDB81\uDC46',  // MJ049345
-  '\uD85F\uDCA8\uDB40\uDD01': '\uDB81\uDC47',  // MJ049486
-  '\uD85F\uDD2A\uDB40\uDD01': '\uDB81\uDC48',  // MJ049590
-  '\uD85F\uDD4D\uDB40\uDD01': '\uDB81\uDC49',  // MJ049614
-  '\uD85F\uDE19\uDB40\uDD01': '\uDB81\uDC4A',  // MJ049742
-  '\uD85F\uDE3D\uDB40\uDD01': '\uDB81\uDC4B',  // MJ049758
-  '\uD85F\uDE79\uDB40\uDD01': '\uDB81\uDC4C',  // MJ049792
-  '\uD85F\uDFA8\uDB40\uDD01': '\uDB81\uDC4D',  // MJ049993
-  '\uD85F\uDFC0\uDB40\uDD01': '\uDB81\uDC4E',  // MJ068090
-  '\uD860\uDD19\uDB40\uDD01': '\uDB81\uDC4F',  // MJ050235
-  '\uD860\uDF8A\uDB40\uDD01': '\uDB81\uDC50',  // MJ050632
-  '\uD861\uDC32\uDB40\uDD01': '\uDB81\uDC51',  // MJ050749
-  '\uD861\uDC4D\uDB40\uDD01': '\uDB81\uDC52',  // MJ050768
-  '\uD861\uDC52\uDB40\uDD01': '\uDB81\uDC53',  // MJ050774
-  '\uD861\uDC55\uDB40\uDD01': '\uDB81\uDC54',  // MJ050780
-  '\uD861\uDC6D\uDB40\uDD01': '\uDB81\uDC55',  // MJ050800
-  '\uD861\uDC89\uDB40\uDD01': '\uDB81\uDC56',  // MJ050818
-  '\uD861\uDC8C\uDB40\uDD01': '\uDB81\uDC57',  // MJ050822
-  '\uD861\uDCAD\uDB40\uDD01': '\uDB81\uDC58',  // MJ050848
-  '\uD861\uDCB0\uDB40\uDD01': '\uDB81\uDC59',  // MJ050852
-  '\uD861\uDCC5\uDB40\uDD01': '\uDB81\uDC5A',  // MJ050868
-  '\uD861\uDCCD\uDB40\uDD01': '\uDB81\uDC5B',  // MJ050877
-  '\uD861\uDCE4\uDB40\uDD01': '\uDB81\uDC5C',  // MJ050888
-  '\uD861\uDCF1\uDB40\uDD01': '\uDB81\uDC5D',  // MJ050903
-  '\uD861\uDCF5\uDB40\uDD01': '\uDB81\uDC5E',  // MJ050907
-  '\uD861\uDD1D\uDB40\uDD01': '\uDB81\uDC5F',  // MJ050933
-  '\uD861\uDD1F\uDB40\uDD01': '\uDB81\uDC60',  // MJ050936
-  '\uD861\uDD27\uDB40\uDD01': '\uDB81\uDC61',  // MJ050944
-  '\uD861\uDD2B\uDB40\uDD01': '\uDB81\uDC62',  // MJ050949
-  '\uD861\uDD2F\uDB40\uDD01': '\uDB81\uDC63',  // MJ050956
-  '\uD861\uDD30\uDB40\uDD01': '\uDB81\uDC64',  // MJ050958
-  '\uD861\uDD60\uDB40\uDD01': '\uDB81\uDC65',  // MJ050976
-  '\uD861\uDD63\uDB40\uDD01': '\uDB81\uDC66',  // MJ050980
-  '\uD861\uDD65\uDB40\uDD01': '\uDB81\uDC67',  // MJ050983
-  '\uD861\uDD6B\uDB40\uDD01': '\uDB81\uDC68',  // MJ050991
-  '\uD861\uDD88\uDB40\uDD01': '\uDB81\uDC69',  // MJ051009
-  '\uD861\uDD8A\uDB40\uDD01': '\uDB81\uDC6A',  // MJ051011
-  '\uD861\uDDB9\uDB40\uDD01': '\uDB81\uDC6B',  // MJ051044
-  '\uD861\uDDBB\uDB40\uDD01': '\uDB81\uDC6C',  // MJ051046
-  '\uD861\uDDBF\uDB40\uDD01': '\uDB81\uDC6D',  // MJ051051
-  '\uD861\uDDC9\uDB40\uDD01': '\uDB81\uDC6E',  // MJ051061
-  '\uD861\uDDED\uDB40\uDD01': '\uDB81\uDC6F',  // MJ051089
-  '\uD861\uDDF1\uDB40\uDD01': '\uDB81\uDC70',  // MJ051093
-  '\uD861\uDE22\uDB40\uDD01': '\uDB81\uDC71',  // MJ051123
-  '\uD861\uDE37\uDB40\uDD01': '\uDB81\uDC72',  // MJ051137
-  '\uD861\uDE42\uDB40\uDD01': '\uDB81\uDC73',  // MJ051146
-  '\uD861\uDE55\uDB40\uDD01': '\uDB81\uDC74',  // MJ051161
-  '\uD861\uDE59\uDB40\uDD01': '\uDB81\uDC75',  // MJ051165
-  '\uD861\uDE5A\uDB40\uDD01': '\uDB81\uDC76',  // MJ051167
-  '\uD861\uDE5F\uDB40\uDD01': '\uDB81\uDC77',  // MJ051172
-  '\uD861\uDF63\uDB40\uDD01': '\uDB81\uDC78',  // MJ058877
-  '\uD862\uDC0B\uDB40\uDD01': '\uDB81\uDC79',  // MJ051499
-  '\uD862\uDD45\uDB40\uDD01': '\uDB81\uDC7A',  // MJ060262
-  '\uD862\uDE71\uDB40\uDD01': '\uDB81\uDC7B',  // MJ051827
-  '\uD862\uDFEF\uDB40\uDD01': '\uDB81\uDC7C',  // MJ051959
-  '\uD863\uDD84\uDB40\uDD01': '\uDB81\uDC7D',  // MJ052219
-  '\uD863\uDF41\uDB40\uDD01': '\uDB81\uDC7E',  // MJ052469
-  '\uD863\uDFE4\uDB40\uDD01': '\uDB81\uDC7F',  // MJ052597
-  '\uD864\uDC31\uDB40\uDD01': '\uDB81\uDC80',  // MJ052666
-  '\uD864\uDD2E\uDB40\uDD01': '\uDB81\uDC81',  // MJ058872
-  '\uD864\uDD5E\uDB40\uDD01': '\uDB81\uDC82',  // MJ052867
-  '\uD864\uDD7E\uDB40\uDD01': '\uDB81\uDC83',  // MJ052889
-  '\uD864\uDDD5\uDB40\uDD01': '\uDB81\uDC84',  // MJ052944
-  '\uD864\uDE1A\uDB40\uDD01': '\uDB81\uDC85',  // MJ052997
-  '\uD864\uDE5E\uDB40\uDD01': '\uDB81\uDC86',  // MJ053054
-  '\uD864\uDE93\uDB40\uDD01': '\uDB81\uDC87',  // MJ059008
-  '\uD864\uDF56\uDB40\uDD01': '\uDB81\uDC88',  // MJ053255
-  '\uD864\uDF79\uDB40\uDD01': '\uDB81\uDC89',  // MJ053282
-  '\uD865\uDC1A\uDB40\uDD01': '\uDB81\uDC8A',  // MJ053403
-  '\uD865\uDC1F\uDB40\uDD01': '\uDB81\uDC8B',  // MJ053408
-  '\uD865\uDC20\uDB40\uDD01': '\uDB81\uDC8C',  // MJ053410
-  '\uD865\uDC22\uDB40\uDD01': '\uDB81\uDC8D',  // MJ053413
-  '\uD865\uDC27\uDB40\uDD01': '\uDB81\uDC8E',  // MJ053419
-  '\uD865\uDC3F\uDB40\uDD01': '\uDB81\uDC8F',  // MJ053438
-  '\uD865\uDD24\uDB40\uDD01': '\uDB81\uDC90',  // MJ059031
-  '\uD865\uDD3A\uDB40\uDD01': '\uDB81\uDC91',  // MJ059032
-  '\uD865\uDD48\uDB40\uDD01': '\uDB81\uDC92',  // MJ068091
-  '\uD865\uDDB6\uDB40\uDD01': '\uDB81\uDC93',  // MJ053710
-  '\uD865\uDE38\uDB40\uDD01': '\uDB81\uDC94',  // MJ053809
-  '\uD865\uDE5E\uDB40\uDD01': '\uDB81\uDC95',  // MJ053841
-  '\uD865\uDE7A\uDB40\uDD01': '\uDB81\uDC96',  // MJ053854
-  '\uD865\uDE82\uDB40\uDD01': '\uDB81\uDC97',  // MJ053861
-  '\uD865\uDE85\uDB40\uDD01': '\uDB81\uDC98',  // MJ053865
-  '\uD865\uDE88\uDB40\uDD01': '\uDB81\uDC99',  // MJ053868
-  '\uD865\uDE95\uDB40\uDD01': '\uDB81\uDC9A',  // MJ053879
-  '\uD865\uDE96\uDB40\uDD01': '\uDB81\uDC9B',  // MJ053881
-  '\uD865\uDEA9\uDB40\uDD01': '\uDB81\uDC9C',  // MJ053894
-  '\uD865\uDEB9\uDB40\uDD01': '\uDB81\uDC9D',  // MJ053911
-  '\uD865\uDEC6\uDB40\uDD01': '\uDB81\uDC9E',  // MJ053920
-  '\uD865\uDEDE\uDB40\uDD01': '\uDB81\uDC9F',  // MJ053938
-  '\uD865\uDEE5\uDB40\uDD01': '\uDB81\uDCA0',  // MJ053946
-  '\uD865\uDEFA\uDB40\uDD01': '\uDB81\uDCA1',  // MJ053963
-  '\uD865\uDF06\uDB40\uDD01': '\uDB81\uDCA2',  // MJ053977
-  '\uD865\uDF08\uDB40\uDD01': '\uDB81\uDCA3',  // MJ053980
-  '\uD865\uDF0B\uDB40\uDD01': '\uDB81\uDCA4',  // MJ053984
-  '\uD865\uDF0F\uDB40\uDD01': '\uDB81\uDCA5',  // MJ053989
-  '\uD865\uDF15\uDB40\uDD01': '\uDB81\uDCA6',  // MJ053997
-  '\uD865\uDF17\uDB40\uDD01': '\uDB81\uDCA7',  // MJ053999
-  '\uD865\uDF19\uDB40\uDD01': '\uDB81\uDCA8',  // MJ054001
-  '\uD865\uDF2F\uDB40\uDD01': '\uDB81\uDCA9',  // MJ054009
-  '\uD865\uDF34\uDB40\uDD01': '\uDB81\uDCAA',  // MJ054015
-  '\uD865\uDF39\uDB40\uDD01': '\uDB81\uDCAB',  // MJ054022
-  '\uD865\uDF3F\uDB40\uDD01': '\uDB81\uDCAC',  // MJ054062
-  '\uD865\uDF59\uDB40\uDD01': '\uDB81\uDCAD',  // MJ054040
-  '\uD865\uDF5D\uDB40\uDD01': '\uDB81\uDCAE',  // MJ054044
-  '\uD865\uDF80\uDB40\uDD01': '\uDB81\uDCAF',  // MJ054074
-  '\uD865\uDF83\uDB40\uDD01': '\uDB81\uDCB0',  // MJ054078
-  '\uD865\uDF8D\uDB40\uDD01': '\uDB81\uDCB1',  // MJ054089
-  '\uD865\uDF8F\uDB40\uDD01': '\uDB81\uDCB2',  // MJ054092
-  '\uD865\uDF91\uDB40\uDD01': '\uDB81\uDCB3',  // MJ054095
-  '\uD865\uDFA1\uDB40\uDD01': '\uDB81\uDCB4',  // MJ054099
-  '\uD865\uDFA5\uDB40\uDD01': '\uDB81\uDCB5',  // MJ054104
-  '\uD865\uDFA7\uDB40\uDD01': '\uDB81\uDCB6',  // MJ054107
-  '\uD865\uDFAB\uDB40\uDD01': '\uDB81\uDCB7',  // MJ054112
-  '\uD865\uDFAD\uDB40\uDD01': '\uDB81\uDCB8',  // MJ054116
-  '\uD865\uDFB7\uDB40\uDD01': '\uDB81\uDCB9',  // MJ054124
-  '\uD865\uDFC4\uDB40\uDD01': '\uDB81\uDCBA',  // MJ054136
-  '\uD865\uDFCB\uDB40\uDD01': '\uDB81\uDCBB',  // MJ054143
-  '\uD865\uDFF1\uDB40\uDD01': '\uDB81\uDCBC',  // MJ054173
-  '\uD865\uDFFD\uDB40\uDD01': '\uDB81\uDCBD',  // MJ054182
-  '\uD866\uDC94\uDB40\uDD01': '\uDB81\uDCBE',  // MJ054274
-  '\uD866\uDC9D\uDB40\uDD01': '\uDB81\uDCBF',  // MJ054285
-  '\uD866\uDD00\uDB40\uDD01': '\uDB81\uDCC0',  // MJ059053
-  '\uD866\uDD18\uDB40\uDD01': '\uDB81\uDCC1',  // MJ068092
-  '\uD866\uDE59\uDB40\uDD01': '\uDB81\uDCC2',  // MJ054564
-  '\uD866\uDEB7\uDB40\uDD01': '\uDB81\uDCC3',  // MJ054637
-  '\uD866\uDFBA\uDB40\uDD01': '\uDB81\uDCC4',  // MJ054793
-  '\uD867\uDC13\uDB40\uDD01': '\uDB81\uDCC5',  // MJ054846
-  '\uD867\uDC7F\uDB40\uDD01': '\uDB81\uDCC6',  // MJ054934
-  '\uD867\uDD34\uDB40\uDD01': '\uDB81\uDCC7',  // MJ055065
-  '\uD867\uDD49\uDB40\uDD01': '\uDB81\uDCC8',  // MJ055079
-  '\uD867\uDDF8\uDB40\uDD01': '\uDB81\uDCC9',  // MJ059133
-  '\uD867\uDE77\uDB40\uDD01': '\uDB81\uDCCA',  // MJ068093
-  '\uD867\uDE7A\uDB40\uDD01': '\uDB81\uDCCB',  // MJ055251
-  '\uD867\uDE8A\uDB40\uDD01': '\uDB81\uDCCC',  // MJ055265
-  '\uD867\uDEDB\uDB40\uDD01': '\uDB81\uDCCD',  // MJ055301
-  '\uD867\uDEE0\uDB40\uDD01': '\uDB81\uDCCE',  // MJ055307
-  '\uD867\uDEE1\uDB40\uDD01': '\uDB81\uDCCF',  // MJ055309
-  '\uD868\uDC2F\uDB40\uDD01': '\uDB81\uDCD0',  // MJ055513
-  '\uD868\uDC4B\uDB40\uDD01': '\uDB81\uDCD1',  // MJ068094
-  '\uD868\uDC61\uDB40\uDD01': '\uDB81\uDCD2',  // MJ055547
-  '\uD868\uDCC8\uDB40\uDD01': '\uDB81\uDCD3',  // MJ055625
-  '\uD868\uDCF9\uDB40\uDD01': '\uDB81\uDCD4',  // MJ055658
-  '\uD868\uDDF4\uDB40\uDD01': '\uDB81\uDCD5',  // MJ055825
-  '\uD868\uDE91\uDB40\uDD01': '\uDB81\uDCD6',  // MJ055928
-  '\uD868\uDE96\uDB40\uDD01': '\uDB81\uDCD7',  // MJ055934
-  '\uD868\uDEA8\uDB40\uDD01': '\uDB81\uDCD8',  // MJ055945
-  '\uD868\uDF01\uDB40\uDD01': '\uDB81\uDCD9',  // MJ056013
-  '\uD868\uDF08\uDB40\uDD01': '\uDB81\uDCDA',  // MJ059257
-  '\uD868\uDF33\uDB40\uDD01': '\uDB81\uDCDB',  // MJ059259
-  '\uD868\uDF47\uDB40\uDD01': '\uDB81\uDCDC',  // MJ056071
-  '\uD868\uDF52\uDB40\uDD01': '\uDB81\uDCDD',  // MJ059260
-  '\uD868\uDF6A\uDB40\uDD01': '\uDB81\uDCDE',  // MJ059262
-  '\uD868\uDF92\uDB40\uDD01': '\uDB81\uDCDF',  // MJ056130
-  '\uD868\uDFB0\uDB40\uDD01': '\uDB81\uDCE0',  // MJ056156
-  '\uD869\uDC72\uDB40\uDD01': '\uDB81\uDCE1',  // MJ056317
-  '\uD869\uDD02\uDB40\uDD01': '\uDB81\uDCE2',  // MJ056430
-  '\uD869\uDD04\uDB40\uDD01': '\uDB81\uDCE3',  // MJ056433
-  '\uD869\uDD08\uDB40\uDD01': '\uDB81\uDCE4',  // MJ056437
-  '\uD869\uDD0D\uDB40\uDD01': '\uDB81\uDCE5',  // MJ056440
-  '\uD869\uDD4D\uDB40\uDD01': '\uDB81\uDCE6',  // MJ056493
-  '\uD869\uDD64\uDB40\uDD01': '\uDB81\uDCE7',  // MJ056511
-  '\uD869\uDD6F\uDB40\uDD01': '\uDB81\uDCE8',  // MJ068095
-  '\uD869\uDD85\uDB40\uDD01': '\uDB81\uDCE9',  // MJ056540
-  '\uD869\uDDC7\uDB40\uDD01': '\uDB81\uDCEA',  // MJ056586
-  '\uD869\uDE00\uDB40\uDD01': '\uDB81\uDCEB',  // MJ056636
-  '\uD869\uDE95\uDB40\uDD01': '\uDB81\uDCEC',  // MJ056763
-  '\uD869\uDE96\uDB40\uDD01': '\uDB81\uDCED',  // MJ056765
-  '\uD869\uDE99\uDB40\uDD01': '\uDB81\uDCEE',  // MJ056769
-  '\uD86D\uDF41\uDB40\uDD01': '\uDB81\uDCEF',  // MJ056830
-  '\uD86D\uDF42\uDB40\uDD01': '\uDB81\uDCF0',  // MJ056835
-  '\uD873\uDED0\uDB40\uDD01': '\uDB81\uDCF1',  // MJ057545
-  '\uD873\uDEDC\uDB40\uDD01': '\uDB81\uDCF2',  // MJ056844
-  '\uD873\uDF4C\uDB40\uDD01': '\uDB81\uDCF3',  // MJ056893
-  '\uD86D\uDF46\uDB40\uDD01': '\uDB81\uDCF4',  // MJ059309
-  '\uD869\uDF46\uDB40\uDD01': '\uDB81\uDCF5',  // MJ056928
-  '\uD877\uDD48\uDB40\uDD01': '\uDB81\uDCF6',  // MJ057999
-  '\uD874\uDC20\uDB40\uDD01': '\uDB81\uDCF7',  // MJ056970
-  '\uD86D\uDF4C\uDB40\uDD01': '\uDB81\uDCF8',  // MJ059345
-  '\uD874\uDDA2\uDB40\uDD01': '\uDB81\uDCF9',  // MJ056988
-  '\uD877\uDD44\uDB40\uDD01': '\uDB81\uDCFA',  // MJ056994
-  '\uD840\uDC4A\uDB40\uDD01': '\uDB81\uDCFB',  // MJ057285
-  '\uD874\uDC6B\uDB40\uDD01': '\uDB81\uDCFC',  // MJ057015
-  '\uD874\uDC6F\uDB40\uDD01': '\uDB81\uDCFD',  // MJ057018
-  '\uD874\uDC77\uDB40\uDD01': '\uDB81\uDCFE',  // MJ057028
-  '\uD86E\uDD7B\uDB40\uDD01': '\uDB81\uDCFF',  // MJ059375
-  '\uD874\uDCDA\uDB40\uDD01': '\uDB81\uDD00',  // MJ057049
-  '\uD86D\uDF51\uDB40\uDD01': '\uDB81\uDD01',  // MJ057073
-  '\uD86D\uDF62\uDB40\uDD01': '\uDB81\uDD02',  // MJ058424
-  '\uD874\uDD69\uDB40\uDD01': '\uDB81\uDD03',  // MJ057103
-  '\uD874\uDD86\uDB40\uDD01': '\uDB81\uDD04',  // MJ057116
-  '\uD874\uDD8F\uDB40\uDD01': '\uDB81\uDD05',  // MJ057121
-  '\uD874\uDD99\uDB40\uDD01': '\uDB81\uDD06',  // MJ057127
-  '\uD843\uDDF0\uDB40\uDD01': '\uDB81\uDD07',  // MJ057181
-  '\uD874\uDDAB\uDB40\uDD01': '\uDB81\uDD08',  // MJ058030
-  '\uD874\uDE39\uDB40\uDD01': '\uDB81\uDD09',  // MJ057183
-  '\uD874\uDEDB\uDB40\uDD01': '\uDB81\uDD0A',  // MJ057198
-  '\uD86D\uDF5D\uDB40\uDD01': '\uDB81\uDD0B',  // MJ057200
-  '\uD844\uDE99\uDB40\uDD01': '\uDB81\uDD0C',  // MJ057215
-  '\uD874\uDFDB\uDB40\uDD01': '\uDB81\uDD0D',  // MJ057239
-  '\uD875\uDC23\uDB40\uDD01': '\uDB81\uDD0E',  // MJ057257
-  '\uD86D\uDF63\uDB40\uDD01': '\uDB81\uDD0F',  // MJ057264
-  '\uD875\uDC33\uDB40\uDD01': '\uDB81\uDD10',  // MJ057267
-  '\uD875\uDC45\uDB40\uDD01': '\uDB81\uDD11',  // MJ057276
-  '\uD875\uDC55\uDB40\uDD01': '\uDB81\uDD12',  // MJ057284
-  '\uD86D\uDF6F\uDB40\uDD01': '\uDB81\uDD13',  // MJ059501
-  '\uD875\uDCE9\uDB40\uDD01': '\uDB81\uDD14',  // MJ057331
-  '\uD846\uDF36\uDB40\uDD01': '\uDB81\uDD15',  // MJ059514
-  '\uD875\uDE3E\uDB40\uDD01': '\uDB81\uDD16',  // MJ057431
-  '\uD875\uDE4C\uDB40\uDD01': '\uDB81\uDD17',  // MJ057434
-  '\uD86D\uDF77\uDB40\uDD01': '\uDB81\uDD18',  // MJ057447
-  '\uD86D\uDF76\uDB40\uDD01': '\uDB81\uDD19',  // MJ057446
-  '\uD861\uDC82\uDB40\uDD01': '\uDB81\uDD1A',  // MJ058843
-  '\uD875\uDE98\uDB40\uDD01': '\uDB81\uDD1B',  // MJ057457
-  '\uD875\uDEB6\uDB40\uDD01': '\uDB81\uDD1C',  // MJ059574
-  '\uD86D\uDF78\uDB40\uDD01': '\uDB81\uDD1D',  // MJ057482
-  '\u3900\uDB40\uDD01': '\uDB81\uDD1E',  // MJ057493
-  '\uD875\uDF33\uDB40\uDD01': '\uDB81\uDD1F',  // MJ057512
-  '\uD86B\uDDC2\uDB40\uDD01': '\uDB81\uDD20',  // MJ057969
-  '\uD86F\uDEDB\uDB40\uDD01': '\uDB81\uDD21',  // MJ057530
-  '\uD876\uDC05\uDB40\uDD01': '\uDB81\uDD22',  // MJ057550
-  '\uD876\uDC86\uDB40\uDD01': '\uDB81\uDD23',  // MJ057567
-  '\uD86D\uDF80\uDB40\uDD01': '\uDB81\uDD24',  // MJ057641
-  '\uD876\uDD97\uDB40\uDD01': '\uDB81\uDD25',  // MJ057669
-  '\uD86D\uDF89\uDB40\uDD01': '\uDB81\uDD26',  // MJ057724
-  '\uD876\uDE99\uDB40\uDD01': '\uDB81\uDD27',  // MJ057769
-  '\uD870\uDCFE\uDB40\uDD01': '\uDB81\uDD28',  // MJ057782
-  '\uD86D\uDF8E\uDB40\uDD01': '\uDB81\uDD29',  // MJ057812
-  '\uD870\uDD55\uDB40\uDD01': '\uDB81\uDD2A',  // MJ057872
-  '\uD876\uDF4B\uDB40\uDD01': '\uDB81\uDD2B',  // MJ057879
-  '\uD876\uDF4E\uDB40\uDD01': '\uDB81\uDD2C',  // MJ057883
-  '\uD873\uDF18\uDB40\uDD01': '\uDB81\uDD2D',  // MJ057889
-  '\uD86D\uDF93\uDB40\uDD01': '\uDB81\uDD2E',  // MJ059758
-  '\uD86B\uDD89\uDB40\uDD01': '\uDB81\uDD2F',  // MJ057949
-  '\uD86D\uDF9C\uDB40\uDD01': '\uDB81\uDD30',  // MJ059829
-  '\uD877\uDEBE\uDB40\uDD01': '\uDB81\uDD31',  // MJ058093
-  '\uD877\uDF3D\uDB40\uDD01': '\uDB81\uDD32',  // MJ058130
-  '\uD877\uDF41\uDB40\uDD01': '\uDB81\uDD33',  // MJ058133
-  '\u3E14\uDB40\uDD01': '\uDB81\uDD34',  // MJ058168
-  '\uD86B\uDFB2\uDB40\uDD01': '\uDB81\uDD35',  // MJ058172
-  '\uD877\uDFF5\uDB40\uDD01': '\uDB81\uDD36',  // MJ058191
-  '\uD86C\uDC03\uDB40\uDD01': '\uDB81\uDD37',  // MJ058203
-  '\uD878\uDC68\uDB40\uDD01': '\uDB81\uDD38',  // MJ058209
-  '\uD86C\uDC48\uDB40\uDD01': '\uDB81\uDD39',  // MJ058236
-  '\uD86D\uDFB9\uDB40\uDD01': '\uDB81\uDD3A',  // MJ058240
-  '\uD878\uDE84\uDB40\uDD01': '\uDB81\uDD3B',  // MJ058339
-  '\uD86D\uDFC8\uDB40\uDD01': '\uDB81\uDD3C',  // MJ060062
-  '\uD878\uDEAB\uDB40\uDD01': '\uDB81\uDD3D',  // MJ060064
-  '\uD878\uDF06\uDB40\uDD01': '\uDB81\uDD3E',  // MJ058376
-  '\uD878\uDF07\uDB40\uDD01': '\uDB81\uDD3F',  // MJ058378
-  '\uD874\uDC48\uDB40\uDD01': '\uDB81\uDD40',  // MJ059341
-  '\uD86D\uDFCD\uDB40\uDD01': '\uDB81\uDD41',  // MJ060099
-  '\uD878\uDFB0\uDB40\uDD01': '\uDB81\uDD42',  // MJ060101
-  '\uD871\uDF37\uDB40\uDD01': '\uDB81\uDD43',  // MJ058478
-  '\uD878\uDFC0\uDB40\uDD01': '\uDB81\uDD44',  // MJ060108
-  '\uD871\uDF3B\uDB40\uDD01': '\uDB81\uDD45',  // MJ058479
-  '\uD86D\uDFD2\uDB40\uDD01': '\uDB81\uDD46',  // MJ058491
-  '\uD879\uDC3C\uDB40\uDD01': '\uDB81\uDD47',  // MJ058541
-  '\uD879\uDCD9\uDB40\uDD01': '\uDB81\uDD48',  // MJ058581
-  '\uD879\uDCDC\uDB40\uDD01': '\uDB81\uDD49',  // MJ058587
-  '\uD840\uDC45\uDB40\uDD01': '\uDB81\uDD4A',  // MJ058592
-  '\uD879\uDD09\uDB40\uDD01': '\uDB81\uDD4B',  // MJ058635
-  '\uD86D\uDFD8\uDB40\uDD01': '\uDB81\uDD4C',  // MJ058683
-  '\uD879\uDDE8\uDB40\uDD01': '\uDB81\uDD4D',  // MJ058733
-  '\uD86D\uDF55\uDB40\uDD01': '\uDB81\uDD4E',  // MJ059406
-  '\uD86D\uDFEA\uDB40\uDD01': '\uDB81\uDD4F',  // MJ060242
-  '\uD86D\uDCBC\uDB40\uDD01': '\uDB81\uDD50',  // MJ058928
-  '\u49DF\uDB40\uDD01': '\uDB81\uDD51',  // MJ068096
-  '\uD87A\uDDCA\uDB40\uDD01': '\uDB81\uDD52',  // MJ059002
-  '\uD87A\uDDD3\uDB40\uDD01': '\uDB81\uDD53',  // MJ059007
-  '\uD87A\uDDF0\uDB40\uDD01': '\uDB81\uDD54',  // MJ059016
-  '\uD873\uDD6B\uDB40\uDD01': '\uDB81\uDD55',  // MJ059171
-  '\uD87A\uDF71\uDB40\uDD01': '\uDB81\uDD56',  // MJ059252
-  '\uD87A\uDF79\uDB40\uDD01': '\uDB81\uDD57',  // MJ059256
-  '\uD873\uDECE\uDB40\uDD01': '\uDB81\uDD58',  // MJ059381
-  '\uD874\uDC28\uDB40\uDD01': '\uDB81\uDD59',  // MJ059339
-  '\uD86E\uDD30\uDB40\uDD01': '\uDB81\uDD5A',  // MJ059348
-  '\uD874\uDCB2\uDB40\uDD01': '\uDB81\uDD5B',  // MJ068097
-  '\uD86E\uDDE4\uDB40\uDD01': '\uDB81\uDD5C',  // MJ059400
-  '\uD874\uDE60\uDB40\uDD01': '\uDB81\uDD5D',  // MJ059426
-  '\uD874\uDF80\uDB40\uDD01': '\uDB81\uDD5E',  // MJ060381
-  '\uD86E\uDFF1\uDB40\uDD01': '\uDB81\uDD5F',  // MJ059483
-  '\uD875\uDCF1\uDB40\uDD01': '\uDB81\uDD60',  // MJ068098
-  '\uD86A\uDDE8\uDB40\uDD01': '\uDB81\uDD61',  // MJ068099
-  '\uD875\uDDD5\uDB40\uDD01': '\uDB81\uDD62',  // MJ059532
-  '\uD875\uDEDD\uDB40\uDD01': '\uDB81\uDD63',  // MJ059589
-  '\uD875\uDF10\uDB40\uDD01': '\uDB81\uDD64',  // MJ059601
-  '\uD875\uDF2E\uDB40\uDD01': '\uDB81\uDD65',  // MJ059609
-  '\uD875\uDFBE\uDB40\uDD01': '\uDB81\uDD66',  // MJ059636
-  '\uD875\uDFF1\uDB40\uDD01': '\uDB81\uDD67',  // MJ059641
-  '\uD876\uDD18\uDB40\uDD01': '\uDB81\uDD68',  // MJ059662
-  '\uD876\uDD16\uDB40\uDD01': '\uDB81\uDD69',  // MJ059664
-  '\uD876\uDD67\uDB40\uDD01': '\uDB81\uDD6A',  // MJ059681
-  '\uD86B\uDD03\uDB40\uDD01': '\uDB81\uDD6B',  // MJ059747
-  '\uD877\uDC7D\uDB40\uDD01': '\uDB81\uDD6C',  // MJ059821
-  '\uD877\uDC9E\uDB40\uDD01': '\uDB81\uDD6D',  // MJ059831
-  '\uD877\uDCD3\uDB40\uDD01': '\uDB81\uDD6E',  // MJ059844
-  '\uD877\uDCEF\uDB40\uDD01': '\uDB81\uDD6F',  // MJ059855
-  '\uD842\uDD24\uDB40\uDD01': '\uDB81\uDD70',  // MJ059938
-  '\uD878\uDCBA\uDB40\uDD01': '\uDB81\uDD71',  // MJ059984
-  '\uD878\uDCEC\uDB40\uDD01': '\uDB81\uDD72',  // MJ059996
-  '\uD878\uDD70\uDB40\uDD01': '\uDB81\uDD73',  // MJ060025
-  '\uD879\uDF89\uDB40\uDD01': '\uDB81\uDD74',  // MJ060225
-  '\uD879\uDFD0\uDB40\uDD01': '\uDB81\uDD75',  // MJ060245
-  '\uD86D\uDC68\uDB40\uDD01': '\uDB81\uDD76',  // MJ060253
-  '\uD87A\uDDC0\uDB40\uDD01': '\uDB81\uDD77',  // MJ060331
-  '\uD87A\uDDF2\uDB40\uDD01': '\uDB81\uDD78',  // MJ060335
-  '\uD87A\uDE41\uDB40\uDD01': '\uDB81\uDD79',  // MJ060342
-  '\u342A\uDB40\uDD03': '\uDB81\uDD7A',  // MJ000022
-  '\u342E\uDB40\uDD03': '\uDB81\uDD7B',  // MJ000029
-  '\u34DE\uDB40\uDD03': '\uDB81\uDD7C',  // MJ000185
-  '\u382F\uDB40\uDD03': '\uDB81\uDD7D',  // MJ000945
-  '\u4103\uDB40\uDD03': '\uDB81\uDD7E',  // MJ003041
-  '\u44B9\uDB40\uDD03': '\uDB81\uDD7F',  // MJ004009
-  '\u4543\uDB40\uDD03': '\uDB81\uDD80',  // MJ004167
-  '\u4674\uDB40\uDD03': '\uDB81\uDD81',  // MJ058717
-  '\u4C17\uDB40\uDD03': '\uDB81\uDD82',  // MJ005903
-  '\u4E08\uDB40\uDD03': '\uDB81\uDD83',  // MJ006304
-  '\u4E0E\uDB40\uDD03': '\uDB81\uDD84',  // MJ006311
-  '\u4E11\uDB40\uDD03': '\uDB81\uDD85',  // MJ056824
-  '\u4E12\uDB40\uDD03': '\uDB81\uDD86',  // MJ006317
-  '\u4E19\uDB40\uDD03': '\uDB81\uDD87',  // MJ006328
-  '\u4E26\uDB40\uDD03': '\uDB81\uDD88',  // MJ006340
-  '\u4E30\uDB40\uDD03': '\uDB81\uDD89',  // MJ006351
-  '\u4E39\uDB40\uDD03': '\uDB81\uDD8A',  // MJ056826
-  '\u4E3B\uDB40\uDD03': '\uDB81\uDD8B',  // MJ006363
-  '\u4E42\uDB40\uDD03': '\uDB81\uDD8C',  // MJ006374
-  '\u4E55\uDB40\uDD03': '\uDB81\uDD8D',  // MJ059544
-  '\u4E73\uDB40\uDD03': '\uDB81\uDD8E',  // MJ006416
-  '\u4E9F\uDB40\uDD03': '\uDB81\uDD8F',  // MJ006459
-  '\u4EA1\uDB40\uDD03': '\uDB81\uDD90',  // MJ006462
-  '\u4EA4\uDB40\uDD03': '\uDB81\uDD91',  // MJ006468
-  '\u4EB6\uDB40\uDD03': '\uDB81\uDD92',  // MJ006487
-  '\u4EB9\uDB40\uDD03': '\uDB81\uDD93',  // MJ006492
-  '\u4ED7\uDB40\uDD03': '\uDB81\uDD94',  // MJ006518
-  '\u4EE5\uDB40\uDD03': '\uDB81\uDD95',  // MJ057124
-  '\u4F34\uDB40\uDD03': '\uDB81\uDD96',  // MJ006601
-  '\u4F4F\uDB40\uDD03': '\uDB81\uDD97',  // MJ006633
-  '\u4F60\uDB40\uDD03': '\uDB81\uDD98',  // MJ006652
-  '\u4F7F\uDB40\uDD03': '\uDB81\uDD99',  // MJ006688
-  '\u4F96\uDB40\uDD03': '\uDB81\uDD9A',  // MJ056926
-  '\u4FAE\uDB40\uDD03': '\uDB81\uDD9B',  // MJ030244
-  '\u4FB5\uDB40\uDD03': '\uDB81\uDD9C',  // MJ006736
-  '\u4FBF\uDB40\uDD03': '\uDB81\uDD9D',  // MJ006750
-  '\u4FDE\uDB40\uDD03': '\uDB81\uDD9E',  // MJ056932
-  '\u5026\uDB40\uDD03': '\uDB81\uDD9F',  // MJ006858
-  '\u5049\uDB40\uDD03': '\uDB81\uDDA0',  // MJ006898
-  '\u504F\uDB40\uDD03': '\uDB81\uDDA1',  // MJ006907
-  '\u5056\uDB40\uDD03': '\uDB81\uDDA2',  // MJ006916
-  '\u5065\uDB40\uDD03': '\uDB81\uDDA3',  // MJ056945
-  '\u5070\uDB40\uDD03': '\uDB81\uDDA4',  // MJ006946
-  '\u5085\uDB40\uDD03': '\uDB81\uDDA5',  // MJ006968
-  '\u5091\uDB40\uDD03': '\uDB81\uDDA6',  // MJ006987
-  '\u50C5\uDB40\uDD03': '\uDB81\uDDA7',  // MJ007049
-  '\u50C9\uDB40\uDD03': '\uDB81\uDDA8',  // MJ056948
-  '\u50CA\uDB40\uDD03': '\uDB81\uDDA9',  // MJ007056
-  '\u50CF\uDB40\uDD03': '\uDB81\uDDAA',  // MJ007063
-  '\u50E7\uDB40\uDD03': '\uDB81\uDDAB',  // MJ007094
-  '\u50ED\uDB40\uDD03': '\uDB81\uDDAC',  // MJ007103
-  '\u50F2\uDB40\uDD03': '\uDB81\uDDAD',  // MJ007111
-  '\u50F6\uDB40\uDD03': '\uDB81\uDDAE',  // MJ007116
-  '\u5108\uDB40\uDD03': '\uDB81\uDDAF',  // MJ056949
-  '\u511A\uDB40\uDD03': '\uDB81\uDDB0',  // MJ007159
-  '\u512A\uDB40\uDD03': '\uDB81\uDDB1',  // MJ007178
-  '\u5132\uDB40\uDD03': '\uDB81\uDDB2',  // MJ007191
-  '\u5140\uDB40\uDD03': '\uDB81\uDDB3',  // MJ059294
-  '\u5142\uDB40\uDD03': '\uDB81\uDDB4',  // MJ007211
-  '\u5146\uDB40\uDD03': '\uDB81\uDDB5',  // MJ007218
-  '\u514D\uDB40\uDD03': '\uDB81\uDDB6',  // MJ007229
-  '\u514E\uDB40\uDD03': '\uDB81\uDDB7',  // MJ007231
-  '\u5154\uDB40\uDD03': '\uDB81\uDDB8',  // MJ007242
-  '\u5164\uDB40\uDD03': '\uDB81\uDDB9',  // MJ007260
-  '\u5168\uDB40\uDD03': '\uDB81\uDDBA',  // MJ007267
-  '\u516B\uDB40\uDD03': '\uDB81\uDDBB',  // MJ007274
-  '\u516C\uDB40\uDD03': '\uDB81\uDDBC',  // MJ007276
-  '\u5177\uDB40\uDD03': '\uDB81\uDDBD',  // MJ007290
-  '\u517C\uDB40\uDD03': '\uDB81\uDDBE',  // MJ007298
-  '\u5189\uDB40\uDD03': '\uDB81\uDDBF',  // MJ007307
-  '\u518D\uDB40\uDD03': '\uDB81\uDDC0',  // MJ007312
-  '\u518E\uDB40\uDD03': '\uDB81\uDDC1',  // MJ057007
-  '\u5192\uDB40\uDD03': '\uDB81\uDDC2',  // MJ007318
-  '\u5193\uDB40\uDD03': '\uDB81\uDDC3',  // MJ007320
-  '\u5195\uDB40\uDD03': '\uDB81\uDDC4',  // MJ007324
-  '\u519D\uDB40\uDD03': '\uDB81\uDDC5',  // MJ057024
-  '\u51A2\uDB40\uDD03': '\uDB81\uDDC6',  // MJ007343
-  '\u51A4\uDB40\uDD03': '\uDB81\uDDC7',  // MJ007346
-  '\u51AC\uDB40\uDD03': '\uDB81\uDDC8',  // MJ007358
-  '\u51B4\uDB40\uDD03': '\uDB81\uDDC9',  // MJ007369
-  '\u51CB\uDB40\uDD03': '\uDB81\uDDCA',  // MJ007393
-  '\u51FD\uDB40\uDD03': '\uDB81\uDDCB',  // MJ007444
-  '\u5203\uDB40\uDD03': '\uDB81\uDDCC',  // MJ007450
-  '\u5206\uDB40\uDD03': '\uDB81\uDDCD',  // MJ007456
-  '\u5207\uDB40\uDD03': '\uDB81\uDDCE',  // MJ007460
-  '\u5224\uDB40\uDD03': '\uDB81\uDDCF',  // MJ007493
-  '\u5238\uDB40\uDD03': '\uDB81\uDDD0',  // MJ007513
-  '\u524A\uDB40\uDD03': '\uDB81\uDDD1',  // MJ007527
-  '\u524D\uDB40\uDD03': '\uDB81\uDDD2',  // MJ007531
-  '\u5271\uDB40\uDD03': '\uDB81\uDDD3',  // MJ007569
-  '\u5272\uDB40\uDD03': '\uDB81\uDDD4',  // MJ007571
-  '\u5275\uDB40\uDD03': '\uDB81\uDDD5',  // MJ007578
-  '\u5289\uDB40\uDD03': '\uDB81\uDDD6',  // MJ057057
-  '\u5294\uDB40\uDD03': '\uDB81\uDDD7',  // MJ007614
-  '\u52C7\uDB40\uDD03': '\uDB81\uDDD8',  // MJ007667
-  '\u52C9\uDB40\uDD03': '\uDB81\uDDD9',  // MJ030247
-  '\u52D7\uDB40\uDD03': '\uDB81\uDDDA',  // MJ007694
-  '\u52D8\uDB40\uDD03': '\uDB81\uDDDB',  // MJ059387
-  '\u52DD\uDB40\uDD03': '\uDB81\uDDDC',  // MJ007700
-  '\u52E4\uDB40\uDD03': '\uDB81\uDDDD',  // MJ030248
-  '\u52FA\uDB40\uDD03': '\uDB81\uDDDE',  // MJ007744
-  '\u5305\uDB40\uDD03': '\uDB81\uDDDF',  // MJ007757
-  '\u5307\uDB40\uDD03': '\uDB81\uDDE0',  // MJ007762
-  '\u5308\uDB40\uDD03': '\uDB81\uDDE1',  // MJ057080
-  '\u530B\uDB40\uDD03': '\uDB81\uDDE2',  // MJ057083
-  '\u5316\uDB40\uDD03': '\uDB81\uDDE3',  // MJ007778
-  '\u5339\uDB40\uDD03': '\uDB81\uDDE4',  // MJ007817
-  '\u533C\uDB40\uDD03': '\uDB81\uDDE5',  // MJ007824
-  '\u533E\uDB40\uDD03': '\uDB81\uDDE6',  // MJ007829
-  '\u533F\uDB40\uDD03': '\uDB81\uDDE7',  // MJ007831
-  '\u5340\uDB40\uDD03': '\uDB81\uDDE8',  // MJ007833
-  '\u534A\uDB40\uDD03': '\uDB81\uDDE9',  // MJ007843
-  '\u5351\uDB40\uDD03': '\uDB81\uDDEA',  // MJ030249
-  '\u535A\uDB40\uDD03': '\uDB81\uDDEB',  // MJ007862
-  '\u5371\uDB40\uDD03': '\uDB81\uDDEC',  // MJ007889
-  '\u5377\uDB40\uDD03': '\uDB81\uDDED',  // MJ007900
-  '\u5378\uDB40\uDD03': '\uDB81\uDDEE',  // MJ007903
-  '\u537F\uDB40\uDD03': '\uDB81\uDDEF',  // MJ007911
-  '\u53C9\uDB40\uDD03': '\uDB81\uDDF0',  // MJ007988
-  '\u53CA\uDB40\uDD03': '\uDB81\uDDF1',  // MJ007989
-  '\u53CE\uDB40\uDD03': '\uDB81\uDDF2',  // MJ007996
-  '\u53D0\uDB40\uDD03': '\uDB81\uDDF3',  // MJ057134
-  '\u53DB\uDB40\uDD03': '\uDB81\uDDF4',  // MJ008009
-  '\u53DF\uDB40\uDD03': '\uDB81\uDDF5',  // MJ008019
-  '\u53F1\uDB40\uDD03': '\uDB81\uDDF6',  // MJ008040
-  '\u53F2\uDB40\uDD03': '\uDB81\uDDF7',  // MJ008042
-  '\u5438\uDB40\uDD03': '\uDB81\uDDF8',  // MJ008113
-  '\u5440\uDB40\uDD03': '\uDB81\uDDF9',  // MJ008124
-  '\u5448\uDB40\uDD03': '\uDB81\uDDFA',  // MJ008134
-  '\u5468\uDB40\uDD03': '\uDB81\uDDFB',  // MJ008158
-  '\u548E\uDB40\uDD03': '\uDB81\uDDFC',  // MJ057149
-  '\u54AC\uDB40\uDD03': '\uDB81\uDDFD',  // MJ008229
-  '\u54B2\uDB40\uDD03': '\uDB81\uDDFE',  // MJ008235
-  '\u54BC\uDB40\uDD03': '\uDB81\uDDFF',  // MJ057154
-  '\u54E8\uDB40\uDD03': '\uDB81\uDE00',  // MJ008279
-  '\u5510\uDB40\uDD03': '\uDB81\uDE01',  // MJ008325
-  '\u5533\uDB40\uDD03': '\uDB81\uDE02',  // MJ008349
-  '\u5539\uDB40\uDD03': '\uDB81\uDE03',  // MJ008358
-  '\u5544\uDB40\uDD03': '\uDB81\uDE04',  // MJ008374
-  '\u5546\uDB40\uDD03': '\uDB81\uDE05',  // MJ008377
-  '\u5553\uDB40\uDD03': '\uDB81\uDE06',  // MJ008391
-  '\u555A\uDB40\uDD03': '\uDB81\uDE07',  // MJ057180
-  '\u5584\uDB40\uDD03': '\uDB81\uDE08',  // MJ008431
-  '\u5599\uDB40\uDD03': '\uDB81\uDE09',  // MJ008461
-  '\u559C\uDB40\uDD03': '\uDB81\uDE0A',  // MJ008465
-  '\u559D\uDB40\uDD03': '\uDB81\uDE0B',  // MJ030250
-  '\u55A9\uDB40\uDD03': '\uDB81\uDE0C',  // MJ008482
-  '\u55AB\uDB40\uDD03': '\uDB81\uDE0D',  // MJ008486
-  '\u55AE\uDB40\uDD03': '\uDB81\uDE0E',  // MJ057167
-  '\u55B0\uDB40\uDD03': '\uDB81\uDE0F',  // MJ008494
-  '\u55E4\uDB40\uDD03': '\uDB81\uDE10',  // MJ008549
-  '\u5605\uDB40\uDD03': '\uDB81\uDE11',  // MJ008576
-  '\u5606\uDB40\uDD03': '\uDB81\uDE12',  // MJ030251
-  '\u5609\uDB40\uDD03': '\uDB81\uDE13',  // MJ008582
-  '\u5632\uDB40\uDD03': '\uDB81\uDE14',  // MJ008622
-  '\u5642\uDB40\uDD03': '\uDB81\uDE15',  // MJ008641
-  '\u564C\uDB40\uDD03': '\uDB81\uDE16',  // MJ008657
-  '\u5668\uDB40\uDD03': '\uDB81\uDE17',  // MJ030252
-  '\u5674\uDB40\uDD03': '\uDB81\uDE18',  // MJ008698
-  '\u5678\uDB40\uDD03': '\uDB81\uDE19',  // MJ008705
-  '\u5694\uDB40\uDD03': '\uDB81\uDE1A',  // MJ008735
-  '\u56A5\uDB40\uDD03': '\uDB81\uDE1B',  // MJ008753
-  '\u56C0\uDB40\uDD03': '\uDB81\uDE1C',  // MJ008783
-  '\u56C1\uDB40\uDD03': '\uDB81\uDE1D',  // MJ008786
-  '\u56CE\uDB40\uDD03': '\uDB81\uDE1E',  // MJ008802
-  '\u56D3\uDB40\uDD03': '\uDB81\uDE1F',  // MJ008809
-  '\u56EE\uDB40\uDD03': '\uDB81\uDE20',  // MJ008837
-  '\u570D\uDB40\uDD03': '\uDB81\uDE21',  // MJ008869
-  '\u5711\uDB40\uDD03': '\uDB81\uDE22',  // MJ059444
-  '\u5716\uDB40\uDD03': '\uDB81\uDE23',  // MJ008881
-  '\u5747\uDB40\uDD03': '\uDB81\uDE24',  // MJ008935
-  '\u576A\uDB40\uDD03': '\uDB81\uDE25',  // MJ008966
-  '\u57CE\uDB40\uDD03': '\uDB81\uDE26',  // MJ009063
-  '\u57D6\uDB40\uDD03': '\uDB81\uDE27',  // MJ057226
-  '\u57F4\uDB40\uDD03': '\uDB81\uDE28',  // MJ009107
-  '\u580B\uDB40\uDD03': '\uDB81\uDE29',  // MJ009134
-  '\u5819\uDB40\uDD03': '\uDB81\uDE2A',  // MJ009143
-  '\u5830\uDB40\uDD03': '\uDB81\uDE2B',  // MJ009168
-  '\u5835\uDB40\uDD03': '\uDB81\uDE2C',  // MJ009177
-  '\u583D\uDB40\uDD03': '\uDB81\uDE2D',  // MJ009187
-  '\u5840\uDB40\uDD03': '\uDB81\uDE2E',  // MJ030253
-  '\u5858\uDB40\uDD03': '\uDB81\uDE2F',  // MJ009210
-  '\u5859\uDB40\uDD03': '\uDB81\uDE30',  // MJ009214
-  '\u585A\uDB40\uDD03': '\uDB81\uDE31',  // MJ009215
-  '\u5870\uDB40\uDD03': '\uDB81\uDE32',  // MJ057249
-  '\u588D\uDB40\uDD03': '\uDB81\uDE33',  // MJ009272
-  '\u589C\uDB40\uDD03': '\uDB81\uDE34',  // MJ009287
-  '\u58A8\uDB40\uDD03': '\uDB81\uDE35',  // MJ030254
-  '\u58AB\uDB40\uDD03': '\uDB81\uDE36',  // MJ009305
-  '\u58B8\uDB40\uDD03': '\uDB81\uDE37',  // MJ057245
-  '\u58D3\uDB40\uDD03': '\uDB81\uDE38',  // MJ059460
-  '\u5900\uDB40\uDD03': '\uDB81\uDE39',  // MJ057358
-  '\u590F\uDB40\uDD03': '\uDB81\uDE3A',  // MJ057256
-  '\u5914\uDB40\uDD03': '\uDB81\uDE3B',  // MJ009428
-  '\u591B\uDB40\uDD03': '\uDB81\uDE3C',  // MJ009439
-  '\u5922\uDB40\uDD03': '\uDB81\uDE3D',  // MJ057269
-  '\u5951\uDB40\uDD03': '\uDB81\uDE3E',  // MJ009491
-  '\u5953\uDB40\uDD03': '\uDB81\uDE3F',  // MJ009495
-  '\u5960\uDB40\uDD03': '\uDB81\uDE40',  // MJ009516
-  '\u5962\uDB40\uDD03': '\uDB81\uDE41',  // MJ009520
-  '\u5984\uDB40\uDD03': '\uDB81\uDE42',  // MJ009563
-  '\u59A5\uDB40\uDD03': '\uDB81\uDE43',  // MJ009598
-  '\u59DA\uDB40\uDD03': '\uDB81\uDE44',  // MJ009651
-  '\u59EC\uDB40\uDD03': '\uDB81\uDE45',  // MJ009671
-  '\u59FF\uDB40\uDD03': '\uDB81\uDE46',  // MJ009691
-  '\u5A1C\uDB40\uDD03': '\uDB81\uDE47',  // MJ009720
-  '\u5A29\uDB40\uDD03': '\uDB81\uDE48',  // MJ009734
-  '\u5A36\uDB40\uDD03': '\uDB81\uDE49',  // MJ009745
-  '\u5A66\uDB40\uDD03': '\uDB81\uDE4A',  // MJ009796
-  '\u5A9B\uDB40\uDD03': '\uDB81\uDE4B',  // MJ009851
-  '\u5ABA\uDB40\uDD03': '\uDB81\uDE4C',  // MJ009883
-  '\u5ABE\uDB40\uDD03': '\uDB81\uDE4D',  // MJ009888
-  '\u5AC2\uDB40\uDD03': '\uDB81\uDE4E',  // MJ009894
-  '\u5ACC\uDB40\uDD03': '\uDB81\uDE4F',  // MJ009909
-  '\u5ADA\uDB40\uDD03': '\uDB81\uDE50',  // MJ009922
-  '\u5B34\uDB40\uDD03': '\uDB81\uDE51',  // MJ010020
-  '\u5B5A\uDB40\uDD03': '\uDB81\uDE52',  // MJ010061
-  '\u5B64\uDB40\uDD03': '\uDB81\uDE53',  // MJ010071
-  '\u5B73\uDB40\uDD03': '\uDB81\uDE54',  // MJ010088
-  '\u5B7C\uDB40\uDD03': '\uDB81\uDE55',  // MJ010099
-  '\u5BB5\uDB40\uDD03': '\uDB81\uDE56',  // MJ010163
-  '\u5BC3\uDB40\uDD03': '\uDB81\uDE57',  // MJ010181
-  '\u5BD2\uDB40\uDD03': '\uDB81\uDE58',  // MJ010200
-  '\u5BD7\uDB40\uDD03': '\uDB81\uDE59',  // MJ010207
-  '\u5BDB\uDB40\uDD03': '\uDB81\uDE5A',  // MJ010214
-  '\u5BE7\uDB40\uDD03': '\uDB81\uDE5B',  // MJ010230
-  '\u5BEC\uDB40\uDD03': '\uDB81\uDE5C',  // MJ010238
-  '\u5BF5\uDB40\uDD03': '\uDB81\uDE5D',  // MJ010249
-  '\u5C06\uDB40\uDD03': '\uDB81\uDE5E',  // MJ010270
-  '\u5C07\uDB40\uDD03': '\uDB81\uDE5F',  // MJ059513
-  '\u5C0A\uDB40\uDD03': '\uDB81\uDE60',  // MJ010276
-  '\u5C0B\uDB40\uDD03': '\uDB81\uDE61',  // MJ010278
-  '\u5C0E\uDB40\uDD03': '\uDB81\uDE62',  // MJ010283
-  '\u5C28\uDB40\uDD03': '\uDB81\uDE63',  // MJ010311
-  '\u5C2D\uDB40\uDD03': '\uDB81\uDE64',  // MJ010318
-  '\u5C51\uDB40\uDD03': '\uDB81\uDE65',  // MJ010355
-  '\u5C60\uDB40\uDD03': '\uDB81\uDE66',  // MJ010374
-  '\u5C64\uDB40\uDD03': '\uDB81\uDE67',  // MJ030255
-  '\u5C6E\uDB40\uDD03': '\uDB81\uDE68',  // MJ030256
-  '\u5D29\uDB40\uDD03': '\uDB81\uDE69',  // MJ010573
-  '\u5D87\uDB40\uDD03': '\uDB81\uDE6A',  // MJ010669
-  '\u5DB2\uDB40\uDD03': '\uDB81\uDE6B',  // MJ010713
-  '\u5DC3\uDB40\uDD03': '\uDB81\uDE6C',  // MJ010731
-  '\u5DC9\uDB40\uDD03': '\uDB81\uDE6D',  // MJ010738
-  '\u5DCD\uDB40\uDD03': '\uDB81\uDE6E',  // MJ010744
-  '\u5DD3\uDB40\uDD03': '\uDB81\uDE6F',  // MJ010753
-  '\u5DD6\uDB40\uDD03': '\uDB81\uDE70',  // MJ059539
-  '\u5DD9\uDB40\uDD03': '\uDB81\uDE71',  // MJ010758
-  '\u5DE1\uDB40\uDD03': '\uDB81\uDE72',  // MJ010768
-  '\u5DE2\uDB40\uDD03': '\uDB81\uDE73',  // MJ010770
-  '\u5DE8\uDB40\uDD03': '\uDB81\uDE74',  // MJ010776
-  '\u5DEE\uDB40\uDD03': '\uDB81\uDE75',  // MJ057409
-  '\u5DF7\uDB40\uDD03': '\uDB81\uDE76',  // MJ010789
-  '\u5DF8\uDB40\uDD03': '\uDB81\uDE77',  // MJ010794
-  '\u5DFB\uDB40\uDD03': '\uDB81\uDE78',  // MJ010799
-  '\u5DFD\uDB40\uDD03': '\uDB81\uDE79',  // MJ010800
-  '\u5E1D\uDB40\uDD03': '\uDB81\uDE7A',  // MJ010834
-  '\u5E2B\uDB40\uDD03': '\uDB81\uDE7B',  // MJ057420
-  '\u5E30\uDB40\uDD03': '\uDB81\uDE7C',  // MJ010856
-  '\u5E3D\uDB40\uDD03': '\uDB81\uDE7D',  // MJ010867
-  '\u5E43\uDB40\uDD03': '\uDB81\uDE7E',  // MJ010877
-  '\u5E54\uDB40\uDD03': '\uDB81\uDE7F',  // MJ010895
-  '\u5E63\uDB40\uDD03': '\uDB81\uDE80',  // MJ010916
-  '\u5E64\uDB40\uDD03': '\uDB81\uDE81',  // MJ010919
-  '\u5E6A\uDB40\uDD03': '\uDB81\uDE82',  // MJ010925
-  '\u5E6D\uDB40\uDD03': '\uDB81\uDE83',  // MJ010930
-  '\u5E73\uDB40\uDD03': '\uDB81\uDE84',  // MJ010942
-  '\u5E75\uDB40\uDD03': '\uDB81\uDE85',  // MJ010948
-  '\u5E7E\uDB40\uDD03': '\uDB81\uDE86',  // MJ057436
-  '\u5E96\uDB40\uDD03': '\uDB81\uDE87',  // MJ010980
-  '\u5EAC\uDB40\uDD03': '\uDB81\uDE88',  // MJ011004
-  '\u5EAD\uDB40\uDD03': '\uDB81\uDE89',  // MJ057441
-  '\u5EC9\uDB40\uDD03': '\uDB81\uDE8A',  // MJ011038
-  '\u5ECA\uDB40\uDD03': '\uDB81\uDE8B',  // MJ011040
-  '\u5ECB\uDB40\uDD03': '\uDB81\uDE8C',  // MJ011042
-  '\u5ECF\uDB40\uDD03': '\uDB81\uDE8D',  // MJ011046
-  '\u5ED0\uDB40\uDD03': '\uDB81\uDE8E',  // MJ011048
-  '\u5EDF\uDB40\uDD03': '\uDB81\uDE8F',  // MJ011069
-  '\u5EE0\uDB40\uDD03': '\uDB81\uDE90',  // MJ011071
-  '\u5EE3\uDB40\uDD03': '\uDB81\uDE91',  // MJ011077
-  '\u5EF6\uDB40\uDD03': '\uDB81\uDE92',  // MJ011101
-  '\u5EF7\uDB40\uDD03': '\uDB81\uDE93',  // MJ011103
-  '\u5EFA\uDB40\uDD03': '\uDB81\uDE94',  // MJ011112
-  '\u5EFB\uDB40\uDD03': '\uDB81\uDE95',  // MJ011114
-  '\u5EFC\uDB40\uDD03': '\uDB81\uDE96',  // MJ011117
-  '\u5F0A\uDB40\uDD03': '\uDB81\uDE97',  // MJ011136
-  '\u5F13\uDB40\uDD03': '\uDB81\uDE98',  // MJ059569
-  '\u5F2D\uDB40\uDD03': '\uDB81\uDE99',  // MJ011185
-  '\u5F31\uDB40\uDD03': '\uDB81\uDE9A',  // MJ011190
-  '\u5F38\uDB40\uDD03': '\uDB81\uDE9B',  // MJ011197
-  '\u5F45\uDB40\uDD03': '\uDB81\uDE9C',  // MJ011211
-  '\u5F4C\uDB40\uDD03': '\uDB81\uDE9D',  // MJ011221
-  '\u5F50\uDB40\uDD03': '\uDB81\uDE9E',  // MJ011226
-  '\u5F56\uDB40\uDD03': '\uDB81\uDE9F',  // MJ011235
-  '\u5F57\uDB40\uDD03': '\uDB81\uDEA0',  // MJ057478
-  '\u5F62\uDB40\uDD03': '\uDB81\uDEA1',  // MJ011254
-  '\u5F69\uDB40\uDD03': '\uDB81\uDEA2',  // MJ011260
-  '\u5F6B\uDB40\uDD03': '\uDB81\uDEA3',  // MJ011266
-  '\u5F80\uDB40\uDD03': '\uDB81\uDEA4',  // MJ011290
-  '\u5F98\uDB40\uDD03': '\uDB81\uDEA5',  // MJ011316
-  '\u5FA1\uDB40\uDD03': '\uDB81\uDEA6',  // MJ011325
-  '\u5FAE\uDB40\uDD03': '\uDB81\uDEA7',  // MJ011345
-  '\u5FB5\uDB40\uDD03': '\uDB81\uDEA8',  // MJ011353
-  '\u5FBD\uDB40\uDD03': '\uDB81\uDEA9',  // MJ011363
-  '\u5FCD\uDB40\uDD03': '\uDB81\uDEAA',  // MJ011380
-  '\u5FD8\uDB40\uDD03': '\uDB81\uDEAB',  // MJ011392
-  '\u5FD9\uDB40\uDD03': '\uDB81\uDEAC',  // MJ011394
-  '\u6025\uDB40\uDD03': '\uDB81\uDEAD',  // MJ011472
-  '\u6050\uDB40\uDD03': '\uDB81\uDEAE',  // MJ057504
-  '\u605D\uDB40\uDD03': '\uDB81\uDEAF',  // MJ011531
-  '\u6062\uDB40\uDD03': '\uDB81\uDEB0',  // MJ011538
-  '\u6065\uDB40\uDD03': '\uDB81\uDEB1',  // MJ011543
-  '\u6075\uDB40\uDD03': '\uDB81\uDEB2',  // MJ030308
-  '\u607E\uDB40\uDD03': '\uDB81\uDEB3',  // MJ011565
-  '\u6094\uDB40\uDD03': '\uDB81\uDEB4',  // MJ030257
-  '\u6097\uDB40\uDD03': '\uDB81\uDEB5',  // MJ011594
-  '\u60A4\uDB40\uDD03': '\uDB81\uDEB6',  // MJ011614
-  '\u60B2\uDB40\uDD03': '\uDB81\uDEB7',  // MJ011625
-  '\u60C5\uDB40\uDD03': '\uDB81\uDEB8',  // MJ011647
-  '\u60D8\uDB40\uDD03': '\uDB81\uDEB9',  // MJ011672
-  '\u60E0\uDB40\uDD03': '\uDB81\uDEBA',  // MJ059623
-  '\u6108\uDB40\uDD03': '\uDB81\uDEBB',  // MJ011721
-  '\u6109\uDB40\uDD03': '\uDB81\uDEBC',  // MJ011725
-  '\u610F\uDB40\uDD03': '\uDB81\uDEBD',  // MJ011734
-  '\u611B\uDB40\uDD03': '\uDB81\uDEBE',  // MJ057515
-  '\u613D\uDB40\uDD03': '\uDB81\uDEBF',  // MJ011790
-  '\u6148\uDB40\uDD03': '\uDB81\uDEC0',  // MJ011804
-  '\u614C\uDB40\uDD03': '\uDB81\uDEC1',  // MJ011812
-  '\u614E\uDB40\uDD03': '\uDB81\uDEC2',  // MJ011815
-  '\u615D\uDB40\uDD03': '\uDB81\uDEC3',  // MJ011832
-  '\u6162\uDB40\uDD03': '\uDB81\uDEC4',  // MJ011839
-  '\u6165\uDB40\uDD03': '\uDB81\uDEC5',  // MJ011845
-  '\u6167\uDB40\uDD03': '\uDB81\uDEC6',  // MJ011848
-  '\u617A\uDB40\uDD03': '\uDB81\uDEC7',  // MJ011878
-  '\u6182\uDB40\uDD03': '\uDB81\uDEC8',  // MJ057524
-  '\u618E\uDB40\uDD03': '\uDB81\uDEC9',  // MJ030259
-  '\u6190\uDB40\uDD03': '\uDB81\uDECA',  // MJ011906
-  '\u61A4\uDB40\uDD03': '\uDB81\uDECB',  // MJ011931
-  '\u61B2\uDB40\uDD03': '\uDB81\uDECC',  // MJ011949
-  '\u61DE\uDB40\uDD03': '\uDB81\uDECD',  // MJ012003
-  '\u61FE\uDB40\uDD03': '\uDB81\uDECE',  // MJ012044
-  '\u6210\uDB40\uDD03': '\uDB81\uDECF',  // MJ012064
-  '\u6220\uDB40\uDD03': '\uDB81\uDED0',  // MJ012081
-  '\u623B\uDB40\uDD03': '\uDB81\uDED1',  // MJ012111
-  '\u623F\uDB40\uDD03': '\uDB81\uDED2',  // MJ012116
-  '\u6240\uDB40\uDD03': '\uDB81\uDED3',  // MJ012119
-  '\u6241\uDB40\uDD03': '\uDB81\uDED4',  // MJ012121
-  '\u6247\uDB40\uDD03': '\uDB81\uDED5',  // MJ012129
-  '\u6248\uDB40\uDD03': '\uDB81\uDED6',  // MJ012131
-  '\u6268\uDB40\uDD03': '\uDB81\uDED7',  // MJ012170
-  '\u6271\uDB40\uDD03': '\uDB81\uDED8',  // MJ012179
-  '\u62B1\uDB40\uDD03': '\uDB81\uDED9',  // MJ012241
-  '\u62CC\uDB40\uDD03': '\uDB81\uDEDA',  // MJ012268
-  '\u62D0\uDB40\uDD03': '\uDB81\uDEDB',  // MJ012273
-  '\u62D2\uDB40\uDD03': '\uDB81\uDEDC',  // MJ012276
-  '\u62F3\uDB40\uDD03': '\uDB81\uDEDD',  // MJ012303
-  '\u62F7\uDB40\uDD03': '\uDB81\uDEDE',  // MJ012310
-  '\u6308\uDB40\uDD03': '\uDB81\uDEDF',  // MJ012331
-  '\u633A\uDB40\uDD03': '\uDB81\uDEE0',  // MJ012372
-  '\u633D\uDB40\uDD03': '\uDB81\uDEE1',  // MJ012376
-  '\u6357\uDB40\uDD03': '\uDB81\uDEE2',  // MJ012413
-  '\u6368\uDB40\uDD03': '\uDB81\uDEE3',  // MJ012424
-  '\u6369\uDB40\uDD03': '\uDB81\uDEE4',  // MJ012427
-  '\u636E\uDB40\uDD03': '\uDB81\uDEE5',  // MJ012433
-  '\u6372\uDB40\uDD03': '\uDB81\uDEE6',  // MJ012437
-  '\u6383\uDB40\uDD03': '\uDB81\uDEE7',  // MJ012455
-  '\u6392\uDB40\uDD03': '\uDB81\uDEE8',  // MJ012472
-  '\u63A1\uDB40\uDD03': '\uDB81\uDEE9',  // MJ012488
-  '\u63A7\uDB40\uDD03': '\uDB81\uDEEA',  // MJ012496
-  '\u63BE\uDB40\uDD03': '\uDB81\uDEEB',  // MJ012515
-  '\u63C3\uDB40\uDD03': '\uDB81\uDEEC',  // MJ012521
-  '\u63C5\uDB40\uDD03': '\uDB81\uDEED',  // MJ012526
-  '\u63F3\uDB40\uDD03': '\uDB81\uDEEE',  // MJ057561
-  '\u63F4\uDB40\uDD03': '\uDB81\uDEEF',  // MJ012581
-  '\u6406\uDB40\uDD03': '\uDB81\uDEF0',  // MJ012592
-  '\u640F\uDB40\uDD03': '\uDB81\uDEF1',  // MJ012603
-  '\u641C\uDB40\uDD03': '\uDB81\uDEF2',  // MJ012618
-  '\u6428\uDB40\uDD03': '\uDB81\uDEF3',  // MJ012636
-  '\u6442\uDB40\uDD03': '\uDB81\uDEF4',  // MJ012667
-  '\u6460\uDB40\uDD03': '\uDB81\uDEF5',  // MJ012697
-  '\u6469\uDB40\uDD03': '\uDB81\uDEF6',  // MJ012708
-  '\u647A\uDB40\uDD03': '\uDB81\uDEF7',  // MJ012732
-  '\u6490\uDB40\uDD03': '\uDB81\uDEF8',  // MJ012756
-  '\u64B0\uDB40\uDD03': '\uDB81\uDEF9',  // MJ012791
-  '\u64DA\uDB40\uDD03': '\uDB81\uDEFA',  // MJ012837
-  '\u64E2\uDB40\uDD03': '\uDB81\uDEFB',  // MJ012842
-  '\u64EA\uDB40\uDD03': '\uDB81\uDEFC',  // MJ012853
-  '\u64F2\uDB40\uDD03': '\uDB81\uDEFD',  // MJ012866
-  '\u64F6\uDB40\uDD03': '\uDB81\uDEFE',  // MJ012875
-  '\u64FF\uDB40\uDD03': '\uDB81\uDEFF',  // MJ012888
-  '\u651D\uDB40\uDD03': '\uDB81\uDF00',  // MJ012921
-  '\u6535\uDB40\uDD03': '\uDB81\uDF01',  // MJ012948
-  '\u654F\uDB40\uDD03': '\uDB81\uDF02',  // MJ030262
-  '\u655D\uDB40\uDD03': '\uDB81\uDF03',  // MJ012990
-  '\u655E\uDB40\uDD03': '\uDB81\uDF04',  // MJ012993
-  '\u6562\uDB40\uDD03': '\uDB81\uDF05',  // MJ057594
-  '\u6577\uDB40\uDD03': '\uDB81\uDF06',  // MJ013021
-  '\u6583\uDB40\uDD03': '\uDB81\uDF07',  // MJ013036
-  '\u6587\uDB40\uDD03': '\uDB81\uDF08',  // MJ013041
-  '\u6589\uDB40\uDD03': '\uDB81\uDF09',  // MJ059659
-  '\u658E\uDB40\uDD03': '\uDB81\uDF0A',  // MJ013050
-  '\u6590\uDB40\uDD03': '\uDB81\uDF0B',  // MJ013052
-  '\u659C\uDB40\uDD03': '\uDB81\uDF0C',  // MJ013064
-  '\u65A7\uDB40\uDD03': '\uDB81\uDF0D',  // MJ013078
-  '\u65C5\uDB40\uDD03': '\uDB81\uDF0E',  // MJ013110
-  '\u65E1\uDB40\uDD03': '\uDB81\uDF0F',  // MJ013145
-  '\u65E2\uDB40\uDD03': '\uDB81\uDF10',  // MJ013147
-  '\u6608\uDB40\uDD03': '\uDB81\uDF11',  // MJ013193
-  '\u660E\uDB40\uDD03': '\uDB81\uDF12',  // MJ013202
-  '\u661E\uDB40\uDD03': '\uDB81\uDF13',  // MJ013219
-  '\u6648\uDB40\uDD03': '\uDB81\uDF14',  // MJ013266
-  '\u6666\uDB40\uDD03': '\uDB81\uDF15',  // MJ013297
-  '\u6667\uDB40\uDD03': '\uDB81\uDF16',  // MJ013299
-  '\u6674\uDB40\uDD03': '\uDB81\uDF17',  // MJ030199
-  '\u6677\uDB40\uDD03': '\uDB81\uDF18',  // MJ013317
-  '\u6681\uDB40\uDD03': '\uDB81\uDF19',  // MJ013330
-  '\u668E\uDB40\uDD03': '\uDB81\uDF1A',  // MJ013343
-  '\u6691\uDB40\uDD03': '\uDB81\uDF1B',  // MJ030264
-  '\u6696\uDB40\uDD03': '\uDB81\uDF1C',  // MJ013354
-  '\u6697\uDB40\uDD03': '\uDB81\uDF1D',  // MJ013357
-  '\u66B1\uDB40\uDD03': '\uDB81\uDF1E',  // MJ013388
-  '\u66C1\uDB40\uDD03': '\uDB81\uDF1F',  // MJ013411
-  '\u66D9\uDB40\uDD03': '\uDB81\uDF20',  // MJ013448
-  '\u66DA\uDB40\uDD03': '\uDB81\uDF21',  // MJ013451
-  '\u66DC\uDB40\uDD03': '\uDB81\uDF22',  // MJ013453
-  '\u66F4\uDB40\uDD03': '\uDB81\uDF23',  // MJ013483
-  '\u66F5\uDB40\uDD03': '\uDB81\uDF24',  // MJ013485
-  '\u66F8\uDB40\uDD03': '\uDB81\uDF25',  // MJ013492
-  '\u66FB\uDB40\uDD03': '\uDB81\uDF26',  // MJ013495
-  '\u66FC\uDB40\uDD03': '\uDB81\uDF27',  // MJ013499
-  '\u66FE\uDB40\uDD03': '\uDB81\uDF28',  // MJ013503
-  '\u6700\uDB40\uDD03': '\uDB81\uDF29',  // MJ013505
-  '\u6701\uDB40\uDD03': '\uDB81\uDF2A',  // MJ057673
-  '\u6703\uDB40\uDD03': '\uDB81\uDF2B',  // MJ013512
-  '\u6708\uDB40\uDD03': '\uDB81\uDF2C',  // MJ013519
-  '\u6709\uDB40\uDD03': '\uDB81\uDF2D',  // MJ013522
-  '\u670B\uDB40\uDD03': '\uDB81\uDF2E',  // MJ013524
-  '\u670D\uDB40\uDD03': '\uDB81\uDF2F',  // MJ013527
-  '\u6714\uDB40\uDD03': '\uDB81\uDF30',  // MJ057685
-  '\u6715\uDB40\uDD03': '\uDB81\uDF31',  // MJ013540
-  '\u671B\uDB40\uDD03': '\uDB81\uDF32',  // MJ013550
-  '\u671D\uDB40\uDD03': '\uDB81\uDF33',  // MJ013557
-  '\u671E\uDB40\uDD03': '\uDB81\uDF34',  // MJ013561
-  '\u671F\uDB40\uDD03': '\uDB81\uDF35',  // MJ013563
-  '\u6726\uDB40\uDD03': '\uDB81\uDF36',  // MJ013574
-  '\u67A9\uDB40\uDD03': '\uDB81\uDF37',  // MJ013715
-  '\u6753\uDB40\uDD03': '\uDB81\uDF38',  // MJ013616
-  '\u6756\uDB40\uDD03': '\uDB81\uDF39',  // MJ013621
-  '\u675E\uDB40\uDD03': '\uDB81\uDF3A',  // MJ013632
-  '\u677E\uDB40\uDD03': '\uDB81\uDF3B',  // MJ013668
-  '\u6785\uDB40\uDD03': '\uDB81\uDF3C',  // MJ013679
-  '\u67A6\uDB40\uDD03': '\uDB81\uDF3D',  // MJ013713
-  '\u67C4\uDB40\uDD03': '\uDB81\uDF3E',  // MJ013743
-  '\u67CA\uDB40\uDD03': '\uDB81\uDF3F',  // MJ013750
-  '\u67D4\uDB40\uDD03': '\uDB81\uDF40',  // MJ013762
-  '\u67E7\uDB40\uDD03': '\uDB81\uDF41',  // MJ013783
-  '\u67F1\uDB40\uDD03': '\uDB81\uDF42',  // MJ013795
-  '\u6801\uDB40\uDD03': '\uDB81\uDF43',  // MJ013816
-  '\u6813\uDB40\uDD03': '\uDB81\uDF44',  // MJ013826
-  '\u681F\uDB40\uDD03': '\uDB81\uDF45',  // MJ013844
-  '\u6821\uDB40\uDD03': '\uDB81\uDF46',  // MJ013847
-  '\u6840\uDB40\uDD03': '\uDB81\uDF47',  // MJ013885
-  '\u6852\uDB40\uDD03': '\uDB81\uDF48',  // MJ013905
-  '\u685D\uDB40\uDD03': '\uDB81\uDF49',  // MJ013919
-  '\u6885\uDB40\uDD03': '\uDB81\uDF4A',  // MJ030265
-  '\u6897\uDB40\uDD03': '\uDB81\uDF4B',  // MJ013983
-  '\u689B\uDB40\uDD03': '\uDB81\uDF4C',  // MJ013988
-  '\u689D\uDB40\uDD03': '\uDB81\uDF4D',  // MJ056933
-  '\u68A2\uDB40\uDD03': '\uDB81\uDF4E',  // MJ013997
-  '\u68C8\uDB40\uDD03': '\uDB81\uDF4F',  // MJ014038
-  '\u68DA\uDB40\uDD03': '\uDB81\uDF50',  // MJ014059
-  '\u690D\uDB40\uDD03': '\uDB81\uDF51',  // MJ014118
-  '\u691B\uDB40\uDD03': '\uDB81\uDF52',  // MJ014137
-  '\u6930\uDB40\uDD03': '\uDB81\uDF53',  // MJ014150
-  '\u693D\uDB40\uDD03': '\uDB81\uDF54',  // MJ014166
-  '\u6954\uDB40\uDD03': '\uDB81\uDF55',  // MJ014194
-  '\u695E\uDB40\uDD03': '\uDB81\uDF56',  // MJ014207
-  '\u6962\uDB40\uDD03': '\uDB81\uDF57',  // MJ014214
-  '\u696B\uDB40\uDD03': '\uDB81\uDF58',  // MJ014225
-  '\u698A\uDB40\uDD03': '\uDB81\uDF59',  // MJ014256
-  '\u6994\uDB40\uDD03': '\uDB81\uDF5A',  // MJ014268
-  '\u69A7\uDB40\uDD03': '\uDB81\uDF5B',  // MJ014291
-  '\u69BB\uDB40\uDD03': '\uDB81\uDF5C',  // MJ014317
-  '\u69C1\uDB40\uDD03': '\uDB81\uDF5D',  // MJ014326
-  '\u69C7\uDB40\uDD03': '\uDB81\uDF5E',  // MJ014357
-  '\u69CB\uDB40\uDD03': '\uDB81\uDF5F',  // MJ014338
-  '\u69CC\uDB40\uDD03': '\uDB81\uDF60',  // MJ014341
-  '\u69CF\uDB40\uDD03': '\uDB81\uDF61',  // MJ014344
-  '\u69E2\uDB40\uDD03': '\uDB81\uDF62',  // MJ014362
-  '\u69E9\uDB40\uDD03': '\uDB81\uDF63',  // MJ014371
-  '\u69EA\uDB40\uDD03': '\uDB81\uDF64',  // MJ014374
-  '\u69FE\uDB40\uDD03': '\uDB81\uDF65',  // MJ014399
-  '\u69FF\uDB40\uDD03': '\uDB81\uDF66',  // MJ014402
-  '\u6A0B\uDB40\uDD03': '\uDB81\uDF67',  // MJ014417
-  '\u6A3D\uDB40\uDD03': '\uDB81\uDF68',  // MJ014480
-  '\u6A44\uDB40\uDD03': '\uDB81\uDF69',  // MJ014489
-  '\u6A5F\uDB40\uDD03': '\uDB81\uDF6A',  // MJ014521
-  '\u6A73\uDB40\uDD03': '\uDB81\uDF6B',  // MJ014547
-  '\u6A8E\uDB40\uDD03': '\uDB81\uDF6C',  // MJ057842
-  '\u6A90\uDB40\uDD03': '\uDB81\uDF6D',  // MJ014574
-  '\u6A9C\uDB40\uDD03': '\uDB81\uDF6E',  // MJ014592
-  '\u6AAC\uDB40\uDD03': '\uDB81\uDF6F',  // MJ014610
-  '\u6AB3\uDB40\uDD03': '\uDB81\uDF70',  // MJ014619
-  '\u6AD4\uDB40\uDD03': '\uDB81\uDF71',  // MJ014660
-  '\u6ADB\uDB40\uDD03': '\uDB81\uDF72',  // MJ014669
-  '\u6ADE\uDB40\uDD03': '\uDB81\uDF73',  // MJ014678
-  '\u6B04\uDB40\uDD03': '\uDB81\uDF74',  // MJ030183
-  '\u6B0A\uDB40\uDD03': '\uDB81\uDF75',  // MJ059750
-  '\u6B1D\uDB40\uDD03': '\uDB81\uDF76',  // MJ014743
-  '\u6B21\uDB40\uDD03': '\uDB81\uDF77',  // MJ014749
-  '\u6B24\uDB40\uDD03': '\uDB81\uDF78',  // MJ057876
-  '\u6B4E\uDB40\uDD03': '\uDB81\uDF79',  // MJ014799
-  '\u6B70\uDB40\uDD03': '\uDB81\uDF7A',  // MJ057898
-  '\u6B72\uDB40\uDD03': '\uDB81\uDF7B',  // MJ057899
-  '\u6B73\uDB40\uDD03': '\uDB81\uDF7C',  // MJ059760
-  '\u6BAF\uDB40\uDD03': '\uDB81\uDF7D',  // MJ014902
-  '\u6BBA\uDB40\uDD03': '\uDB81\uDF7E',  // MJ030187
-  '\u6BBB\uDB40\uDD03': '\uDB81\uDF7F',  // MJ014918
-  '\u6C08\uDB40\uDD03': '\uDB81\uDF80',  // MJ014993
-  '\u6C13\uDB40\uDD03': '\uDB81\uDF81',  // MJ015009
-  '\u6C42\uDB40\uDD03': '\uDB81\uDF82',  // MJ057940
-  '\u6C6D\uDB40\uDD03': '\uDB81\uDF83',  // MJ015100
-  '\u6C72\uDB40\uDD03': '\uDB81\uDF84',  // MJ015106
-  '\u6C97\uDB40\uDD03': '\uDB81\uDF85',  // MJ015147
-  '\u6CAA\uDB40\uDD03': '\uDB81\uDF86',  // MJ015163
-  '\u6CBF\uDB40\uDD03': '\uDB81\uDF87',  // MJ015186
-  '\u6CD2\uDB40\uDD03': '\uDB81\uDF88',  // MJ015208
-  '\u6CE1\uDB40\uDD03': '\uDB81\uDF89',  // MJ015226
-  '\u6CE8\uDB40\uDD03': '\uDB81\uDF8A',  // MJ015235
-  '\u6CF0\uDB40\uDD03': '\uDB81\uDF8B',  // MJ057277
-  '\u6D3E\uDB40\uDD03': '\uDB81\uDF8C',  // MJ015325
-  '\u6D69\uDB40\uDD03': '\uDB81\uDF8D',  // MJ015355
-  '\u6D6E\uDB40\uDD03': '\uDB81\uDF8E',  // MJ015361
-  '\u6D77\uDB40\uDD03': '\uDB81\uDF8F',  // MJ030266
-  '\u6D78\uDB40\uDD03': '\uDB81\uDF90',  // MJ015372
-  '\u6D88\uDB40\uDD03': '\uDB81\uDF91',  // MJ015390
-  '\u6DBF\uDB40\uDD03': '\uDB81\uDF92',  // MJ068062
-  '\u6DEB\uDB40\uDD03': '\uDB81\uDF93',  // MJ015492
-  '\u6DF5\uDB40\uDD03': '\uDB81\uDF94',  // MJ059782
-  '\u6DFB\uDB40\uDD03': '\uDB81\uDF95',  // MJ015512
-  '\u6E1A\uDB40\uDD03': '\uDB81\uDF96',  // MJ030267
-  '\u6E23\uDB40\uDD03': '\uDB81\uDF97',  // MJ015549
-  '\u6E2F\uDB40\uDD03': '\uDB81\uDF98',  // MJ015564
-  '\u6E5B\uDB40\uDD03': '\uDB81\uDF99',  // MJ059792
-  '\u6E6E\uDB40\uDD03': '\uDB81\uDF9A',  // MJ015638
-  '\u6E72\uDB40\uDD03': '\uDB81\uDF9B',  // MJ015647
-  '\u6E7E\uDB40\uDD03': '\uDB81\uDF9C',  // MJ015661
-  '\u6E9D\uDB40\uDD03': '\uDB81\uDF9D',  // MJ015686
-  '\u6EA2\uDB40\uDD03': '\uDB81\uDF9E',  // MJ015693
-  '\u6EB2\uDB40\uDD03': '\uDB81\uDF9F',  // MJ015714
-  '\u6EBA\uDB40\uDD03': '\uDB81\uDFA0',  // MJ015723
-  '\u6ECB\uDB40\uDD03': '\uDB81\uDFA1',  // MJ015743
-  '\u6ED5\uDB40\uDD03': '\uDB81\uDFA2',  // MJ015757
-  '\u6EDB\uDB40\uDD03': '\uDB81\uDFA3',  // MJ057957
-  '\u6EEC\uDB40\uDD03': '\uDB81\uDFA4',  // MJ015774
-  '\u6EFE\uDB40\uDD03': '\uDB81\uDFA5',  // MJ015795
-  '\u6EFF\uDB40\uDD03': '\uDB81\uDFA6',  // MJ015797
-  '\u6F11\uDB40\uDD03': '\uDB81\uDFA7',  // MJ015818
-  '\u6F22\uDB40\uDD03': '\uDB81\uDFA8',  // MJ030268
-  '\u6F23\uDB40\uDD03': '\uDB81\uDFA9',  // MJ015845
-  '\u6F3B\uDB40\uDD03': '\uDB81\uDFAA',  // MJ015875
-  '\u6F3E\uDB40\uDD03': '\uDB81\uDFAB',  // MJ015880
-  '\u6F54\uDB40\uDD03': '\uDB81\uDFAC',  // MJ015898
-  '\u6F5B\uDB40\uDD03': '\uDB81\uDFAD',  // MJ015907
-  '\u6F64\uDB40\uDD03': '\uDB81\uDFAE',  // MJ015923
-  '\u6F6D\uDB40\uDD03': '\uDB81\uDFAF',  // MJ059825
-  '\u6F6E\uDB40\uDD03': '\uDB81\uDFB0',  // MJ015936
-  '\u6F74\uDB40\uDD03': '\uDB81\uDFB1',  // MJ015945
-  '\u6F7E\uDB40\uDD03': '\uDB81\uDFB2',  // MJ015957
-  '\u6F80\uDB40\uDD03': '\uDB81\uDFB3',  // MJ015963
-  '\u6F82\uDB40\uDD03': '\uDB81\uDFB4',  // MJ015967
-  '\u6F98\uDB40\uDD03': '\uDB81\uDFB5',  // MJ015991
-  '\u6F9A\uDB40\uDD03': '\uDB81\uDFB6',  // MJ015994
-  '\u6FA4\uDB40\uDD03': '\uDB81\uDFB7',  // MJ016003
-  '\u6FAB\uDB40\uDD03': '\uDB81\uDFB8',  // MJ016013
-  '\u6FDB\uDB40\uDD03': '\uDB81\uDFB9',  // MJ016070
-  '\u6FEF\uDB40\uDD03': '\uDB81\uDFBA',  // MJ016097
-  '\u6FF1\uDB40\uDD03': '\uDB81\uDFBB',  // MJ016102
-  '\u6FF9\uDB40\uDD03': '\uDB81\uDFBC',  // MJ016110
-  '\u7015\uDB40\uDD03': '\uDB81\uDFBD',  // MJ016143
-  '\u701B\uDB40\uDD03': '\uDB81\uDFBE',  // MJ016155
-  '\u701E\uDB40\uDD03': '\uDB81\uDFBF',  // MJ016161
-  '\u7026\uDB40\uDD03': '\uDB81\uDFC0',  // MJ016176
-  '\u7027\uDB40\uDD03': '\uDB81\uDFC1',  // MJ016180
-  '\u704A\uDB40\uDD03': '\uDB81\uDFC2',  // MJ016224
-  '\u7058\uDB40\uDD03': '\uDB81\uDFC3',  // MJ016238
-  '\u706E\uDB40\uDD03': '\uDB81\uDFC4',  // MJ016263
-  '\u7070\uDB40\uDD03': '\uDB81\uDFC5',  // MJ016266
-  '\u7078\uDB40\uDD03': '\uDB81\uDFC6',  // MJ016278
-  '\u707C\uDB40\uDD03': '\uDB81\uDFC7',  // MJ016282
-  '\u70AD\uDB40\uDD03': '\uDB81\uDFC8',  // MJ016334
-  '\u7149\uDB40\uDD03': '\uDB81\uDFC9',  // MJ016475
-  '\u714E\uDB40\uDD03': '\uDB81\uDFCA',  // MJ016480
-  '\u7152\uDB40\uDD03': '\uDB81\uDFCB',  // MJ016486
-  '\u7159\uDB40\uDD03': '\uDB81\uDFCC',  // MJ016496
-  '\u7162\uDB40\uDD03': '\uDB81\uDFCD',  // MJ016508
-  '\u716E\uDB40\uDD03': '\uDB81\uDFCE',  // MJ030269
-  '\u717D\uDB40\uDD03': '\uDB81\uDFCF',  // MJ016533
-  '\u7194\uDB40\uDD03': '\uDB81\uDFD0',  // MJ016562
-  '\u71B3\uDB40\uDD03': '\uDB81\uDFD1',  // MJ016595
-  '\u71C1\uDB40\uDD03': '\uDB81\uDFD2',  // MJ016613
-  '\u71D0\uDB40\uDD03': '\uDB81\uDFD3',  // MJ016630
-  '\u71E7\uDB40\uDD03': '\uDB81\uDFD4',  // MJ016657
-  '\u71EE\uDB40\uDD03': '\uDB81\uDFD5',  // MJ016664
-  '\u71FF\uDB40\uDD03': '\uDB81\uDFD6',  // MJ016682
-  '\u7228\uDB40\uDD03': '\uDB81\uDFD7',  // MJ016729
-  '\u722B\uDB40\uDD03': '\uDB81\uDFD8',  // MJ016734
-  '\u7235\uDB40\uDD03': '\uDB81\uDFD9',  // MJ016747
-  '\u7236\uDB40\uDD03': '\uDB81\uDFDA',  // MJ016750
-  '\u723A\uDB40\uDD03': '\uDB81\uDFDB',  // MJ016756
-  '\u723B\uDB40\uDD03': '\uDB81\uDFDC',  // MJ016758
-  '\u723E\uDB40\uDD03': '\uDB81\uDFDD',  // MJ016763
-  '\u7247\uDB40\uDD03': '\uDB81\uDFDE',  // MJ016777
-  '\u724C\uDB40\uDD03': '\uDB81\uDFDF',  // MJ016783
-  '\u7259\uDB40\uDD03': '\uDB81\uDFE0',  // MJ016801
-  '\u72D0\uDB40\uDD03': '\uDB81\uDFE1',  // MJ016924
-  '\u72E1\uDB40\uDD03': '\uDB81\uDFE2',  // MJ016941
-  '\u731C\uDB40\uDD03': '\uDB81\uDFE3',  // MJ016996
-  '\u732A\uDB40\uDD03': '\uDB81\uDFE4',  // MJ030208
-  '\u7336\uDB40\uDD03': '\uDB81\uDFE5',  // MJ017023
-  '\u7337\uDB40\uDD03': '\uDB81\uDFE6',  // MJ017026
-  '\u7387\uDB40\uDD03': '\uDB81\uDFE7',  // MJ017115
-  '\u73CA\uDB40\uDD03': '\uDB81\uDFE8',  // MJ017187
-  '\u73CE\uDB40\uDD03': '\uDB81\uDFE9',  // MJ017194
-  '\u73E5\uDB40\uDD03': '\uDB81\uDFEA',  // MJ017218
-  '\u73ED\uDB40\uDD03': '\uDB81\uDFEB',  // MJ017228
-  '\u7422\uDB40\uDD03': '\uDB81\uDFEC',  // MJ030273
-  '\u7432\uDB40\uDD03': '\uDB81\uDFED',  // MJ017304
-  '\u7434\uDB40\uDD03': '\uDB81\uDFEE',  // MJ017308
-  '\u744B\uDB40\uDD03': '\uDB81\uDFEF',  // MJ017335
-  '\u745F\uDB40\uDD03': '\uDB81\uDFF0',  // MJ017360
-  '\u7462\uDB40\uDD03': '\uDB81\uDFF1',  // MJ017364
-  '\u7471\uDB40\uDD03': '\uDB81\uDFF2',  // MJ058048
-  '\u74A3\uDB40\uDD03': '\uDB81\uDFF3',  // MJ017447
-  '\u74B0\uDB40\uDD03': '\uDB81\uDFF4',  // MJ017464
-  '\u74CA\uDB40\uDD03': '\uDB81\uDFF5',  // MJ017496
-  '\u74D8\uDB40\uDD03': '\uDB81\uDFF6',  // MJ017513
-  '\u74DC\uDB40\uDD03': '\uDB81\uDFF7',  // MJ017520
-  '\u74DF\uDB40\uDD03': '\uDB81\uDFF8',  // MJ017526
-  '\u74E0\uDB40\uDD03': '\uDB81\uDFF9',  // MJ017530
-  '\u74E3\uDB40\uDD03': '\uDB81\uDFFA',  // MJ017535
-  '\u74EF\uDB40\uDD03': '\uDB81\uDFFB',  // MJ017551
-  '\u7504\uDB40\uDD03': '\uDB81\uDFFC',  // MJ017579
-  '\u7506\uDB40\uDD03': '\uDB81\uDFFD',  // MJ017583
-  '\u750C\uDB40\uDD03': '\uDB81\uDFFE',  // MJ017590
-  '\u750D\uDB40\uDD03': '\uDB81\uDFFF',  // MJ017592
-  '\u7515\uDB40\uDD03': '\uDB82\uDC00',  // MJ017606
-  '\u7526\uDB40\uDD03': '\uDB82\uDC01',  // MJ017626
-  '\u7554\uDB40\uDD03': '\uDB82\uDC02',  // MJ017675
-  '\u7559\uDB40\uDD03': '\uDB82\uDC03',  // MJ058087
-  '\u7570\uDB40\uDD03': '\uDB82\uDC04',  // MJ058096
-  '\u75BC\uDB40\uDD03': '\uDB82\uDC05',  // MJ017778
-  '\u7608\uDB40\uDD03': '\uDB82\uDC06',  // MJ017854
-  '\u761B\uDB40\uDD03': '\uDB82\uDC07',  // MJ058123
-  '\u7626\uDB40\uDD03': '\uDB82\uDC08',  // MJ017889
-  '\u7652\uDB40\uDD03': '\uDB82\uDC09',  // MJ017936
-  '\u7662\uDB40\uDD03': '\uDB82\uDC0A',  // MJ058126
-  '\u7669\uDB40\uDD03': '\uDB82\uDC0B',  // MJ017962
-  '\u7672\uDB40\uDD03': '\uDB82\uDC0C',  // MJ017972
-  '\u7684\uDB40\uDD03': '\uDB82\uDC0D',  // MJ017994
-  '\u7693\uDB40\uDD03': '\uDB82\uDC0E',  // MJ018012
-  '\u76C6\uDB40\uDD03': '\uDB82\uDC0F',  // MJ018073
-  '\u76CA\uDB40\uDD03': '\uDB82\uDC10',  // MJ030209
-  '\u76D4\uDB40\uDD03': '\uDB82\uDC11',  // MJ018087
-  '\u76DB\uDB40\uDD03': '\uDB82\uDC12',  // MJ018094
-  '\u76DF\uDB40\uDD03': '\uDB82\uDC13',  // MJ018099
-  '\u76F2\uDB40\uDD03': '\uDB82\uDC14',  // MJ018120
-  '\u76F4\uDB40\uDD03': '\uDB82\uDC15',  // MJ018124
-  '\u771E\uDB40\uDD03': '\uDB82\uDC16',  // MJ018171
-  '\u771F\uDB40\uDD03': '\uDB82\uDC17',  // MJ056991
-  '\u7737\uDB40\uDD03': '\uDB82\uDC18',  // MJ018202
-  '\u773E\uDB40\uDD03': '\uDB82\uDC19',  // MJ058167
-  '\u778E\uDB40\uDD03': '\uDB82\uDC1A',  // MJ018299
-  '\u77A2\uDB40\uDD03': '\uDB82\uDC1B',  // MJ018318
-  '\u77A5\uDB40\uDD03': '\uDB82\uDC1C',  // MJ018321
-  '\u77AC\uDB40\uDD03': '\uDB82\uDC1D',  // MJ018330
-  '\u77C7\uDB40\uDD03': '\uDB82\uDC1E',  // MJ018364
-  '\u77E9\uDB40\uDD03': '\uDB82\uDC1F',  // MJ018402
-  '\u7832\uDB40\uDD03': '\uDB82\uDC20',  // MJ018470
-  '\u785D\uDB40\uDD03': '\uDB82\uDC21',  // MJ018502
-  '\u786C\uDB40\uDD03': '\uDB82\uDC22',  // MJ018521
-  '\u787C\uDB40\uDD03': '\uDB82\uDC23',  // MJ018537
-  '\u7891\uDB40\uDD03': '\uDB82\uDC24',  // MJ030272
-  '\u78D4\uDB40\uDD03': '\uDB82\uDC25',  // MJ018634
-  '\u78E8\uDB40\uDD03': '\uDB82\uDC26',  // MJ018654
-  '\u78EF\uDB40\uDD03': '\uDB82\uDC27',  // MJ018662
-  '\u792A\uDB40\uDD03': '\uDB82\uDC28',  // MJ018724
-  '\u7934\uDB40\uDD03': '\uDB82\uDC29',  // MJ018739
-  '\u793C\uDB40\uDD03': '\uDB82\uDC2A',  // MJ030210
-  '\u793E\uDB40\uDD03': '\uDB82\uDC2B',  // MJ030274
-  '\u7940\uDB40\uDD03': '\uDB82\uDC2C',  // MJ018760
-  '\u7941\uDB40\uDD03': '\uDB82\uDC2D',  // MJ018763
-  '\u7947\uDB40\uDD03': '\uDB82\uDC2E',  // MJ018771
-  '\u7948\uDB40\uDD03': '\uDB82\uDC2F',  // MJ030276
-  '\u7949\uDB40\uDD03': '\uDB82\uDC30',  // MJ030275
-  '\u7950\uDB40\uDD03': '\uDB82\uDC31',  // MJ030277
-  '\u7953\uDB40\uDD03': '\uDB82\uDC32',  // MJ018787
-  '\u7956\uDB40\uDD03': '\uDB82\uDC33',  // MJ030278
-  '\u7958\uDB40\uDD03': '\uDB82\uDC34',  // MJ018799
-  '\u795D\uDB40\uDD03': '\uDB82\uDC35',  // MJ030279
-  '\u795E\uDB40\uDD03': '\uDB82\uDC36',  // MJ030211
-  '\u7962\uDB40\uDD03': '\uDB82\uDC37',  // MJ018821
-  '\u7965\uDB40\uDD03': '\uDB82\uDC38',  // MJ030212
-  '\u7984\uDB40\uDD03': '\uDB82\uDC39',  // MJ018879
-  '\u798A\uDB40\uDD03': '\uDB82\uDC3A',  // MJ018886
-  '\u798D\uDB40\uDD03': '\uDB82\uDC3B',  // MJ030280
-  '\u798E\uDB40\uDD03': '\uDB82\uDC3C',  // MJ030281
-  '\u798F\uDB40\uDD03': '\uDB82\uDC3D',  // MJ030213
-  '\u7995\uDB40\uDD03': '\uDB82\uDC3E',  // MJ018913
-  '\u7998\uDB40\uDD03': '\uDB82\uDC3F',  // MJ018920
-  '\u799D\uDB40\uDD03': '\uDB82\uDC40',  // MJ018929
-  '\u79A7\uDB40\uDD03': '\uDB82\uDC41',  // MJ018944
-  '\u79A8\uDB40\uDD03': '\uDB82\uDC42',  // MJ018950
-  '\u79A9\uDB40\uDD03': '\uDB82\uDC43',  // MJ018953
-  '\u79AA\uDB40\uDD03': '\uDB82\uDC44',  // MJ059973
-  '\u79AB\uDB40\uDD03': '\uDB82\uDC45',  // MJ018958
-  '\u79AE\uDB40\uDD03': '\uDB82\uDC46',  // MJ018964
-  '\u79B0\uDB40\uDD03': '\uDB82\uDC47',  // MJ018969
-  '\u79B1\uDB40\uDD03': '\uDB82\uDC48',  // MJ018971
-  '\u79BB\uDB40\uDD03': '\uDB82\uDC49',  // MJ058219
-  '\u79E4\uDB40\uDD03': '\uDB82\uDC4A',  // MJ019033
-  '\u7A0B\uDB40\uDD03': '\uDB82\uDC4B',  // MJ019074
-  '\u7A17\uDB40\uDD03': '\uDB82\uDC4C',  // MJ019088
-  '\u7A27\uDB40\uDD03': '\uDB82\uDC4D',  // MJ019107
-  '\u7A31\uDB40\uDD03': '\uDB82\uDC4E',  // MJ019119
-  '\u7A3D\uDB40\uDD03': '\uDB82\uDC4F',  // MJ059990
-  '\u7A40\uDB40\uDD03': '\uDB82\uDC50',  // MJ030282
-  '\u7A57\uDB40\uDD03': '\uDB82\uDC51',  // MJ019169
-  '\u7A62\uDB40\uDD03': '\uDB82\uDC52',  // MJ019183
-  '\u7A74\uDB40\uDD03': '\uDB82\uDC53',  // MJ019203
-  '\u7A7A\uDB40\uDD03': '\uDB82\uDC54',  // MJ019211
-  '\u7A7F\uDB40\uDD03': '\uDB82\uDC55',  // MJ019216
-  '\u7A81\uDB40\uDD03': '\uDB82\uDC56',  // MJ030283
-  '\u7A95\uDB40\uDD03': '\uDB82\uDC57',  // MJ019241
-  '\u7A97\uDB40\uDD03': '\uDB82\uDC58',  // MJ019245
-  '\u7AAE\uDB40\uDD03': '\uDB82\uDC59',  // MJ019272
-  '\u7ABB\uDB40\uDD03': '\uDB82\uDC5A',  // MJ058250
-  '\u7AC8\uDB40\uDD03': '\uDB82\uDC5B',  // MJ019305
-  '\u7B08\uDB40\uDD03': '\uDB82\uDC5C',  // MJ019381
-  '\u7B51\uDB40\uDD03': '\uDB82\uDC5D',  // MJ019458
-  '\u7B99\uDB40\uDD03': '\uDB82\uDC5E',  // MJ019531
-  '\u7B9E\uDB40\uDD03': '\uDB82\uDC5F',  // MJ019542
-  '\u7BAD\uDB40\uDD03': '\uDB82\uDC60',  // MJ019555
-  '\u7BB8\uDB40\uDD03': '\uDB82\uDC61',  // MJ019568
-  '\u7BC0\uDB40\uDD03': '\uDB82\uDC62',  // MJ019576
-  '\u7BC4\uDB40\uDD03': '\uDB82\uDC63',  // MJ019584
-  '\u7BC7\uDB40\uDD03': '\uDB82\uDC64',  // MJ019589
-  '\u7BC9\uDB40\uDD03': '\uDB82\uDC65',  // MJ019593
-  '\u7BDD\uDB40\uDD03': '\uDB82\uDC66',  // MJ019610
-  '\u7BE0\uDB40\uDD03': '\uDB82\uDC67',  // MJ019614
-  '\u7BF7\uDB40\uDD03': '\uDB82\uDC68',  // MJ019640
-  '\u7C09\uDB40\uDD03': '\uDB82\uDC69',  // MJ019663
-  '\u7C13\uDB40\uDD03': '\uDB82\uDC6A',  // MJ019674
-  '\u7C2A\uDB40\uDD03': '\uDB82\uDC6B',  // MJ019698
-  '\u7C3E\uDB40\uDD03': '\uDB82\uDC6C',  // MJ019722
-  '\u7C3F\uDB40\uDD03': '\uDB82\uDC6D',  // MJ019724
-  '\u7C4D\uDB40\uDD03': '\uDB82\uDC6E',  // MJ019738
-  '\u7C50\uDB40\uDD03': '\uDB82\uDC6F',  // MJ019742
-  '\u7C58\uDB40\uDD03': '\uDB82\uDC70',  // MJ019752
-  '\u7C60\uDB40\uDD03': '\uDB82\uDC71',  // MJ019768
-  '\u7C67\uDB40\uDD03': '\uDB82\uDC72',  // MJ019777
-  '\u7C69\uDB40\uDD03': '\uDB82\uDC73',  // MJ019779
-  '\u7C7E\uDB40\uDD03': '\uDB82\uDC74',  // MJ019807
-  '\u7C82\uDB40\uDD03': '\uDB82\uDC75',  // MJ019812
-  '\u7C89\uDB40\uDD03': '\uDB82\uDC76',  // MJ019820
-  '\u7C90\uDB40\uDD03': '\uDB82\uDC77',  // MJ019828
-  '\u7CAE\uDB40\uDD03': '\uDB82\uDC78',  // MJ019858
-  '\u7CBE\uDB40\uDD03': '\uDB82\uDC79',  // MJ030215
-  '\u7CC0\uDB40\uDD03': '\uDB82\uDC7A',  // MJ019879
-  '\u7CD6\uDB40\uDD03': '\uDB82\uDC7B',  // MJ019903
-  '\u7CF2\uDB40\uDD03': '\uDB82\uDC7C',  // MJ019938
-  '\u7D00\uDB40\uDD03': '\uDB82\uDC7D',  // MJ019957
-  '\u7D04\uDB40\uDD03': '\uDB82\uDC7E',  // MJ019966
-  '\u7D0B\uDB40\uDD03': '\uDB82\uDC7F',  // MJ019978
-  '\u7D0D\uDB40\uDD03': '\uDB82\uDC80',  // MJ019980
-  '\u7D1A\uDB40\uDD03': '\uDB82\uDC81',  // MJ020001
-  '\u7D1B\uDB40\uDD03': '\uDB82\uDC82',  // MJ020003
-  '\u7D42\uDB40\uDD03': '\uDB82\uDC83',  // MJ020046
-  '\u7D46\uDB40\uDD03': '\uDB82\uDC84',  // MJ020053
-  '\u7D5C\uDB40\uDD03': '\uDB82\uDC85',  // MJ020082
-  '\u7D5E\uDB40\uDD03': '\uDB82\uDC86',  // MJ020086
-  '\u7D63\uDB40\uDD03': '\uDB82\uDC87',  // MJ020092
-  '\u7D73\uDB40\uDD03': '\uDB82\uDC88',  // MJ020111
-  '\u7D86\uDB40\uDD03': '\uDB82\uDC89',  // MJ020134
-  '\u7D9B\uDB40\uDD03': '\uDB82\uDC8A',  // MJ020164
-  '\u7D9F\uDB40\uDD03': '\uDB82\uDC8B',  // MJ020169
-  '\u7DAE\uDB40\uDD03': '\uDB82\uDC8C',  // MJ020189
-  '\u7DB2\uDB40\uDD03': '\uDB82\uDC8D',  // MJ020195
-  '\u7DCB\uDB40\uDD03': '\uDB82\uDC8E',  // MJ020229
-  '\u7DCF\uDB40\uDD03': '\uDB82\uDC8F',  // MJ020234
-  '\u7DDD\uDB40\uDD03': '\uDB82\uDC90',  // MJ020247
-  '\u7DE8\uDB40\uDD03': '\uDB82\uDC91',  // MJ020261
-  '\u7DE9\uDB40\uDD03': '\uDB82\uDC92',  // MJ020263
-  '\u7DEF\uDB40\uDD03': '\uDB82\uDC93',  // MJ020269
-  '\u7DF4\uDB40\uDD03': '\uDB82\uDC94',  // MJ030286
-  '\u7E09\uDB40\uDD03': '\uDB82\uDC95',  // MJ030287
-  '\u7E0A\uDB40\uDD03': '\uDB82\uDC96',  // MJ020300
-  '\u7E1B\uDB40\uDD03': '\uDB82\uDC97',  // MJ020319
-  '\u7E22\uDB40\uDD03': '\uDB82\uDC98',  // MJ020331
-  '\u7E2B\uDB40\uDD03': '\uDB82\uDC99',  // MJ020345
-  '\u7E35\uDB40\uDD03': '\uDB82\uDC9A',  // MJ020358
-  '\u7E41\uDB40\uDD03': '\uDB82\uDC9B',  // MJ030288
-  '\u7E43\uDB40\uDD03': '\uDB82\uDC9C',  // MJ020379
-  '\u7E6B\uDB40\uDD03': '\uDB82\uDC9D',  // MJ020429
-  '\u7E6D\uDB40\uDD03': '\uDB82\uDC9E',  // MJ020432
-  '\u7E7D\uDB40\uDD03': '\uDB82\uDC9F',  // MJ020454
-  '\u7E92\uDB40\uDD03': '\uDB82\uDCA0',  // MJ020479
-  '\u7F3E\uDB40\uDD03': '\uDB82\uDCA1',  // MJ020508
-  '\u7F50\uDB40\uDD03': '\uDB82\uDCA2',  // MJ020526
-  '\u7F54\uDB40\uDD03': '\uDB82\uDCA3',  // MJ020532
-  '\u7F6A\uDB40\uDD03': '\uDB82\uDCA4',  // MJ020556
-  '\u7F72\uDB40\uDD03': '\uDB82\uDCA5',  // MJ030289
-  '\u7F9E\uDB40\uDD03': '\uDB82\uDCA6',  // MJ058348
-  '\u7FA1\uDB40\uDD03': '\uDB82\uDCA7',  // MJ020619
-  '\u7FAE\uDB40\uDD03': '\uDB82\uDCA8',  // MJ020635
-  '\u7FAF\uDB40\uDD03': '\uDB82\uDCA9',  // MJ020637
-  '\u7FBD\uDB40\uDD03': '\uDB82\uDCAA',  // MJ030216
-  '\u7FC1\uDB40\uDD03': '\uDB82\uDCAB',  // MJ020660
-  '\u7FC5\uDB40\uDD03': '\uDB82\uDCAC',  // MJ020666
-  '\u7FC6\uDB40\uDD03': '\uDB82\uDCAD',  // MJ020668
-  '\u7FCC\uDB40\uDD03': '\uDB82\uDCAE',  // MJ020675
-  '\u7FD2\uDB40\uDD03': '\uDB82\uDCAF',  // MJ020682
-  '\u7FD4\uDB40\uDD03': '\uDB82\uDCB0',  // MJ020685
-  '\u7FE0\uDB40\uDD03': '\uDB82\uDCB1',  // MJ020698
-  '\u7FE6\uDB40\uDD03': '\uDB82\uDCB2',  // MJ020708
-  '\u7FE9\uDB40\uDD03': '\uDB82\uDCB3',  // MJ020713
-  '\u7FEB\uDB40\uDD03': '\uDB82\uDCB4',  // MJ020716
-  '\u7FF0\uDB40\uDD03': '\uDB82\uDCB5',  // MJ020723
-  '\u7FFB\uDB40\uDD03': '\uDB82\uDCB6',  // MJ020739
-  '\u7FFC\uDB40\uDD03': '\uDB82\uDCB7',  // MJ020741
-  '\u8000\uDB40\uDD03': '\uDB82\uDCB8',  // MJ020749
-  '\u8003\uDB40\uDD03': '\uDB82\uDCB9',  // MJ020754
-  '\u8005\uDB40\uDD03': '\uDB82\uDCBA',  // MJ030290
-  '\u8012\uDB40\uDD03': '\uDB82\uDCBB',  // MJ020768
-  '\u8015\uDB40\uDD03': '\uDB82\uDCBC',  // MJ020772
-  '\u8017\uDB40\uDD03': '\uDB82\uDCBD',  // MJ020776
-  '\u801C\uDB40\uDD03': '\uDB82\uDCBE',  // MJ020786
-  '\u8028\uDB40\uDD03': '\uDB82\uDCBF',  // MJ020797
-  '\u8036\uDB40\uDD03': '\uDB82\uDCC0',  // MJ020817
-  '\u8056\uDB40\uDD03': '\uDB82\uDCC1',  // MJ020845
-  '\u805F\uDB40\uDD03': '\uDB82\uDCC2',  // MJ020857
-  '\u8070\uDB40\uDD03': '\uDB82\uDCC3',  // MJ020872
-  '\u8073\uDB40\uDD03': '\uDB82\uDCC4',  // MJ020879
-  '\u8074\uDB40\uDD03': '\uDB82\uDCC5',  // MJ020881
-  '\u8076\uDB40\uDD03': '\uDB82\uDCC6',  // MJ020884
-  '\u8077\uDB40\uDD03': '\uDB82\uDCC7',  // MJ020886
-  '\u807E\uDB40\uDD03': '\uDB82\uDCC8',  // MJ020898
-  '\u8087\uDB40\uDD03': '\uDB82\uDCC9',  // MJ020907
-  '\u8096\uDB40\uDD03': '\uDB82\uDCCA',  // MJ020927
-  '\u809E\uDB40\uDD03': '\uDB82\uDCCB',  // MJ020937
-  '\u80A9\uDB40\uDD03': '\uDB82\uDCCC',  // MJ020948
-  '\u80AD\uDB40\uDD03': '\uDB82\uDCCD',  // MJ020952
-  '\u80BA\uDB40\uDD03': '\uDB82\uDCCE',  // MJ020968
-  '\u80D6\uDB40\uDD03': '\uDB82\uDCCF',  // MJ020994
-  '\u80DE\uDB40\uDD03': '\uDB82\uDCD0',  // MJ021002
-  '\u8106\uDB40\uDD03': '\uDB82\uDCD1',  // MJ021040
-  '\u8108\uDB40\uDD03': '\uDB82\uDCD2',  // MJ021043
-  '\u8129\uDB40\uDD03': '\uDB82\uDCD3',  // MJ021072
-  '\u8153\uDB40\uDD03': '\uDB82\uDCD4',  // MJ021120
-  '\u8154\uDB40\uDD03': '\uDB82\uDCD5',  // MJ021122
-  '\u8170\uDB40\uDD03': '\uDB82\uDCD6',  // MJ021152
-  '\u8171\uDB40\uDD03': '\uDB82\uDCD7',  // MJ021154
-  '\u817F\uDB40\uDD03': '\uDB82\uDCD8',  // MJ021169
-  '\u8184\uDB40\uDD03': '\uDB82\uDCD9',  // MJ021176
-  '\u818A\uDB40\uDD03': '\uDB82\uDCDA',  // MJ021184
-  '\u81B5\uDB40\uDD03': '\uDB82\uDCDB',  // MJ021234
-  '\u81C8\uDB40\uDD03': '\uDB82\uDCDC',  // MJ021258
-  '\u81ED\uDB40\uDD03': '\uDB82\uDCDD',  // MJ030291
-  '\u8200\uDB40\uDD03': '\uDB82\uDCDE',  // MJ021324
-  '\u8201\uDB40\uDD03': '\uDB82\uDCDF',  // MJ021327
-  '\u820C\uDB40\uDD03': '\uDB82\uDCE0',  // MJ021344
-  '\u8218\uDB40\uDD03': '\uDB82\uDCE1',  // MJ030310
-  '\u821B\uDB40\uDD03': '\uDB82\uDCE2',  // MJ021367
-  '\u821C\uDB40\uDD03': '\uDB82\uDCE3',  // MJ021370
-  '\u821F\uDB40\uDD03': '\uDB82\uDCE4',  // MJ058427
-  '\u822E\uDB40\uDD03': '\uDB82\uDCE5',  // MJ021391
-  '\u8239\uDB40\uDD03': '\uDB82\uDCE6',  // MJ021400
-  '\u8240\uDB40\uDD03': '\uDB82\uDCE7',  // MJ021408
-  '\u8247\uDB40\uDD03': '\uDB82\uDCE8',  // MJ021416
-  '\u8258\uDB40\uDD03': '\uDB82\uDCE9',  // MJ021435
-  '\u8268\uDB40\uDD03': '\uDB82\uDCEA',  // MJ021458
-  '\u8279\uDB40\uDD03': '\uDB82\uDCEB',  // MJ030292
-  '\u827E\uDB40\uDD03': '\uDB82\uDCEC',  // MJ021489
-  '\u8283\uDB40\uDD03': '\uDB82\uDCED',  // MJ021500
-  '\u828D\uDB40\uDD03': '\uDB82\uDCEE',  // MJ021516
-  '\u8292\uDB40\uDD03': '\uDB82\uDCEF',  // MJ021527
-  '\u82A6\uDB40\uDD03': '\uDB82\uDCF0',  // MJ021562
-  '\u82AC\uDB40\uDD03': '\uDB82\uDCF1',  // MJ021581
-  '\u82AE\uDB40\uDD03': '\uDB82\uDCF2',  // MJ021584
-  '\u82B1\uDB40\uDD03': '\uDB82\uDCF3',  // MJ021592
-  '\u82BD\uDB40\uDD03': '\uDB82\uDCF4',  // MJ021616
-  '\u82C5\uDB40\uDD03': '\uDB82\uDCF5',  // MJ021628
-  '\u82D1\uDB40\uDD03': '\uDB82\uDCF6',  // MJ021636
-  '\u82D2\uDB40\uDD03': '\uDB82\uDCF7',  // MJ021639
-  '\u82DE\uDB40\uDD03': '\uDB82\uDCF8',  // MJ021662
-  '\u82DF\uDB40\uDD03': '\uDB82\uDCF9',  // MJ021665
-  '\u82E2\uDB40\uDD03': '\uDB82\uDCFA',  // MJ058449
-  '\u82E3\uDB40\uDD03': '\uDB82\uDCFB',  // MJ021673
-  '\u82E5\uDB40\uDD03': '\uDB82\uDCFC',  // MJ021679
-  '\u82F1\uDB40\uDD03': '\uDB82\uDCFD',  // MJ021703
-  '\u82F3\uDB40\uDD03': '\uDB82\uDCFE',  // MJ021708
-  '\u82F9\uDB40\uDD03': '\uDB82\uDCFF',  // MJ021718
-  '\u82FD\uDB40\uDD03': '\uDB82\uDD00',  // MJ021726
-  '\u8302\uDB40\uDD03': '\uDB82\uDD01',  // MJ021737
-  '\u8303\uDB40\uDD03': '\uDB82\uDD02',  // MJ021740
-  '\u8323\uDB40\uDD03': '\uDB82\uDD03',  // MJ021790
-  '\u8328\uDB40\uDD03': '\uDB82\uDD04',  // MJ021802
-  '\u832B\uDB40\uDD03': '\uDB82\uDD05',  // MJ021810
-  '\u832E\uDB40\uDD03': '\uDB82\uDD06',  // MJ021815
-  '\u8330\uDB40\uDD03': '\uDB82\uDD07',  // MJ021819
-  '\u8338\uDB40\uDD03': '\uDB82\uDD08',  // MJ021840
-  '\u8342\uDB40\uDD03': '\uDB82\uDD09',  // MJ021857
-  '\u8343\uDB40\uDD03': '\uDB82\uDD0A',  // MJ021860
-  '\u8344\uDB40\uDD03': '\uDB82\uDD0B',  // MJ021863
-  '\u8345\uDB40\uDD03': '\uDB82\uDD0C',  // MJ021867
-  '\u8346\uDB40\uDD03': '\uDB82\uDD0D',  // MJ021869
-  '\u834A\uDB40\uDD03': '\uDB82\uDD0E',  // MJ021878
-  '\u834F\uDB40\uDD03': '\uDB82\uDD0F',  // MJ021891
-  '\u8351\uDB40\uDD03': '\uDB82\uDD10',  // MJ021896
-  '\u8352\uDB40\uDD03': '\uDB82\uDD11',  // MJ021898
-  '\u8353\uDB40\uDD03': '\uDB82\uDD12',  // MJ021901
-  '\u8362\uDB40\uDD03': '\uDB82\uDD13',  // MJ021916
-  '\u8375\uDB40\uDD03': '\uDB82\uDD14',  // MJ021931
-  '\u837B\uDB40\uDD03': '\uDB82\uDD15',  // MJ021941
-  '\u837F\uDB40\uDD03': '\uDB82\uDD16',  // MJ021950
-  '\u8393\uDB40\uDD03': '\uDB82\uDD17',  // MJ021988
-  '\u8396\uDB40\uDD03': '\uDB82\uDD18',  // MJ021994
-  '\u839A\uDB40\uDD03': '\uDB82\uDD19',  // MJ022002
-  '\u839B\uDB40\uDD03': '\uDB82\uDD1A',  // MJ022004
-  '\u83AD\uDB40\uDD03': '\uDB82\uDD1B',  // MJ022039
-  '\u83B5\uDB40\uDD03': '\uDB82\uDD1C',  // MJ022047
-  '\u83BD\uDB40\uDD03': '\uDB82\uDD1D',  // MJ022052
-  '\u83C1\uDB40\uDD03': '\uDB82\uDD1E',  // MJ022063
-  '\u83D3\uDB40\uDD03': '\uDB82\uDD1F',  // MJ022096
-  '\u83D4\uDB40\uDD03': '\uDB82\uDD20',  // MJ022097
-  '\u83D8\uDB40\uDD03': '\uDB82\uDD21',  // MJ022105
-  '\u83DC\uDB40\uDD03': '\uDB82\uDD22',  // MJ022110
-  '\u83E1\uDB40\uDD03': '\uDB82\uDD23',  // MJ058493
-  '\u83EF\uDB40\uDD03': '\uDB82\uDD24',  // MJ022151
-  '\u83F0\uDB40\uDD03': '\uDB82\uDD25',  // MJ022155
-  '\u83F1\uDB40\uDD03': '\uDB82\uDD26',  // MJ022159
-  '\u83F2\uDB40\uDD03': '\uDB82\uDD27',  // MJ022162
-  '\u83F7\uDB40\uDD03': '\uDB82\uDD28',  // MJ022173
-  '\u8403\uDB40\uDD03': '\uDB82\uDD29',  // MJ022195
-  '\u8404\uDB40\uDD03': '\uDB82\uDD2A',  // MJ058494
-  '\u840B\uDB40\uDD03': '\uDB82\uDD2B',  // MJ022211
-  '\u840C\uDB40\uDD03': '\uDB82\uDD2C',  // MJ022213
-  '\u840D\uDB40\uDD03': '\uDB82\uDD2D',  // MJ022216
-  '\u840F\uDB40\uDD03': '\uDB82\uDD2E',  // MJ022220
-  '\u8413\uDB40\uDD03': '\uDB82\uDD2F',  // MJ022226
-  '\u8415\uDB40\uDD03': '\uDB82\uDD30',  // MJ022230
-  '\u8420\uDB40\uDD03': '\uDB82\uDD31',  // MJ022240
-  '\u8422\uDB40\uDD03': '\uDB82\uDD32',  // MJ022245
-  '\u842C\uDB40\uDD03': '\uDB82\uDD33',  // MJ022256
-  '\u8449\uDB40\uDD03': '\uDB82\uDD34',  // MJ022302
-  '\u8457\uDB40\uDD03': '\uDB82\uDD35',  // MJ022327
-  '\u845A\uDB40\uDD03': '\uDB82\uDD36',  // MJ022334
-  '\u845B\uDB40\uDD03': '\uDB82\uDD37',  // MJ022336
-  '\u845C\uDB40\uDD03': '\uDB82\uDD38',  // MJ022343
-  '\u8462\uDB40\uDD03': '\uDB82\uDD39',  // MJ022354
-  '\u8466\uDB40\uDD03': '\uDB82\uDD3A',  // MJ022368
-  '\u847A\uDB40\uDD03': '\uDB82\uDD3B',  // MJ022406
-  '\u847D\uDB40\uDD03': '\uDB82\uDD3C',  // MJ022413
-  '\u8481\uDB40\uDD03': '\uDB82\uDD3D',  // MJ022420
-  '\u8482\uDB40\uDD03': '\uDB82\uDD3E',  // MJ022425
-  '\u8485\uDB40\uDD03': '\uDB82\uDD3F',  // MJ022432
-  '\u8499\uDB40\uDD03': '\uDB82\uDD40',  // MJ022454
-  '\u849C\uDB40\uDD03': '\uDB82\uDD41',  // MJ022458
-  '\u84A1\uDB40\uDD03': '\uDB82\uDD42',  // MJ022469
-  '\u84A6\uDB40\uDD03': '\uDB82\uDD43',  // MJ022476
-  '\u84A8\uDB40\uDD03': '\uDB82\uDD44',  // MJ022481
-  '\u84B9\uDB40\uDD03': '\uDB82\uDD45',  // MJ022509
-  '\u84BB\uDB40\uDD03': '\uDB82\uDD46',  // MJ022515
-  '\u84CA\uDB40\uDD03': '\uDB82\uDD47',  // MJ022548
-  '\u84CF\uDB40\uDD03': '\uDB82\uDD48',  // MJ022559
-  '\u84D0\uDB40\uDD03': '\uDB82\uDD49',  // MJ022562
-  '\u84D9\uDB40\uDD03': '\uDB82\uDD4A',  // MJ022578
-  '\u84DC\uDB40\uDD03': '\uDB82\uDD4B',  // MJ022583
-  '\u84EA\uDB40\uDD03': '\uDB82\uDD4C',  // MJ022594
-  '\u84EC\uDB40\uDD03': '\uDB82\uDD4D',  // MJ022599
-  '\u84EE\uDB40\uDD03': '\uDB82\uDD4E',  // MJ022606
-  '\u84F1\uDB40\uDD03': '\uDB82\uDD4F',  // MJ022613
-  '\u84F4\uDB40\uDD03': '\uDB82\uDD50',  // MJ022620
-  '\u84FC\uDB40\uDD03': '\uDB82\uDD51',  // MJ022633
-  '\u84FD\uDB40\uDD03': '\uDB82\uDD52',  // MJ022635
-  '\u8511\uDB40\uDD03': '\uDB82\uDD53',  // MJ022669
-  '\u8513\uDB40\uDD03': '\uDB82\uDD54',  // MJ022675
-  '\u8517\uDB40\uDD03': '\uDB82\uDD55',  // MJ022684
-  '\u8521\uDB40\uDD03': '\uDB82\uDD56',  // MJ060130
-  '\u8523\uDB40\uDD03': '\uDB82\uDD57',  // MJ022705
-  '\u8525\uDB40\uDD03': '\uDB82\uDD58',  // MJ022712
-  '\u8532\uDB40\uDD03': '\uDB82\uDD59',  // MJ060129
-  '\u853D\uDB40\uDD03': '\uDB82\uDD5A',  // MJ022744
-  '\u853E\uDB40\uDD03': '\uDB82\uDD5B',  // MJ022749
-  '\u8541\uDB40\uDD03': '\uDB82\uDD5C',  // MJ022756
-  '\u8543\uDB40\uDD03': '\uDB82\uDD5D',  // MJ022761
-  '\u8548\uDB40\uDD03': '\uDB82\uDD5E',  // MJ022769
-  '\u8551\uDB40\uDD03': '\uDB82\uDD5F',  // MJ022785
-  '\u8555\uDB40\uDD03': '\uDB82\uDD60',  // MJ022792
-  '\u8556\uDB40\uDD03': '\uDB82\uDD61',  // MJ022798
-  '\u8559\uDB40\uDD03': '\uDB82\uDD62',  // MJ022804
-  '\u855D\uDB40\uDD03': '\uDB82\uDD63',  // MJ022812
-  '\u8561\uDB40\uDD03': '\uDB82\uDD64',  // MJ058545
-  '\u8563\uDB40\uDD03': '\uDB82\uDD65',  // MJ022826
-  '\u8568\uDB40\uDD03': '\uDB82\uDD66',  // MJ058518
-  '\u856B\uDB40\uDD03': '\uDB82\uDD67',  // MJ022844
-  '\u8584\uDB40\uDD03': '\uDB82\uDD68',  // MJ022888
-  '\u8587\uDB40\uDD03': '\uDB82\uDD69',  // MJ022897
-  '\u858A\uDB40\uDD03': '\uDB82\uDD6A',  // MJ022906
-  '\u858C\uDB40\uDD03': '\uDB82\uDD6B',  // MJ022912
-  '\u858F\uDB40\uDD03': '\uDB82\uDD6C',  // MJ022917
-  '\u8598\uDB40\uDD03': '\uDB82\uDD6D',  // MJ022934
-  '\u85A9\uDB40\uDD03': '\uDB82\uDD6E',  // MJ022966
-  '\u85AB\uDB40\uDD03': '\uDB82\uDD6F',  // MJ022972
-  '\u85AF\uDB40\uDD03': '\uDB82\uDD70',  // MJ022984
-  '\u85C9\uDB40\uDD03': '\uDB82\uDD71',  // MJ023033
-  '\u85CD\uDB40\uDD03': '\uDB82\uDD72',  // MJ023039
-  '\u85CF\uDB40\uDD03': '\uDB82\uDD73',  // MJ023046
-  '\u85D5\uDB40\uDD03': '\uDB82\uDD74',  // MJ023054
-  '\u85DA\uDB40\uDD03': '\uDB82\uDD75',  // MJ023062
-  '\u85E1\uDB40\uDD03': '\uDB82\uDD76',  // MJ023074
-  '\u85E4\uDB40\uDD03': '\uDB82\uDD77',  // MJ023080
-  '\u85E5\uDB40\uDD03': '\uDB82\uDD78',  // MJ023088
-  '\u85EA\uDB40\uDD03': '\uDB82\uDD79',  // MJ023100
-  '\u85F7\uDB40\uDD03': '\uDB82\uDD7A',  // MJ023118
-  '\u85F9\uDB40\uDD03': '\uDB82\uDD7B',  // MJ023122
-  '\u85FC\uDB40\uDD03': '\uDB82\uDD7C',  // MJ023129
-  '\u85FE\uDB40\uDD03': '\uDB82\uDD7D',  // MJ023134
-  '\u8607\uDB40\uDD03': '\uDB82\uDD7E',  // MJ023149
-  '\u860B\uDB40\uDD03': '\uDB82\uDD7F',  // MJ023159
-  '\u8612\uDB40\uDD03': '\uDB82\uDD80',  // MJ023172
-  '\u8616\uDB40\uDD03': '\uDB82\uDD81',  // MJ060149
-  '\u8618\uDB40\uDD03': '\uDB82\uDD82',  // MJ023184
-  '\u8619\uDB40\uDD03': '\uDB82\uDD83',  // MJ023187
-  '\u861A\uDB40\uDD03': '\uDB82\uDD84',  // MJ058561
-  '\u8622\uDB40\uDD03': '\uDB82\uDD85',  // MJ023201
-  '\u8624\uDB40\uDD03': '\uDB82\uDD86',  // MJ023204
-  '\u8627\uDB40\uDD03': '\uDB82\uDD87',  // MJ023209
-  '\u8629\uDB40\uDD03': '\uDB82\uDD88',  // MJ023216
-  '\u862D\uDB40\uDD03': '\uDB82\uDD89',  // MJ023223
-  '\u8630\uDB40\uDD03': '\uDB82\uDD8A',  // MJ023229
-  '\u8636\uDB40\uDD03': '\uDB82\uDD8B',  // MJ023236
-  '\u8641\uDB40\uDD03': '\uDB82\uDD8C',  // MJ023255
-  '\u864E\uDB40\uDD03': '\uDB82\uDD8D',  // MJ023273
-  '\u8650\uDB40\uDD03': '\uDB82\uDD8E',  // MJ023278
-  '\u8654\uDB40\uDD03': '\uDB82\uDD8F',  // MJ023286
-  '\u865C\uDB40\uDD03': '\uDB82\uDD90',  // MJ030186
-  '\u865E\uDB40\uDD03': '\uDB82\uDD91',  // MJ023296
-  '\u868A\uDB40\uDD03': '\uDB82\uDD92',  // MJ023342
-  '\u86A9\uDB40\uDD03': '\uDB82\uDD93',  // MJ023378
-  '\u86AB\uDB40\uDD03': '\uDB82\uDD94',  // MJ058601
-  '\u86E9\uDB40\uDD03': '\uDB82\uDD95',  // MJ023446
-  '\u86F8\uDB40\uDD03': '\uDB82\uDD96',  // MJ023458
-  '\u8703\uDB40\uDD03': '\uDB82\uDD97',  // MJ023472
-  '\u8712\uDB40\uDD03': '\uDB82\uDD98',  // MJ023492
-  '\u871A\uDB40\uDD03': '\uDB82\uDD99',  // MJ023499
-  '\u8737\uDB40\uDD03': '\uDB82\uDD9A',  // MJ023530
-  '\u873B\uDB40\uDD03': '\uDB82\uDD9B',  // MJ023537
-  '\u8755\uDB40\uDD03': '\uDB82\uDD9C',  // MJ023567
-  '\u8759\uDB40\uDD03': '\uDB82\uDD9D',  // MJ023572
-  '\u8782\uDB40\uDD03': '\uDB82\uDD9E',  // MJ023621
-  '\u87A3\uDB40\uDD03': '\uDB82\uDD9F',  // MJ023655
-  '\u87BD\uDB40\uDD03': '\uDB82\uDDA0',  // MJ023681
-  '\u87D2\uDB40\uDD03': '\uDB82\uDDA1',  // MJ023704
-  '\u8803\uDB40\uDD03': '\uDB82\uDDA2',  // MJ023763
-  '\u8805\uDB40\uDD03': '\uDB82\uDDA3',  // MJ023766
-  '\u880D\uDB40\uDD03': '\uDB82\uDDA4',  // MJ023778
-  '\u880E\uDB40\uDD03': '\uDB82\uDDA5',  // MJ023781
-  '\u881B\uDB40\uDD03': '\uDB82\uDDA6',  // MJ023801
-  '\u8821\uDB40\uDD03': '\uDB82\uDDA7',  // MJ023809
-  '\u8836\uDB40\uDD03': '\uDB82\uDDA8',  // MJ023834
-  '\u8842\uDB40\uDD03': '\uDB82\uDDA9',  // MJ023848
-  '\u8846\uDB40\uDD03': '\uDB82\uDDAA',  // MJ058673
-  '\u884A\uDB40\uDD03': '\uDB82\uDDAB',  // MJ023858
-  '\u884B\uDB40\uDD03': '\uDB82\uDDAC',  // MJ023862
-  '\u8853\uDB40\uDD03': '\uDB82\uDDAD',  // MJ023870
-  '\u885B\uDB40\uDD03': '\uDB82\uDDAE',  // MJ023878
-  '\u8863\uDB40\uDD03': '\uDB82\uDDAF',  // MJ060165
-  '\u889E\uDB40\uDD03': '\uDB82\uDDB0',  // MJ023949
-  '\u88F4\uDB40\uDD03': '\uDB82\uDDB1',  // MJ024030
-  '\u890A\uDB40\uDD03': '\uDB82\uDDB2',  // MJ024055
-  '\u8910\uDB40\uDD03': '\uDB82\uDDB3',  // MJ030295
-  '\u891C\uDB40\uDD03': '\uDB82\uDDB4',  // MJ024077
-  '\u892B\uDB40\uDD03': '\uDB82\uDDB5',  // MJ024096
-  '\u8935\uDB40\uDD03': '\uDB82\uDDB6',  // MJ024107
-  '\u893B\uDB40\uDD03': '\uDB82\uDDB7',  // MJ024116
-  '\u8941\uDB40\uDD03': '\uDB82\uDDB8',  // MJ024124
-  '\u8956\uDB40\uDD03': '\uDB82\uDDB9',  // MJ024146
-  '\u896A\uDB40\uDD03': '\uDB82\uDDBA',  // MJ024167
-  '\u896F\uDB40\uDD03': '\uDB82\uDDBB',  // MJ024174
-  '\u8981\uDB40\uDD03': '\uDB82\uDDBC',  // MJ024200
-  '\u8983\uDB40\uDD03': '\uDB82\uDDBD',  // MJ058715
-  '\u8986\uDB40\uDD03': '\uDB82\uDDBE',  // MJ024206
-  '\u8987\uDB40\uDD03': '\uDB82\uDDBF',  // MJ024209
-  '\u8990\uDB40\uDD03': '\uDB82\uDDC0',  // MJ068066
-  '\u8996\uDB40\uDD03': '\uDB82\uDDC1',  // MJ030296
-  '\u89AF\uDB40\uDD03': '\uDB82\uDDC2',  // MJ024257
-  '\u89BD\uDB40\uDD03': '\uDB82\uDDC3',  // MJ060178
-  '\u89C0\uDB40\uDD03': '\uDB82\uDDC4',  // MJ024280
-  '\u89D2\uDB40\uDD03': '\uDB82\uDDC5',  // MJ024283
-  '\u89E3\uDB40\uDD03': '\uDB82\uDDC6',  // MJ058737
-  '\u8A0A\uDB40\uDD03': '\uDB82\uDDC7',  // MJ024340
-  '\u8A12\uDB40\uDD03': '\uDB82\uDDC8',  // MJ024350
-  '\u8A1D\uDB40\uDD03': '\uDB82\uDDC9',  // MJ024364
-  '\u8A1F\uDB40\uDD03': '\uDB82\uDDCA',  // MJ024369
-  '\u8A3B\uDB40\uDD03': '\uDB82\uDDCB',  // MJ024400
-  '\u8A55\uDB40\uDD03': '\uDB82\uDDCC',  // MJ024429
-  '\u8A6E\uDB40\uDD03': '\uDB82\uDDCD',  // MJ024459
-  '\u8A8D\uDB40\uDD03': '\uDB82\uDDCE',  // MJ024493
-  '\u8A95\uDB40\uDD03': '\uDB82\uDDCF',  // MJ024503
-  '\u8AA0\uDB40\uDD03': '\uDB82\uDDD0',  // MJ024518
-  '\u8AA4\uDB40\uDD03': '\uDB82\uDDD1',  // MJ024524
-  '\u8AA5\uDB40\uDD03': '\uDB82\uDDD2',  // MJ024526
-  '\u8AB9\uDB40\uDD03': '\uDB82\uDDD3',  // MJ024551
-  '\u8ABF\uDB40\uDD03': '\uDB82\uDDD4',  // MJ024558
-  '\u8ACB\uDB40\uDD03': '\uDB82\uDDD5',  // MJ024571
-  '\u8ADB\uDB40\uDD03': '\uDB82\uDDD6',  // MJ024595
-  '\u8ADE\uDB40\uDD03': '\uDB82\uDDD7',  // MJ024598
-  '\u8AED\uDB40\uDD03': '\uDB82\uDDD8',  // MJ024621
-  '\u8AEE\uDB40\uDD03': '\uDB82\uDDD9',  // MJ024623
-  '\u8AF1\uDB40\uDD03': '\uDB82\uDDDA',  // MJ024628
-  '\u8AF8\uDB40\uDD03': '\uDB82\uDDDB',  // MJ030226
-  '\u8AFA\uDB40\uDD03': '\uDB82\uDDDC',  // MJ024640
-  '\u8B01\uDB40\uDD03': '\uDB82\uDDDD',  // MJ030297
-  '\u8B04\uDB40\uDD03': '\uDB82\uDDDE',  // MJ024653
-  '\u8B0A\uDB40\uDD03': '\uDB82\uDDDF',  // MJ024664
-  '\u8B0E\uDB40\uDD03': '\uDB82\uDDE0',  // MJ024670
-  '\u8B19\uDB40\uDD03': '\uDB82\uDDE1',  // MJ024686
-  '\u8B1A\uDB40\uDD03': '\uDB82\uDDE2',  // MJ024691
-  '\u8B1B\uDB40\uDD03': '\uDB82\uDDE3',  // MJ024693
-  '\u8B1D\uDB40\uDD03': '\uDB82\uDDE4',  // MJ024697
-  '\u8B2C\uDB40\uDD03': '\uDB82\uDDE5',  // MJ024714
-  '\u8B33\uDB40\uDD03': '\uDB82\uDDE6',  // MJ058752
-  '\u8B39\uDB40\uDD03': '\uDB82\uDDE7',  // MJ024731
-  '\u8B3E\uDB40\uDD03': '\uDB82\uDDE8',  // MJ024736
-  '\u8B41\uDB40\uDD03': '\uDB82\uDDE9',  // MJ024742
-  '\u8B44\uDB40\uDD03': '\uDB82\uDDEA',  // MJ024747
-  '\u8B4C\uDB40\uDD03': '\uDB82\uDDEB',  // MJ024759
-  '\u8B4F\uDB40\uDD03': '\uDB82\uDDEC',  // MJ024764
-  '\u8B53\uDB40\uDD03': '\uDB82\uDDED',  // MJ060190
-  '\u8B56\uDB40\uDD03': '\uDB82\uDDEE',  // MJ024773
-  '\u8B5A\uDB40\uDD03': '\uDB82\uDDEF',  // MJ024779
-  '\u8B5C\uDB40\uDD03': '\uDB82\uDDF0',  // MJ024783
-  '\u8B81\uDB40\uDD03': '\uDB82\uDDF1',  // MJ024830
-  '\u8C3A\uDB40\uDD03': '\uDB82\uDDF2',  // MJ024871
-  '\u8C41\uDB40\uDD03': '\uDB82\uDDF3',  // MJ024883
-  '\u8C55\uDB40\uDD03': '\uDB82\uDDF4',  // MJ024907
-  '\u8C61\uDB40\uDD03': '\uDB82\uDDF5',  // MJ024922
-  '\u8C6A\uDB40\uDD03': '\uDB82\uDDF6',  // MJ024937
-  '\u8C79\uDB40\uDD03': '\uDB82\uDDF7',  // MJ024955
-  '\u8C9B\uDB40\uDD03': '\uDB82\uDDF8',  // MJ024993
-  '\u8CA0\uDB40\uDD03': '\uDB82\uDDF9',  // MJ024999
-  '\u8CA7\uDB40\uDD03': '\uDB82\uDDFA',  // MJ025008
-  '\u8CA8\uDB40\uDD03': '\uDB82\uDDFB',  // MJ025010
-  '\u8CAB\uDB40\uDD03': '\uDB82\uDDFC',  // MJ025014
-  '\u8CC7\uDB40\uDD03': '\uDB82\uDDFD',  // MJ025047
-  '\u8CCA\uDB40\uDD03': '\uDB82\uDDFE',  // MJ025051
-  '\u8CD3\uDB40\uDD03': '\uDB82\uDDFF',  // MJ030299
-  '\u8CED\uDB40\uDD03': '\uDB82\uDE00',  // MJ025088
-  '\u8CFC\uDB40\uDD03': '\uDB82\uDE01',  // MJ025107
-  '\u8D05\uDB40\uDD03': '\uDB82\uDE02',  // MJ025119
-  '\u8D08\uDB40\uDD03': '\uDB82\uDE03',  // MJ030301
-  '\u8D0F\uDB40\uDD03': '\uDB82\uDE04',  // MJ025131
-  '\u8D1C\uDB40\uDD03': '\uDB82\uDE05',  // MJ025154
-  '\u8D73\uDB40\uDD03': '\uDB82\uDE06',  // MJ025172
-  '\u8D77\uDB40\uDD03': '\uDB82\uDE07',  // MJ025179
-  '\u8D99\uDB40\uDD03': '\uDB82\uDE08',  // MJ025214
-  '\u8DB9\uDB40\uDD03': '\uDB82\uDE09',  // MJ068068
-  '\u8DDA\uDB40\uDD03': '\uDB82\uDE0A',  // MJ025282
-  '\u8DDD\uDB40\uDD03': '\uDB82\uDE0B',  // MJ025288
-  '\u8DF3\uDB40\uDD03': '\uDB82\uDE0C',  // MJ025315
-  '\u8E09\uDB40\uDD03': '\uDB82\uDE0D',  // MJ025332
-  '\u8E4A\uDB40\uDD03': '\uDB82\uDE0E',  // MJ025397
-  '\u8E72\uDB40\uDD03': '\uDB82\uDE0F',  // MJ025443
-  '\u8E87\uDB40\uDD03': '\uDB82\uDE10',  // MJ025463
-  '\u8E8D\uDB40\uDD03': '\uDB82\uDE11',  // MJ025470
-  '\u8E91\uDB40\uDD03': '\uDB82\uDE12',  // MJ025475
-  '\u8E9A\uDB40\uDD03': '\uDB82\uDE13',  // MJ025486
-  '\u8EA1\uDB40\uDD03': '\uDB82\uDE14',  // MJ025493
-  '\u8ED4\uDB40\uDD03': '\uDB82\uDE15',  // MJ025558
-  '\u8F03\uDB40\uDD03': '\uDB82\uDE16',  // MJ025606
-  '\u8F13\uDB40\uDD03': '\uDB82\uDE17',  // MJ025624
-  '\u8F29\uDB40\uDD03': '\uDB82\uDE18',  // MJ025651
-  '\u8F38\uDB40\uDD03': '\uDB82\uDE19',  // MJ025668
-  '\u8F44\uDB40\uDD03': '\uDB82\uDE1A',  // MJ025683
-  '\u8FA8\uDB40\uDD03': '\uDB82\uDE1B',  // MJ058833
-  '\u8FB1\uDB40\uDD03': '\uDB82\uDE1C',  // MJ025748
-  '\u8FB6\uDB40\uDD03': '\uDB82\uDE1D',  // MJ025753
-  '\u8FBB\uDB40\uDD03': '\uDB82\uDE1E',  // MJ025761
-  '\u8FBC\uDB40\uDD03': '\uDB82\uDE1F',  // MJ025763
-  '\u8FBF\uDB40\uDD03': '\uDB82\uDE20',  // MJ025768
-  '\u8FC2\uDB40\uDD03': '\uDB82\uDE21',  // MJ025773
-  '\u8FC4\uDB40\uDD03': '\uDB82\uDE22',  // MJ025778
-  '\u8FC5\uDB40\uDD03': '\uDB82\uDE23',  // MJ025779
-  '\u8FC6\uDB40\uDD03': '\uDB82\uDE24',  // MJ025781
-  '\u8FCE\uDB40\uDD03': '\uDB82\uDE25',  // MJ025794
-  '\u8FD1\uDB40\uDD03': '\uDB82\uDE26',  // MJ025799
-  '\u8FD3\uDB40\uDD03': '\uDB82\uDE27',  // MJ025802
-  '\u8FD4\uDB40\uDD03': '\uDB82\uDE28',  // MJ025805
-  '\u8FE6\uDB40\uDD03': '\uDB82\uDE29',  // MJ025830
-  '\u8FE9\uDB40\uDD03': '\uDB82\uDE2A',  // MJ025836
-  '\u8FEA\uDB40\uDD03': '\uDB82\uDE2B',  // MJ025839
-  '\u8FEB\uDB40\uDD03': '\uDB82\uDE2C',  // MJ025841
-  '\u8FED\uDB40\uDD03': '\uDB82\uDE2D',  // MJ025845
-  '\u8FEF\uDB40\uDD03': '\uDB82\uDE2E',  // MJ025850
-  '\u8FF0\uDB40\uDD03': '\uDB82\uDE2F',  // MJ025852
-  '\u8FF7\uDB40\uDD03': '\uDB82\uDE30',  // MJ025862
-  '\u8FFA\uDB40\uDD03': '\uDB82\uDE31',  // MJ025867
-  '\u8FFD\uDB40\uDD03': '\uDB82\uDE32',  // MJ025872
-  '\u9000\uDB40\uDD03': '\uDB82\uDE33',  // MJ025879
-  '\u9001\uDB40\uDD03': '\uDB82\uDE34',  // MJ025881
-  '\u9003\uDB40\uDD03': '\uDB82\uDE35',  // MJ025884
-  '\u9004\uDB40\uDD03': '\uDB82\uDE36',  // MJ025887
-  '\u9006\uDB40\uDD03': '\uDB82\uDE37',  // MJ025892
-  '\u900D\uDB40\uDD03': '\uDB82\uDE38',  // MJ025903
-  '\u900E\uDB40\uDD03': '\uDB82\uDE39',  // MJ025904
-  '\u900F\uDB40\uDD03': '\uDB82\uDE3A',  // MJ025909
-  '\u9010\uDB40\uDD03': '\uDB82\uDE3B',  // MJ025911
-  '\u9011\uDB40\uDD03': '\uDB82\uDE3C',  // MJ025915
-  '\u9014\uDB40\uDD03': '\uDB82\uDE3D',  // MJ025920
-  '\u9016\uDB40\uDD03': '\uDB82\uDE3E',  // MJ025925
-  '\u9017\uDB40\uDD03': '\uDB82\uDE3F',  // MJ025927
-  '\u9019\uDB40\uDD03': '\uDB82\uDE40',  // MJ025931
-  '\u901A\uDB40\uDD03': '\uDB82\uDE41',  // MJ025933
-  '\u901D\uDB40\uDD03': '\uDB82\uDE42',  // MJ025938
-  '\u901E\uDB40\uDD03': '\uDB82\uDE43',  // MJ025939
-  '\u901F\uDB40\uDD03': '\uDB82\uDE44',  // MJ025945
-  '\u9020\uDB40\uDD03': '\uDB82\uDE45',  // MJ025947
-  '\u9022\uDB40\uDD03': '\uDB82\uDE46',  // MJ025951
-  '\u9023\uDB40\uDD03': '\uDB82\uDE47',  // MJ025954
-  '\u902E\uDB40\uDD03': '\uDB82\uDE48',  // MJ025973
-  '\u9031\uDB40\uDD03': '\uDB82\uDE49',  // MJ025978
-  '\u9032\uDB40\uDD03': '\uDB82\uDE4A',  // MJ025980
-  '\u9035\uDB40\uDD03': '\uDB82\uDE4B',  // MJ025984
-  '\u9038\uDB40\uDD03': '\uDB82\uDE4C',  // MJ025993
-  '\u9039\uDB40\uDD03': '\uDB82\uDE4D',  // MJ025998
-  '\u903C\uDB40\uDD03': '\uDB82\uDE4E',  // MJ026003
-  '\u903E\uDB40\uDD03': '\uDB82\uDE4F',  // MJ026007
-  '\u9041\uDB40\uDD03': '\uDB82\uDE50',  // MJ026012
-  '\u9042\uDB40\uDD03': '\uDB82\uDE51',  // MJ026015
-  '\u9047\uDB40\uDD03': '\uDB82\uDE52',  // MJ026028
-  '\u904A\uDB40\uDD03': '\uDB82\uDE53',  // MJ026033
-  '\u904B\uDB40\uDD03': '\uDB82\uDE54',  // MJ026035
-  '\u904C\uDB40\uDD03': '\uDB82\uDE55',  // MJ026038
-  '\u904D\uDB40\uDD03': '\uDB82\uDE56',  // MJ026040
-  '\u904E\uDB40\uDD03': '\uDB82\uDE57',  // MJ026042
-  '\u904F\uDB40\uDD03': '\uDB82\uDE58',  // MJ026046
-  '\u9050\uDB40\uDD03': '\uDB82\uDE59',  // MJ026049
-  '\u9052\uDB40\uDD03': '\uDB82\uDE5A',  // MJ026055
-  '\u9053\uDB40\uDD03': '\uDB82\uDE5B',  // MJ026059
-  '\u9054\uDB40\uDD03': '\uDB82\uDE5C',  // MJ026061
-  '\u9055\uDB40\uDD03': '\uDB82\uDE5D',  // MJ026064
-  '\u9058\uDB40\uDD03': '\uDB82\uDE5E',  // MJ026070
-  '\u905C\uDB40\uDD03': '\uDB82\uDE5F',  // MJ026079
-  '\u9060\uDB40\uDD03': '\uDB82\uDE60',  // MJ026088
-  '\u9061\uDB40\uDD03': '\uDB82\uDE61',  // MJ026090
-  '\u9062\uDB40\uDD03': '\uDB82\uDE62',  // MJ026091
-  '\u9063\uDB40\uDD03': '\uDB82\uDE63',  // MJ026095
-  '\u9068\uDB40\uDD03': '\uDB82\uDE64',  // MJ026104
-  '\u9069\uDB40\uDD03': '\uDB82\uDE65',  // MJ026106
-  '\u906D\uDB40\uDD03': '\uDB82\uDE66',  // MJ026113
-  '\u906E\uDB40\uDD03': '\uDB82\uDE67',  // MJ026117
-  '\u906F\uDB40\uDD03': '\uDB82\uDE68',  // MJ026121
-  '\u9072\uDB40\uDD03': '\uDB82\uDE69',  // MJ058867
-  '\u9074\uDB40\uDD03': '\uDB82\uDE6A',  // MJ026131
-  '\u9075\uDB40\uDD03': '\uDB82\uDE6B',  // MJ026135
-  '\u9078\uDB40\uDD03': '\uDB82\uDE6C',  // MJ026147
-  '\u907A\uDB40\uDD03': '\uDB82\uDE6D',  // MJ026152
-  '\u907C\uDB40\uDD03': '\uDB82\uDE6E',  // MJ026156
-  '\u907D\uDB40\uDD03': '\uDB82\uDE6F',  // MJ026159
-  '\u907F\uDB40\uDD03': '\uDB82\uDE70',  // MJ026164
-  '\u9080\uDB40\uDD03': '\uDB82\uDE71',  // MJ026167
-  '\u9081\uDB40\uDD03': '\uDB82\uDE72',  // MJ026171
-  '\u9083\uDB40\uDD03': '\uDB82\uDE73',  // MJ026174
-  '\u9084\uDB40\uDD03': '\uDB82\uDE74',  // MJ026181
-  '\u9087\uDB40\uDD03': '\uDB82\uDE75',  // MJ026187
-  '\u90A3\uDB40\uDD03': '\uDB82\uDE76',  // MJ026238
-  '\u90A6\uDB40\uDD03': '\uDB82\uDE77',  // MJ026242
-  '\u90A8\uDB40\uDD03': '\uDB82\uDE78',  // MJ026250
-  '\u90AA\uDB40\uDD03': '\uDB82\uDE79',  // MJ026255
-  '\u90E2\uDB40\uDD03': '\uDB82\uDE7A',  // MJ026315
-  '\u90FD\uDB40\uDD03': '\uDB82\uDE7B',  // MJ030235
-  '\u9115\uDB40\uDD03': '\uDB82\uDE7C',  // MJ026369
-  '\u912D\uDB40\uDD03': '\uDB82\uDE7D',  // MJ026398
-  '\u9130\uDB40\uDD03': '\uDB82\uDE7E',  // MJ026404
-  '\u914B\uDB40\uDD03': '\uDB82\uDE7F',  // MJ026434
-  '\u914C\uDB40\uDD03': '\uDB82\uDE80',  // MJ026437
-  '\u914D\uDB40\uDD03': '\uDB82\uDE81',  // MJ026440
-  '\u9172\uDB40\uDD03': '\uDB82\uDE82',  // MJ026479
-  '\u9177\uDB40\uDD03': '\uDB82\uDE83',  // MJ026485
-  '\u9178\uDB40\uDD03': '\uDB82\uDE84',  // MJ026489
-  '\u91AA\uDB40\uDD03': '\uDB82\uDE85',  // MJ026546
-  '\u91B5\uDB40\uDD03': '\uDB82\uDE86',  // MJ026562
-  '\u91BA\uDB40\uDD03': '\uDB82\uDE87',  // MJ026569
-  '\u91C1\uDB40\uDD03': '\uDB82\uDE88',  // MJ026579
-  '\u91C7\uDB40\uDD03': '\uDB82\uDE89',  // MJ026587
-  '\u91DC\uDB40\uDD03': '\uDB82\uDE8A',  // MJ026608
-  '\u91E3\uDB40\uDD03': '\uDB82\uDE8B',  // MJ026616
-  '\u91FC\uDB40\uDD03': '\uDB82\uDE8C',  // MJ026648
-  '\u925B\uDB40\uDD03': '\uDB82\uDE8D',  // MJ026757
-  '\u92CC\uDB40\uDD03': '\uDB82\uDE8E',  // MJ026882
-  '\u92E9\uDB40\uDD03': '\uDB82\uDE8F',  // MJ026918
-  '\u9306\uDB40\uDD03': '\uDB82\uDE90',  // MJ026950
-  '\u931A\uDB40\uDD03': '\uDB82\uDE91',  // MJ026975
-  '\u9335\uDB40\uDD03': '\uDB82\uDE92',  // MJ027003
-  '\u9365\uDB40\uDD03': '\uDB82\uDE93',  // MJ027050
-  '\u9375\uDB40\uDD03': '\uDB82\uDE94',  // MJ027071
-  '\u938B\uDB40\uDD03': '\uDB82\uDE95',  // MJ027091
-  '\u938C\uDB40\uDD03': '\uDB82\uDE96',  // MJ027092
-  '\u9396\uDB40\uDD03': '\uDB82\uDE97',  // MJ027103
-  '\u939A\uDB40\uDD03': '\uDB82\uDE98',  // MJ027109
-  '\u93A1\uDB40\uDD03': '\uDB82\uDE99',  // MJ027118
-  '\u93B0\uDB40\uDD03': '\uDB82\uDE9A',  // MJ027138
-  '\u93B9\uDB40\uDD03': '\uDB82\uDE9B',  // MJ027150
-  '\u9453\uDB40\uDD03': '\uDB82\uDE9C',  // MJ027327
-  '\u9477\uDB40\uDD03': '\uDB82\uDE9D',  // MJ027375
-  '\u9592\uDB40\uDD03': '\uDB82\uDE9E',  // MJ027431
-  '\u95AB\uDB40\uDD03': '\uDB82\uDE9F',  // MJ027458
-  '\u95BB\uDB40\uDD03': '\uDB82\uDEA0',  // MJ027476
-  '\u95BC\uDB40\uDD03': '\uDB82\uDEA1',  // MJ027478
-  '\u95CD\uDB40\uDD03': '\uDB82\uDEA2',  // MJ027499
-  '\u95D0\uDB40\uDD03': '\uDB82\uDEA3',  // MJ027501
-  '\u964D\uDB40\uDD03': '\uDB82\uDEA4',  // MJ027574
-  '\u9686\uDB40\uDD03': '\uDB82\uDEA5',  // MJ027639
-  '\u968A\uDB40\uDD03': '\uDB82\uDEA6',  // MJ027646
-  '\u9694\uDB40\uDD03': '\uDB82\uDEA7',  // MJ027656
-  '\u9698\uDB40\uDD03': '\uDB82\uDEA8',  // MJ027661
-  '\u9699\uDB40\uDD03': '\uDB82\uDEA9',  // MJ027666
-  '\u96A3\uDB40\uDD03': '\uDB82\uDEAA',  // MJ027679
-  '\u96A7\uDB40\uDD03': '\uDB82\uDEAB',  // MJ027686
-  '\u96BB\uDB40\uDD03': '\uDB82\uDEAC',  // MJ027712
-  '\u96C5\uDB40\uDD03': '\uDB82\uDEAD',  // MJ027722
-  '\u96C7\uDB40\uDD03': '\uDB82\uDEAE',  // MJ027725
-  '\u96D8\uDB40\uDD03': '\uDB82\uDEAF',  // MJ027745
-  '\u96D9\uDB40\uDD03': '\uDB82\uDEB0',  // MJ027750
-  '\u96DA\uDB40\uDD03': '\uDB82\uDEB1',  // MJ027753
-  '\u96E3\uDB40\uDD03': '\uDB82\uDEB2',  // MJ058984
-  '\u96E8\uDB40\uDD03': '\uDB82\uDEB3',  // MJ027771
-  '\u96EA\uDB40\uDD03': '\uDB82\uDEB4',  // MJ027774
-  '\u96F0\uDB40\uDD03': '\uDB82\uDEB5',  // MJ027784
-  '\u9706\uDB40\uDD03': '\uDB82\uDEB6',  // MJ027806
-  '\u9721\uDB40\uDD03': '\uDB82\uDEB7',  // MJ027838
-  '\u9724\uDB40\uDD03': '\uDB82\uDEB8',  // MJ027843
-  '\u9744\uDB40\uDD03': '\uDB82\uDEB9',  // MJ027879
-  '\u9755\uDB40\uDD03': '\uDB82\uDEBA',  // MJ027898
-  '\u9756\uDB40\uDD03': '\uDB82\uDEBB',  // MJ030214
-  '\u975C\uDB40\uDD03': '\uDB82\uDEBC',  // MJ027913
-  '\u976D\uDB40\uDD03': '\uDB82\uDEBD',  // MJ027942
-  '\u9774\uDB40\uDD03': '\uDB82\uDEBE',  // MJ027951
-  '\u9784\uDB40\uDD03': '\uDB82\uDEBF',  // MJ027970
-  '\u9798\uDB40\uDD03': '\uDB82\uDEC0',  // MJ027991
-  '\u97A8\uDB40\uDD03': '\uDB82\uDEC1',  // MJ028010
-  '\u97AD\uDB40\uDD03': '\uDB82\uDEC2',  // MJ028016
-  '\u97B8\uDB40\uDD03': '\uDB82\uDEC3',  // MJ068070
-  '\u97C6\uDB40\uDD03': '\uDB82\uDEC4',  // MJ028045
-  '\u97C8\uDB40\uDD03': '\uDB82\uDEC5',  // MJ028052
-  '\u97CB\uDB40\uDD03': '\uDB82\uDEC6',  // MJ028061
-  '\u97CC\uDB40\uDD03': '\uDB82\uDEC7',  // MJ028063
-  '\u97D1\uDB40\uDD03': '\uDB82\uDEC8',  // MJ028075
-  '\u97D3\uDB40\uDD03': '\uDB82\uDEC9',  // MJ028077
-  '\u97DC\uDB40\uDD03': '\uDB82\uDECA',  // MJ028096
-  '\u97DE\uDB40\uDD03': '\uDB82\uDECB',  // MJ028100
-  '\u97E0\uDB40\uDD03': '\uDB82\uDECC',  // MJ068071
-  '\u97E4\uDB40\uDD03': '\uDB82\uDECD',  // MJ028112
-  '\u97F3\uDB40\uDD03': '\uDB82\uDECE',  // MJ028123
-  '\u97FA\uDB40\uDD03': '\uDB82\uDECF',  // MJ028135
-  '\u97FB\uDB40\uDD03': '\uDB82\uDED0',  // MJ028139
-  '\u9800\uDB40\uDD03': '\uDB82\uDED1',  // MJ068047
-  '\u980C\uDB40\uDD03': '\uDB82\uDED2',  // MJ028164
-  '\u9811\uDB40\uDD03': '\uDB82\uDED3',  // MJ028170
-  '\u9812\uDB40\uDD03': '\uDB82\uDED4',  // MJ028172
-  '\u9813\uDB40\uDD03': '\uDB82\uDED5',  // MJ028173
-  '\u9824\uDB40\uDD03': '\uDB82\uDED6',  // MJ028196
-  '\u9832\uDB40\uDD03': '\uDB82\uDED7',  // MJ028213
-  '\u983B\uDB40\uDD03': '\uDB82\uDED8',  // MJ030307
-  '\u985E\uDB40\uDD03': '\uDB82\uDED9',  // MJ030188
-  '\u9867\uDB40\uDD03': '\uDB82\uDEDA',  // MJ028272
-  '\u9873\uDB40\uDD03': '\uDB82\uDEDB',  // MJ028287
-  '\u98DF\uDB40\uDD03': '\uDB82\uDEDC',  // MJ028339
-  '\u98E2\uDB40\uDD03': '\uDB82\uDEDD',  // MJ028344
-  '\u98E6\uDB40\uDD03': '\uDB82\uDEDE',  // MJ028352
-  '\u98EB\uDB40\uDD03': '\uDB82\uDEDF',  // MJ028358
-  '\u98ED\uDB40\uDD03': '\uDB82\uDEE0',  // MJ059041
-  '\u98EF\uDB40\uDD03': '\uDB82\uDEE1',  // MJ028364
-  '\u98F4\uDB40\uDD03': '\uDB82\uDEE2',  // MJ028370
-  '\u98FC\uDB40\uDD03': '\uDB82\uDEE3',  // MJ030241
-  '\u98FD\uDB40\uDD03': '\uDB82\uDEE4',  // MJ028384
-  '\u98FE\uDB40\uDD03': '\uDB82\uDEE5',  // MJ028386
-  '\u9903\uDB40\uDD03': '\uDB82\uDEE6',  // MJ028393
-  '\u9905\uDB40\uDD03': '\uDB82\uDEE7',  // MJ028398
-  '\u9909\uDB40\uDD03': '\uDB82\uDEE8',  // MJ028403
-  '\u990A\uDB40\uDD03': '\uDB82\uDEE9',  // MJ059042
-  '\u9910\uDB40\uDD03': '\uDB82\uDEEA',  // MJ028415
-  '\u9912\uDB40\uDD03': '\uDB82\uDEEB',  // MJ028418
-  '\u9913\uDB40\uDD03': '\uDB82\uDEEC',  // MJ028422
-  '\u9915\uDB40\uDD03': '\uDB82\uDEED',  // MJ028425
-  '\u991D\uDB40\uDD03': '\uDB82\uDEEE',  // MJ028442
-  '\u9921\uDB40\uDD03': '\uDB82\uDEEF',  // MJ028449
-  '\u9927\uDB40\uDD03': '\uDB82\uDEF0',  // MJ028463
-  '\u9928\uDB40\uDD03': '\uDB82\uDEF1',  // MJ030242
-  '\u9934\uDB40\uDD03': '\uDB82\uDEF2',  // MJ028489
-  '\u9939\uDB40\uDD03': '\uDB82\uDEF3',  // MJ028493
-  '\u9942\uDB40\uDD03': '\uDB82\uDEF4',  // MJ028517
-  '\u9945\uDB40\uDD03': '\uDB82\uDEF5',  // MJ028524
-  '\u9946\uDB40\uDD03': '\uDB82\uDEF6',  // MJ028528
-  '\u9947\uDB40\uDD03': '\uDB82\uDEF7',  // MJ028531
-  '\u9949\uDB40\uDD03': '\uDB82\uDEF8',  // MJ028536
-  '\u994B\uDB40\uDD03': '\uDB82\uDEF9',  // MJ028539
-  '\u994C\uDB40\uDD03': '\uDB82\uDEFA',  // MJ028543
-  '\u9951\uDB40\uDD03': '\uDB82\uDEFB',  // MJ028553
-  '\u9959\uDB40\uDD03': '\uDB82\uDEFC',  // MJ028575
-  '\u995B\uDB40\uDD03': '\uDB82\uDEFD',  // MJ028578
-  '\u995C\uDB40\uDD03': '\uDB82\uDEFE',  // MJ028581
-  '\u99C1\uDB40\uDD03': '\uDB82\uDEFF',  // MJ028645
-  '\u99D0\uDB40\uDD03': '\uDB82\uDF00',  // MJ028660
-  '\u9A19\uDB40\uDD03': '\uDB82\uDF01',  // MJ028741
-  '\u9A30\uDB40\uDD03': '\uDB82\uDF02',  // MJ028769
-  '\u9A4A\uDB40\uDD03': '\uDB82\uDF03',  // MJ028801
-  '\u9A56\uDB40\uDD03': '\uDB82\uDF04',  // MJ028816
-  '\u9A5F\uDB40\uDD03': '\uDB82\uDF05',  // MJ028831
-  '\u9A65\uDB40\uDD03': '\uDB82\uDF06',  // MJ028838
-  '\u9AA8\uDB40\uDD03': '\uDB82\uDF07',  // MJ059059
-  '\u9AD6\uDB40\uDD03': '\uDB82\uDF08',  // MJ028897
-  '\u9AEF\uDB40\uDD03': '\uDB82\uDF09',  // MJ028927
-  '\u9B18\uDB40\uDD03': '\uDB82\uDF0A',  // MJ028969
-  '\u9B2D\uDB40\uDD03': '\uDB82\uDF0B',  // MJ028994
-  '\u9B2E\uDB40\uDD03': '\uDB82\uDF0C',  // MJ028999
-  '\u9B32\uDB40\uDD03': '\uDB82\uDF0D',  // MJ059077
-  '\u9B4D\uDB40\uDD03': '\uDB82\uDF0E',  // MJ029030
-  '\u9B54\uDB40\uDD03': '\uDB82\uDF0F',  // MJ029039
-  '\u9B8E\uDB40\uDD03': '\uDB82\uDF10',  // MJ059095
-  '\u9B97\uDB40\uDD03': '\uDB82\uDF11',  // MJ029120
-  '\u9BAB\uDB40\uDD03': '\uDB82\uDF12',  // MJ029143
-  '\u9BB1\uDB40\uDD03': '\uDB82\uDF13',  // MJ029154
-  '\u9BB9\uDB40\uDD03': '\uDB82\uDF14',  // MJ029162
-  '\u9BD6\uDB40\uDD03': '\uDB82\uDF15',  // MJ029194
-  '\u9BDB\uDB40\uDD03': '\uDB82\uDF16',  // MJ029203
-  '\u9BE1\uDB40\uDD03': '\uDB82\uDF17',  // MJ029210
-  '\u9BF1\uDB40\uDD03': '\uDB82\uDF18',  // MJ029230
-  '\u9BF2\uDB40\uDD03': '\uDB82\uDF19',  // MJ029233
-  '\u9C0C\uDB40\uDD03': '\uDB82\uDF1A',  // MJ029266
-  '\u9C10\uDB40\uDD03': '\uDB82\uDF1B',  // MJ029271
-  '\u9C2F\uDB40\uDD03': '\uDB82\uDF1C',  // MJ029312
-  '\u9C3B\uDB40\uDD03': '\uDB82\uDF1D',  // MJ029330
-  '\u9C41\uDB40\uDD03': '\uDB82\uDF1E',  // MJ029338
-  '\u9C48\uDB40\uDD03': '\uDB82\uDF1F',  // MJ029347
-  '\u9C52\uDB40\uDD03': '\uDB82\uDF20',  // MJ029360
-  '\u9C57\uDB40\uDD03': '\uDB82\uDF21',  // MJ029366
-  '\u9C76\uDB40\uDD03': '\uDB82\uDF22',  // MJ029405
-  '\u9CE6\uDB40\uDD03': '\uDB82\uDF23',  // MJ029413
-  '\u9D07\uDB40\uDD03': '\uDB82\uDF24',  // MJ029448
-  '\u9D08\uDB40\uDD03': '\uDB82\uDF25',  // MJ029450
-  '\u9D09\uDB40\uDD03': '\uDB82\uDF26',  // MJ029451
-  '\u9D48\uDB40\uDD03': '\uDB82\uDF27',  // MJ029521
-  '\u9D60\uDB40\uDD03': '\uDB82\uDF28',  // MJ029547
-  '\u9D6C\uDB40\uDD03': '\uDB82\uDF29',  // MJ029562
-  '\u9DB2\uDB40\uDD03': '\uDB82\uDF2A',  // MJ029638
-  '\u9DB4\uDB40\uDD03': '\uDB82\uDF2B',  // MJ030243
-  '\u9DBF\uDB40\uDD03': '\uDB82\uDF2C',  // MJ029656
-  '\u9DC0\uDB40\uDD03': '\uDB82\uDF2D',  // MJ029660
-  '\u9DC1\uDB40\uDD03': '\uDB82\uDF2E',  // MJ029665
-  '\u9E81\uDB40\uDD03': '\uDB82\uDF2F',  // MJ060364
-  '\u9E8E\uDB40\uDD03': '\uDB82\uDF30',  // MJ029797
-  '\u9E97\uDB40\uDD03': '\uDB82\uDF31',  // MJ029807
-  '\u9E9F\uDB40\uDD03': '\uDB82\uDF32',  // MJ029817
-  '\u9EAA\uDB40\uDD03': '\uDB82\uDF33',  // MJ029832
-  '\u9EAD\uDB40\uDD03': '\uDB82\uDF34',  // MJ029838
-  '\u9EBB\uDB40\uDD03': '\uDB82\uDF35',  // MJ029854
-  '\u9EBF\uDB40\uDD03': '\uDB82\uDF36',  // MJ029862
-  '\u9ECC\uDB40\uDD03': '\uDB82\uDF37',  // MJ029886
-  '\u9EDB\uDB40\uDD03': '\uDB82\uDF38',  // MJ029906
-  '\u9EEF\uDB40\uDD03': '\uDB82\uDF39',  // MJ029931
-  '\u9EF9\uDB40\uDD03': '\uDB82\uDF3A',  // MJ058678
-  '\u9F07\uDB40\uDD03': '\uDB82\uDF3B',  // MJ029966
-  '\u9F08\uDB40\uDD03': '\uDB82\uDF3C',  // MJ029968
-  '\u9F1B\uDB40\uDD03': '\uDB82\uDF3D',  // MJ029995
-  '\u9F31\uDB40\uDD03': '\uDB82\uDF3E',  // MJ030027
-  '\u9F3B\uDB40\uDD03': '\uDB82\uDF3F',  // MJ030041
-  '\u9F4A\uDB40\uDD03': '\uDB82\uDF40',  // MJ030058
-  '\u9F4B\uDB40\uDD03': '\uDB82\uDF41',  // MJ030062
-  '\u9F4E\uDB40\uDD03': '\uDB82\uDF42',  // MJ030068
-  '\u9F67\uDB40\uDD03': '\uDB82\uDF43',  // MJ030098
-  '\u9F8D\uDB40\uDD03': '\uDB82\uDF44',  // MJ030123
-  '\u9F9C\uDB40\uDD03': '\uDB82\uDF45',  // MJ030157
-  '\u9F9D\uDB40\uDD03': '\uDB82\uDF46',  // MJ030159
-  '\uFA11\uDB40\uDD03': '\uDB82\uDF47',  // MJ030197
-  '\uFA1F\uDB40\uDD03': '\uDB82\uDF48',  // MJ030218
-  '\uFA24\uDB40\uDD03': '\uDB82\uDF49',  // MJ030229
-  '\uD850\uDEEE\uDB40\uDD03': '\uDB82\uDF4A',  // MJ030309
-  '\uD840\uDC0B\uDB40\uDD03': '\uDB82\uDF4B',  // MJ030319
-  '\uD840\uDC41\uDB40\uDD03': '\uDB82\uDF4C',  // MJ056847
-  '\uD840\uDF2B\uDB40\uDD03': '\uDB82\uDF4D',  // MJ068074
-  '\uD841\uDD25\uDB40\uDD03': '\uDB82\uDF4E',  // MJ031009
-  '\uD84D\uDDC4\uDB40\uDD03': '\uDB82\uDF4F',  // MJ038174
-  '\uD84F\uDCFE\uDB40\uDD03': '\uDB82\uDF50',  // MJ059776
-  '\uD84F\uDF1B\uDB40\uDD03': '\uDB82\uDF51',  // MJ059818
-  '\uD853\uDC1E\uDB40\uDD03': '\uDB82\uDF52',  // MJ041344
-  '\uD858\uDE22\uDB40\uDD03': '\uDB82\uDF53',  // MJ058334
-  '\uD85B\uDC73\uDB40\uDD03': '\uDB82\uDF54',  // MJ046538
-  '\uD861\uDD6B\uDB40\uDD03': '\uDB82\uDF55',  // MJ050992
-  '\uD867\uDE3D\uDB40\uDD03': '\uDB82\uDF56',  // MJ055216
-  '\uD867\uDE8A\uDB40\uDD03': '\uDB82\uDF57',  // MJ055266
-  '\uD873\uDF4C\uDB40\uDD03': '\uDB82\uDF58',  // MJ056898
-  '\uD86D\uDF46\uDB40\uDD03': '\uDB82\uDF59',  // MJ056904
-  '\uD86D\uDF77\uDB40\uDD03': '\uDB82\uDF5A',  // MJ059556
-  '\uD875\uDEB6\uDB40\uDD03': '\uDB82\uDF5B',  // MJ059576
-  '\uD871\uDF3B\uDB40\uDD03': '\uDB82\uDF5C',  // MJ060113
-  '\u903A\uDB40\uDD03': '\uDB82\uDF5D',  // MJ060230
-  '\uD86E\uDDE4\uDB40\uDD03': '\uDB82\uDF5E',  // MJ059402
-  '\uD874\uDE60\uDB40\uDD03': '\uDB82\uDF5F',  // MJ059464
-  '\uD877\uDCD3\uDB40\uDD03': '\uDB82\uDF60',  // MJ059846
-  '\u3404\uDB40\uDD00': '\uDB82\uDF61',  // MJ000008
-  '\u3436\uDB40\uDD00': '\uDB82\uDF62',  // MJ000036
-  '\u3441\uDB40\uDD00': '\uDB82\uDF63',  // MJ000045
-  '\u3442\uDB40\uDD00': '\uDB82\uDF64',  // MJ000047
-  '\u3464\uDB40\uDD00': '\uDB82\uDF65',  // MJ000074
-  '\u3479\uDB40\uDD00': '\uDB82\uDF66',  // MJ000089
-  '\u348A\uDB40\uDD00': '\uDB82\uDF67',  // MJ000106
-  '\u34A7\uDB40\uDD00': '\uDB82\uDF68',  // MJ000129
-  '\u34B8\uDB40\uDD00': '\uDB82\uDF69',  // MJ000143
-  '\u34B9\uDB40\uDD00': '\uDB82\uDF6A',  // MJ000146
-  '\u34C3\uDB40\uDD00': '\uDB82\uDF6B',  // MJ000156
-  '\u34D7\uDB40\uDD00': '\uDB82\uDF6C',  // MJ000175
-  '\u34DE\uDB40\uDD00': '\uDB82\uDF6D',  // MJ000183
-  '\u34F5\uDB40\uDD00': '\uDB82\uDF6E',  // MJ000206
-  '\u34F6\uDB40\uDD00': '\uDB82\uDF6F',  // MJ000208
-  '\u351C\uDB40\uDD00': '\uDB82\uDF70',  // MJ000242
-  '\u3530\uDB40\uDD00': '\uDB82\uDF71',  // MJ000265
-  '\u3531\uDB40\uDD00': '\uDB82\uDF72',  // MJ000266
-  '\u3534\uDB40\uDD00': '\uDB82\uDF73',  // MJ000269
-  '\u353A\uDB40\uDD00': '\uDB82\uDF74',  // MJ000276
-  '\u3553\uDB40\uDD00': '\uDB82\uDF75',  // MJ000303
-  '\u355B\uDB40\uDD00': '\uDB82\uDF76',  // MJ000309
-  '\u355C\uDB40\uDD00': '\uDB82\uDF77',  // MJ000311
-  '\u3561\uDB40\uDD00': '\uDB82\uDF78',  // MJ000317
-  '\u356F\uDB40\uDD00': '\uDB82\uDF79',  // MJ000332
-  '\u35B6\uDB40\uDD00': '\uDB82\uDF7A',  // MJ000381
-  '\u35D4\uDB40\uDD00': '\uDB82\uDF7B',  // MJ000405
-  '\u35D6\uDB40\uDD00': '\uDB82\uDF7C',  // MJ000408
-  '\u35FB\uDB40\uDD00': '\uDB82\uDF7D',  // MJ000437
-  '\u361D\uDB40\uDD00': '\uDB82\uDF7E',  // MJ000462
-  '\u3634\uDB40\uDD00': '\uDB82\uDF7F',  // MJ000485
-  '\u3644\uDB40\uDD00': '\uDB82\uDF80',  // MJ000499
-  '\u365B\uDB40\uDD00': '\uDB82\uDF81',  // MJ000519
-  '\u3687\uDB40\uDD00': '\uDB82\uDF82',  // MJ057255
-  '\u3688\uDB40\uDD00': '\uDB82\uDF83',  // MJ000558
-  '\u3689\uDB40\uDD00': '\uDB82\uDF84',  // MJ000560
-  '\u36A2\uDB40\uDD00': '\uDB82\uDF85',  // MJ000583
-  '\u36EE\uDB40\uDD00': '\uDB82\uDF86',  // MJ000648
-  '\u36FA\uDB40\uDD00': '\uDB82\uDF87',  // MJ000660
-  '\u36FC\uDB40\uDD00': '\uDB82\uDF88',  // MJ000663
-  '\u3732\uDB40\uDD00': '\uDB82\uDF89',  // MJ000711
-  '\u3778\uDB40\uDD00': '\uDB82\uDF8A',  // MJ034205
-  '\u37B7\uDB40\uDD00': '\uDB82\uDF8B',  // MJ000836
-  '\u37D0\uDB40\uDD00': '\uDB82\uDF8C',  // MJ000859
-  '\u37DF\uDB40\uDD00': '\uDB82\uDF8D',  // MJ000873
-  '\u37E7\uDB40\uDD00': '\uDB82\uDF8E',  // MJ000879
-  '\u3809\uDB40\uDD00': '\uDB82\uDF8F',  // MJ000910
-  '\u3815\uDB40\uDD00': '\uDB82\uDF90',  // MJ000923
-  '\u3817\uDB40\uDD00': '\uDB82\uDF91',  // MJ000926
-  '\u384C\uDB40\uDD00': '\uDB82\uDF92',  // MJ000973
-  '\u385B\uDB40\uDD00': '\uDB82\uDF93',  // MJ000988
-  '\u3862\uDB40\uDD00': '\uDB82\uDF94',  // MJ000996
-  '\u386D\uDB40\uDD00': '\uDB82\uDF95',  // MJ001007
-  '\u38A2\uDB40\uDD00': '\uDB82\uDF96',  // MJ001058
-  '\u38A3\uDB40\uDD00': '\uDB82\uDF97',  // MJ001060
-  '\u38B4\uDB40\uDD00': '\uDB82\uDF98',  // MJ001075
-  '\u38C7\uDB40\uDD00': '\uDB82\uDF99',  // MJ001092
-  '\u38FC\uDB40\uDD00': '\uDB82\uDF9A',  // MJ001135
-  '\u3905\uDB40\uDD00': '\uDB82\uDF9B',  // MJ001144
-  '\u393A\uDB40\uDD00': '\uDB82\uDF9C',  // MJ001199
-  '\u3971\uDB40\uDD00': '\uDB82\uDF9D',  // MJ001250
-  '\u39A2\uDB40\uDD00': '\uDB82\uDF9E',  // MJ001297
-  '\u39AE\uDB40\uDD00': '\uDB82\uDF9F',  // MJ001313
-  '\u39B6\uDB40\uDD00': '\uDB82\uDFA0',  // MJ001323
-  '\u39DE\uDB40\uDD00': '\uDB82\uDFA1',  // MJ001356
-  '\u3A17\uDB40\uDD00': '\uDB82\uDFA2',  // MJ001407
-  '\u3A2F\uDB40\uDD00': '\uDB82\uDFA3',  // MJ001429
-  '\u3A3E\uDB40\uDD00': '\uDB82\uDFA4',  // MJ001445
-  '\u3A3F\uDB40\uDD00': '\uDB82\uDFA5',  // MJ001446
-  '\u3A9C\uDB40\uDD00': '\uDB82\uDFA6',  // MJ001528
-  '\u3AA4\uDB40\uDD00': '\uDB82\uDFA7',  // MJ001537
-  '\u3AE0\uDB40\uDD00': '\uDB82\uDFA8',  // MJ001588
-  '\u3AE6\uDB40\uDD00': '\uDB82\uDFA9',  // MJ001595
-  '\u3AF4\uDB40\uDD00': '\uDB82\uDFAA',  // MJ001608
-  '\u3AF7\uDB40\uDD00': '\uDB82\uDFAB',  // MJ001613
-  '\u3B08\uDB40\uDD00': '\uDB82\uDFAC',  // MJ001627
-  '\u3B0A\uDB40\uDD00': '\uDB82\uDFAD',  // MJ001630
-  '\u3B1D\uDB40\uDD00': '\uDB82\uDFAE',  // MJ001649
-  '\u3B26\uDB40\uDD00': '\uDB82\uDFAF',  // MJ001659
-  '\u3B27\uDB40\uDD00': '\uDB82\uDFB0',  // MJ001660
-  '\u3B3C\uDB40\uDD00': '\uDB82\uDFB1',  // MJ001683
-  '\u3B52\uDB40\uDD00': '\uDB82\uDFB2',  // MJ001696
-  '\u3B74\uDB40\uDD00': '\uDB82\uDFB3',  // MJ001726
-  '\u3B78\uDB40\uDD00': '\uDB82\uDFB4',  // MJ001730
-  '\u3BAE\uDB40\uDD00': '\uDB82\uDFB5',  // MJ001784
-  '\u3BB5\uDB40\uDD00': '\uDB82\uDFB6',  // MJ001792
-  '\u3BB8\uDB40\uDD00': '\uDB82\uDFB7',  // MJ001795
-  '\u3BEC\uDB40\uDD00': '\uDB82\uDFB8',  // MJ001840
-  '\u3BFE\uDB40\uDD00': '\uDB82\uDFB9',  // MJ001855
-  '\u3C05\uDB40\uDD00': '\uDB82\uDFBA',  // MJ001863
-  '\u3C0D\uDB40\uDD00': '\uDB82\uDFBB',  // MJ001870
-  '\u3C4E\uDB40\uDD00': '\uDB82\uDFBC',  // MJ001937
-  '\u3C4F\uDB40\uDD00': '\uDB82\uDFBD',  // MJ001938
-  '\u3C8A\uDB40\uDD00': '\uDB82\uDFBE',  // MJ001992
-  '\u3CDF\uDB40\uDD00': '\uDB82\uDFBF',  // MJ002064
-  '\u3CE4\uDB40\uDD00': '\uDB82\uDFC0',  // MJ002067
-  '\u3D00\uDB40\uDD00': '\uDB82\uDFC1',  // MJ002093
-  '\u3D04\uDB40\uDD00': '\uDB82\uDFC2',  // MJ002099
-  '\u3D1B\uDB40\uDD00': '\uDB82\uDFC3',  // MJ002118
-  '\u3D5D\uDB40\uDD00': '\uDB82\uDFC4',  // MJ002176
-  '\u3D67\uDB40\uDD00': '\uDB82\uDFC5',  // MJ002187
-  '\u3D7E\uDB40\uDD00': '\uDB82\uDFC6',  // MJ002213
-  '\u3D80\uDB40\uDD00': '\uDB82\uDFC7',  // MJ002216
-  '\u3D93\uDB40\uDD00': '\uDB82\uDFC8',  // MJ002231
-  '\u3DB3\uDB40\uDD00': '\uDB82\uDFC9',  // MJ002258
-  '\u3DDF\uDB40\uDD00': '\uDB82\uDFCA',  // MJ002294
-  '\u3DED\uDB40\uDD00': '\uDB82\uDFCB',  // MJ002306
-  '\u3DF1\uDB40\uDD00': '\uDB82\uDFCC',  // MJ002310
-  '\u3E02\uDB40\uDD00': '\uDB82\uDFCD',  // MJ002325
-  '\u3E0F\uDB40\uDD00': '\uDB82\uDFCE',  // MJ002335
-  '\u3E37\uDB40\uDD00': '\uDB82\uDFCF',  // MJ002374
-  '\u3E9A\uDB40\uDD00': '\uDB82\uDFD0',  // MJ002469
-  '\u3EE8\uDB40\uDD00': '\uDB82\uDFD1',  // MJ002526
-  '\u3F0B\uDB40\uDD00': '\uDB82\uDFD2',  // MJ002551
-  '\u3F1B\uDB40\uDD00': '\uDB82\uDFD3',  // MJ002567
-  '\u3FC2\uDB40\uDD00': '\uDB82\uDFD4',  // MJ002721
-  '\u3FCA\uDB40\uDD00': '\uDB82\uDFD5',  // MJ002730
-  '\u3FDF\uDB40\uDD00': '\uDB82\uDFD6',  // MJ002750
-  '\u3FFC\uDB40\uDD00': '\uDB82\uDFD7',  // MJ002780
-  '\u4018\uDB40\uDD00': '\uDB82\uDFD8',  // MJ002807
-  '\u4048\uDB40\uDD00': '\uDB82\uDFD9',  // MJ002856
-  '\u404F\uDB40\uDD00': '\uDB82\uDFDA',  // MJ002863
-  '\u4050\uDB40\uDD00': '\uDB82\uDFDB',  // MJ002865
-  '\u4071\uDB40\uDD00': '\uDB82\uDFDC',  // MJ002897
-  '\u4096\uDB40\uDD00': '\uDB82\uDFDD',  // MJ002936
-  '\u40AE\uDB40\uDD00': '\uDB82\uDFDE',  // MJ002960
-  '\u40CD\uDB40\uDD00': '\uDB82\uDFDF',  // MJ002986
-  '\u40FD\uDB40\uDD00': '\uDB82\uDFE0',  // MJ003032
-  '\u40FE\uDB40\uDD00': '\uDB82\uDFE1',  // MJ003034
-  '\u4102\uDB40\uDD00': '\uDB82\uDFE2',  // MJ003038
-  '\u4104\uDB40\uDD00': '\uDB82\uDFE3',  // MJ003043
-  '\u4107\uDB40\uDD00': '\uDB82\uDFE4',  // MJ003049
-  '\u410D\uDB40\uDD00': '\uDB82\uDFE5',  // MJ003057
-  '\u410F\uDB40\uDD00': '\uDB82\uDFE6',  // MJ003060
-  '\u4112\uDB40\uDD00': '\uDB82\uDFE7',  // MJ003064
-  '\u4120\uDB40\uDD00': '\uDB82\uDFE8',  // MJ003078
-  '\u412A\uDB40\uDD00': '\uDB82\uDFE9',  // MJ003088
-  '\u412F\uDB40\uDD00': '\uDB82\uDFEA',  // MJ003093
-  '\u4146\uDB40\uDD00': '\uDB82\uDFEB',  // MJ003114
-  '\u4165\uDB40\uDD00': '\uDB82\uDFEC',  // MJ003146
-  '\u4183\uDB40\uDD00': '\uDB82\uDFED',  // MJ003178
-  '\u4192\uDB40\uDD00': '\uDB82\uDFEE',  // MJ003190
-  '\u41B3\uDB40\uDD00': '\uDB82\uDFEF',  // MJ003224
-  '\u41D2\uDB40\uDD00': '\uDB82\uDFF0',  // MJ003258
-  '\u41F1\uDB40\uDD00': '\uDB82\uDFF1',  // MJ003290
-  '\u4227\uDB40\uDD00': '\uDB82\uDFF2',  // MJ003346
-  '\u422A\uDB40\uDD00': '\uDB82\uDFF3',  // MJ003347
-  '\u4275\uDB40\uDD00': '\uDB82\uDFF4',  // MJ003424
-  '\u42B8\uDB40\uDD00': '\uDB82\uDFF5',  // MJ003496
-  '\u42E3\uDB40\uDD00': '\uDB82\uDFF6',  // MJ003541
-  '\u4301\uDB40\uDD00': '\uDB82\uDFF7',  // MJ003571
-  '\u4334\uDB40\uDD00': '\uDB82\uDFF8',  // MJ003623
-  '\u4359\uDB40\uDD00': '\uDB82\uDFF9',  // MJ003649
-  '\u43A9\uDB40\uDD00': '\uDB82\uDFFA',  // MJ003730
-  '\u43CA\uDB40\uDD00': '\uDB82\uDFFB',  // MJ003762
-  '\u43D5\uDB40\uDD00': '\uDB82\uDFFC',  // MJ003777
-  '\u43D9\uDB40\uDD00': '\uDB82\uDFFD',  // MJ003782
-  '\u43E2\uDB40\uDD00': '\uDB82\uDFFE',  // MJ003791
-  '\u440B\uDB40\uDD00': '\uDB82\uDFFF',  // MJ003833
-  '\u446B\uDB40\uDD00': '\uDB83\uDC00',  // MJ003927
-  '\u4494\uDB40\uDD00': '\uDB83\uDC01',  // MJ003965
-  '\u44A2\uDB40\uDD00': '\uDB83\uDC02',  // MJ003980
-  '\u44A9\uDB40\uDD00': '\uDB83\uDC03',  // MJ003989
-  '\u44AB\uDB40\uDD00': '\uDB83\uDC04',  // MJ003992
-  '\u44B1\uDB40\uDD00': '\uDB83\uDC05',  // MJ003997
-  '\u44B6\uDB40\uDD00': '\uDB83\uDC06',  // MJ004004
-  '\u44B9\uDB40\uDD00': '\uDB83\uDC07',  // MJ004010
-  '\u44C1\uDB40\uDD00': '\uDB83\uDC08',  // MJ004021
-  '\u44CC\uDB40\uDD00': '\uDB83\uDC09',  // MJ004034
-  '\u44D0\uDB40\uDD00': '\uDB83\uDC0A',  // MJ004039
-  '\u44D3\uDB40\uDD00': '\uDB83\uDC0B',  // MJ004043
-  '\u44E6\uDB40\uDD00': '\uDB83\uDC0C',  // MJ004064
-  '\u44F2\uDB40\uDD00': '\uDB83\uDC0D',  // MJ004072
-  '\u44F5\uDB40\uDD00': '\uDB83\uDC0E',  // MJ004077
-  '\u44FA\uDB40\uDD00': '\uDB83\uDC0F',  // MJ004084
-  '\u4506\uDB40\uDD00': '\uDB83\uDC10',  // MJ004097
-  '\u450A\uDB40\uDD00': '\uDB83\uDC11',  // MJ004103
-  '\u450F\uDB40\uDD00': '\uDB83\uDC12',  // MJ004110
-  '\u4524\uDB40\uDD00': '\uDB83\uDC13',  // MJ004131
-  '\u4535\uDB40\uDD00': '\uDB83\uDC14',  // MJ004148
-  '\u453B\uDB40\uDD00': '\uDB83\uDC15',  // MJ004155
-  '\u453C\uDB40\uDD00': '\uDB83\uDC16',  // MJ004157
-  '\u454C\uDB40\uDD00': '\uDB83\uDC17',  // MJ004177
-  '\u455E\uDB40\uDD00': '\uDB83\uDC18',  // MJ004197
-  '\u4572\uDB40\uDD00': '\uDB83\uDC19',  // MJ004220
-  '\u4576\uDB40\uDD00': '\uDB83\uDC1A',  // MJ004226
-  '\u457E\uDB40\uDD00': '\uDB83\uDC1B',  // MJ004235
-  '\u4587\uDB40\uDD00': '\uDB83\uDC1C',  // MJ004244
-  '\u458D\uDB40\uDD00': '\uDB83\uDC1D',  // MJ004251
-  '\u458E\uDB40\uDD00': '\uDB83\uDC1E',  // MJ004255
-  '\u459F\uDB40\uDD00': '\uDB83\uDC1F',  // MJ004279
-  '\u45C8\uDB40\uDD00': '\uDB83\uDC20',  // MJ004319
-  '\u45CE\uDB40\uDD00': '\uDB83\uDC21',  // MJ004326
-  '\u45CF\uDB40\uDD00': '\uDB83\uDC22',  // MJ004328
-  '\u45D7\uDB40\uDD00': '\uDB83\uDC23',  // MJ004335
-  '\u45E6\uDB40\uDD00': '\uDB83\uDC24',  // MJ004352
-  '\u460D\uDB40\uDD00': '\uDB83\uDC25',  // MJ004387
-  '\u4638\uDB40\uDD00': '\uDB83\uDC26',  // MJ004426
-  '\u4645\uDB40\uDD00': '\uDB83\uDC27',  // MJ004440
-  '\u465C\uDB40\uDD00': '\uDB83\uDC28',  // MJ004459
-  '\u465D\uDB40\uDD00': '\uDB83\uDC29',  // MJ004460
-  '\u4670\uDB40\uDD00': '\uDB83\uDC2A',  // MJ004480
-  '\u4672\uDB40\uDD00': '\uDB83\uDC2B',  // MJ004482
-  '\u4674\uDB40\uDD00': '\uDB83\uDC2C',  // MJ004485
-  '\u46AC\uDB40\uDD00': '\uDB83\uDC2D',  // MJ004539
-  '\u46B0\uDB40\uDD00': '\uDB83\uDC2E',  // MJ004544
-  '\u4704\uDB40\uDD00': '\uDB83\uDC2F',  // MJ004627
-  '\u471A\uDB40\uDD00': '\uDB83\uDC30',  // MJ004649
-  '\u4722\uDB40\uDD00': '\uDB83\uDC31',  // MJ004658
-  '\u475F\uDB40\uDD00': '\uDB83\uDC32',  // MJ004711
-  '\u4768\uDB40\uDD00': '\uDB83\uDC33',  // MJ004721
-  '\u477C\uDB40\uDD00': '\uDB83\uDC34',  // MJ004741
-  '\u4871\uDB40\uDD00': '\uDB83\uDC35',  // MJ004976
-  '\u4875\uDB40\uDD00': '\uDB83\uDC36',  // MJ004981
-  '\u4889\uDB40\uDD00': '\uDB83\uDC37',  // MJ004995
-  '\u488B\uDB40\uDD00': '\uDB83\uDC38',  // MJ004997
-  '\u488C\uDB40\uDD00': '\uDB83\uDC39',  // MJ004999
-  '\u4890\uDB40\uDD00': '\uDB83\uDC3A',  // MJ005003
-  '\u4894\uDB40\uDD00': '\uDB83\uDC3B',  // MJ005009
-  '\u48A6\uDB40\uDD00': '\uDB83\uDC3C',  // MJ005030
-  '\u48AB\uDB40\uDD00': '\uDB83\uDC3D',  // MJ005036
-  '\u48B0\uDB40\uDD00': '\uDB83\uDC3E',  // MJ005042
-  '\u48D0\uDB40\uDD00': '\uDB83\uDC3F',  // MJ005072
-  '\u493F\uDB40\uDD00': '\uDB83\uDC40',  // MJ005179
-  '\u494E\uDB40\uDD00': '\uDB83\uDC41',  // MJ005198
-  '\u496C\uDB40\uDD00': '\uDB83\uDC42',  // MJ005225
-  '\u4995\uDB40\uDD00': '\uDB83\uDC43',  // MJ005252
-  '\u49A8\uDB40\uDD00': '\uDB83\uDC44',  // MJ005272
-  '\u49E2\uDB40\uDD00': '\uDB83\uDC45',  // MJ005322
-  '\u4A22\uDB40\uDD00': '\uDB83\uDC46',  // MJ005384
-  '\u4A24\uDB40\uDD00': '\uDB83\uDC47',  // MJ005388
-  '\u4A28\uDB40\uDD00': '\uDB83\uDC48',  // MJ005392
-  '\u4A3C\uDB40\uDD00': '\uDB83\uDC49',  // MJ005411
-  '\u4A7F\uDB40\uDD00': '\uDB83\uDC4A',  // MJ005477
-  '\u4A9D\uDB40\uDD00': '\uDB83\uDC4B',  // MJ005507
-  '\u4AA7\uDB40\uDD00': '\uDB83\uDC4C',  // MJ005515
-  '\u4AAB\uDB40\uDD00': '\uDB83\uDC4D',  // MJ005520
-  '\u4AB4\uDB40\uDD00': '\uDB83\uDC4E',  // MJ005530
-  '\u4AB5\uDB40\uDD00': '\uDB83\uDC4F',  // MJ005533
-  '\u4ADD\uDB40\uDD00': '\uDB83\uDC50',  // MJ005572
-  '\u4B12\uDB40\uDD00': '\uDB83\uDC51',  // MJ005624
-  '\u4B13\uDB40\uDD00': '\uDB83\uDC52',  // MJ005625
-  '\u4B19\uDB40\uDD00': '\uDB83\uDC53',  // MJ005632
-  '\u4B1F\uDB40\uDD00': '\uDB83\uDC54',  // MJ005639
-  '\u4B22\uDB40\uDD00': '\uDB83\uDC55',  // MJ005644
-  '\u4B2A\uDB40\uDD00': '\uDB83\uDC56',  // MJ005653
-  '\u4B2E\uDB40\uDD00': '\uDB83\uDC57',  // MJ005658
-  '\u4B33\uDB40\uDD00': '\uDB83\uDC58',  // MJ005665
-  '\u4B34\uDB40\uDD00': '\uDB83\uDC59',  // MJ005667
-  '\u4B39\uDB40\uDD00': '\uDB83\uDC5A',  // MJ005673
-  '\u4B3C\uDB40\uDD00': '\uDB83\uDC5B',  // MJ005678
-  '\u4B40\uDB40\uDD00': '\uDB83\uDC5C',  // MJ005683
-  '\u4B43\uDB40\uDD00': '\uDB83\uDC5D',  // MJ005688
-  '\u4B45\uDB40\uDD00': '\uDB83\uDC5E',  // MJ005691
-  '\u4B47\uDB40\uDD00': '\uDB83\uDC5F',  // MJ005694
-  '\u4B49\uDB40\uDD00': '\uDB83\uDC60',  // MJ005697
-  '\u4B4B\uDB40\uDD00': '\uDB83\uDC61',  // MJ005700
-  '\u4B50\uDB40\uDD00': '\uDB83\uDC62',  // MJ005705
-  '\u4B51\uDB40\uDD00': '\uDB83\uDC63',  // MJ005707
-  '\u4B52\uDB40\uDD00': '\uDB83\uDC64',  // MJ005709
-  '\u4B54\uDB40\uDD00': '\uDB83\uDC65',  // MJ005712
-  '\u4B61\uDB40\uDD00': '\uDB83\uDC66',  // MJ005725
-  '\u4B63\uDB40\uDD00': '\uDB83\uDC67',  // MJ005728
-  '\u4B68\uDB40\uDD00': '\uDB83\uDC68',  // MJ005734
-  '\u4B69\uDB40\uDD00': '\uDB83\uDC69',  // MJ005736
-  '\u4BEC\uDB40\uDD00': '\uDB83\uDC6A',  // MJ005861
-  '\u4C50\uDB40\uDD00': '\uDB83\uDC6B',  // MJ005955
-  '\u4C95\uDB40\uDD00': '\uDB83\uDC6C',  // MJ006021
-  '\u4CCE\uDB40\uDD00': '\uDB83\uDC6D',  // MJ006068
-  '\u4CF1\uDB40\uDD00': '\uDB83\uDC6E',  // MJ006104
-  '\u4D1F\uDB40\uDD00': '\uDB83\uDC6F',  // MJ006144
-  '\u4D2A\uDB40\uDD00': '\uDB83\uDC70',  // MJ006154
-  '\u4D34\uDB40\uDD00': '\uDB83\uDC71',  // MJ006164
-  '\u4D39\uDB40\uDD00': '\uDB83\uDC72',  // MJ006170
-  '\u4D43\uDB40\uDD00': '\uDB83\uDC73',  // MJ006181
-  '\u4E3D\uDB40\uDD00': '\uDB83\uDC74',  // MJ006365
-  '\u4EB7\uDB40\uDD00': '\uDB83\uDC75',  // MJ006489
-  '\u4F6D\uDB40\uDD00': '\uDB83\uDC76',  // MJ006664
-  '\u4F9C\uDB40\uDD00': '\uDB83\uDC77',  // MJ006718
-  '\u4FB1\uDB40\uDD00': '\uDB83\uDC78',  // MJ006732
-  '\u4FDE\uDB40\uDD00': '\uDB83\uDC79',  // MJ006784
-  '\u508B\uDB40\uDD00': '\uDB83\uDC7A',  // MJ006976
-  '\u50DB\uDB40\uDD00': '\uDB83\uDC7B',  // MJ007077
-  '\u5125\uDB40\uDD00': '\uDB83\uDC7C',  // MJ007171
-  '\u5220\uDB40\uDD00': '\uDB83\uDC7D',  // MJ007487
-  '\u5268\uDB40\uDD00': '\uDB83\uDC7E',  // MJ007557
-  '\u5304\uDB40\uDD00': '\uDB83\uDC7F',  // MJ007755
-  '\u5336\uDB40\uDD00': '\uDB83\uDC80',  // MJ007813
-  '\u5344\uDB40\uDD00': '\uDB83\uDC81',  // MJ007837
-  '\uD848\uDC34\uDB40\uDD00': '\uDB83\uDC82',  // MJ007920
-  '\u53D0\uDB40\uDD00': '\uDB83\uDC83',  // MJ007998
-  '\u53DC\uDB40\uDD00': '\uDB83\uDC84',  // MJ008013
-  '\u5406\uDB40\uDD00': '\uDB83\uDC85',  // MJ008060
-  '\u549E\uDB40\uDD00': '\uDB83\uDC86',  // MJ008213
-  '\u54B5\uDB40\uDD00': '\uDB83\uDC87',  // MJ008239
-  '\u5568\uDB40\uDD00': '\uDB83\uDC88',  // MJ008415
-  '\u55BB\uDB40\uDD00': '\uDB83\uDC89',  // MJ008501
-  '\u55C2\uDB40\uDD00': '\uDB83\uDC8A',  // MJ008507
-  '\u55D0\uDB40\uDD00': '\uDB83\uDC8B',  // MJ008523
-  '\u563E\uDB40\uDD00': '\uDB83\uDC8C',  // MJ008636
-  '\u5683\uDB40\uDD00': '\uDB83\uDC8D',  // MJ008715
-  '\u5717\uDB40\uDD00': '\uDB83\uDC8E',  // MJ008882
-  '\u5748\uDB40\uDD00': '\uDB83\uDC8F',  // MJ008936
-  '\u5837\uDB40\uDD00': '\uDB83\uDC90',  // MJ009179
-  '\u5900\uDB40\uDD00': '\uDB83\uDC91',  // MJ057355
-  '\u5917\uDB40\uDD00': '\uDB83\uDC92',  // MJ009433
-  '\u5970\uDB40\uDD00': '\uDB83\uDC93',  // MJ009539
-  '\u59A0\uDB40\uDD00': '\uDB83\uDC94',  // MJ009592
-  '\u59D8\uDB40\uDD00': '\uDB83\uDC95',  // MJ009647
-  '\u5A8D\uDB40\uDD00': '\uDB83\uDC96',  // MJ009836
-  '\u5ADB\uDB40\uDD00': '\uDB83\uDC97',  // MJ009923
-  '\u5ADF\uDB40\uDD00': '\uDB83\uDC98',  // MJ009929
-  '\u5B05\uDB40\uDD00': '\uDB83\uDC99',  // MJ009970
-  '\u5BBB\uDB40\uDD00': '\uDB83\uDC9A',  // MJ010171
-  '\u5BC8\uDB40\uDD00': '\uDB83\uDC9B',  // MJ010187
-  '\u5C8D\uDB40\uDD00': '\uDB83\uDC9C',  // MJ010418
-  '\u5CC0\uDB40\uDD00': '\uDB83\uDC9D',  // MJ010468
-  '\u5D21\uDB40\uDD00': '\uDB83\uDC9E',  // MJ010562
-  '\u5D2A\uDB40\uDD00': '\uDB83\uDC9F',  // MJ010575
-  '\u5D41\uDB40\uDD00': '\uDB83\uDCA0',  // MJ010595
-  '\u5D6B\uDB40\uDD00': '\uDB83\uDCA1',  // MJ010636
-  '\u5D6E\uDB40\uDD00': '\uDB83\uDCA2',  // MJ010641
-  '\u5DC1\uDB40\uDD00': '\uDB83\uDCA3',  // MJ010728
-  '\u5E13\uDB40\uDD00': '\uDB83\uDCA4',  // MJ010822
-  '\u5E23\uDB40\uDD00': '\uDB83\uDCA5',  // MJ010840
-  '\u5E42\uDB40\uDD00': '\uDB83\uDCA6',  // MJ010874
-  '\u5E59\uDB40\uDD00': '\uDB83\uDCA7',  // MJ010903
-  '\u5E69\uDB40\uDD00': '\uDB83\uDCA8',  // MJ010924
-  '\u5E6F\uDB40\uDD00': '\uDB83\uDCA9',  // MJ010935
-  '\u5EBB\uDB40\uDD00': '\uDB83\uDCAA',  // MJ011023
-  '\u5F55\uDB40\uDD00': '\uDB83\uDCAB',  // MJ011232
-  '\u5F5A\uDB40\uDD00': '\uDB83\uDCAC',  // MJ011240
-  '\u5FB2\uDB40\uDD00': '\uDB83\uDCAD',  // MJ011350
-  '\u5FDF\uDB40\uDD00': '\uDB83\uDCAE',  // MJ011402
-  '\u615C\uDB40\uDD00': '\uDB83\uDCAF',  // MJ011830
-  '\u617A\uDB40\uDD00': '\uDB83\uDCB0',  // MJ011877
-  '\u619B\uDB40\uDD00': '\uDB83\uDCB1',  // MJ011920
-  '\u61AF\uDB40\uDD00': '\uDB83\uDCB2',  // MJ011945
-  '\u61B4\uDB40\uDD00': '\uDB83\uDCB3',  // MJ011953
-  '\u61FB\uDB40\uDD00': '\uDB83\uDCB4',  // MJ012038
-  '\u6205\uDB40\uDD00': '\uDB83\uDCB5',  // MJ012052
-  '\u625D\uDB40\uDD00': '\uDB83\uDCB6',  // MJ012157
-  '\u6286\uDB40\uDD00': '\uDB83\uDCB7',  // MJ012202
-  '\u63DE\uDB40\uDD00': '\uDB83\uDCB8',  // MJ012554
-  '\u6455\uDB40\uDD00': '\uDB83\uDCB9',  // MJ012681
-  '\u6459\uDB40\uDD00': '\uDB83\uDCBA',  // MJ012687
-  '\u6466\uDB40\uDD00': '\uDB83\uDCBB',  // MJ012705
-  '\u6477\uDB40\uDD00': '\uDB83\uDCBC',  // MJ012725
-  '\u64A2\uDB40\uDD00': '\uDB83\uDCBD',  // MJ012776
-  '\u6507\uDB40\uDD00': '\uDB83\uDCBE',  // MJ012896
-  '\u65DD\uDB40\uDD00': '\uDB83\uDCBF',  // MJ013136
-  '\u65DE\uDB40\uDD00': '\uDB83\uDCC0',  // MJ013138
-  '\u65F3\uDB40\uDD00': '\uDB83\uDCC1',  // MJ013166
-  '\u660B\uDB40\uDD00': '\uDB83\uDCC2',  // MJ013196
-  '\u6647\uDB40\uDD00': '\uDB83\uDCC3',  // MJ013264
-  '\u66C5\uDB40\uDD00': '\uDB83\uDCC4',  // MJ013422
-  '\u671A\uDB40\uDD00': '\uDB83\uDCC5',  // MJ013547
-  '\u6721\uDB40\uDD00': '\uDB83\uDCC6',  // MJ013567
-  '\u6723\uDB40\uDD00': '\uDB83\uDCC7',  // MJ013570
-  '\u6757\uDB40\uDD00': '\uDB83\uDCC8',  // MJ013623
-  '\u6794\uDB40\uDD00': '\uDB83\uDCC9',  // MJ013697
-  '\u6825\uDB40\uDD00': '\uDB83\uDCCA',  // MJ013851
-  '\u6914\uDB40\uDD00': '\uDB83\uDCCB',  // MJ014126
-  '\u6956\uDB40\uDD00': '\uDB83\uDCCC',  // MJ014196
-  '\u69A3\uDB40\uDD00': '\uDB83\uDCCD',  // MJ014284
-  '\u69E4\uDB40\uDD00': '\uDB83\uDCCE',  // MJ014364
-  '\u6A5D\uDB40\uDD00': '\uDB83\uDCCF',  // MJ014517
-  '\u6A96\uDB40\uDD00': '\uDB83\uDCD0',  // MJ014581
-  '\u6AA8\uDB40\uDD00': '\uDB83\uDCD1',  // MJ014605
-  '\u6ACE\uDB40\uDD00': '\uDB83\uDCD2',  // MJ014651
-  '\u6B2E\uDB40\uDD00': '\uDB83\uDCD3',  // MJ014763
-  '\u6B55\uDB40\uDD00': '\uDB83\uDCD4',  // MJ014808
-  '\u6BFA\uDB40\uDD00': '\uDB83\uDCD5',  // MJ014978
-  '\u6C03\uDB40\uDD00': '\uDB83\uDCD6',  // MJ014988
-  '\u6CA0\uDB40\uDD00': '\uDB83\uDCD7',  // MJ015158
-  '\u6CB7\uDB40\uDD00': '\uDB83\uDCD8',  // MJ015178
-  '\uD84F\uDD60\uDB40\uDD00': '\uDB83\uDCD9',  // MJ015437
-  '\u6DC3\uDB40\uDD00': '\uDB83\uDCDA',  // MJ015442
-  '\u6E33\uDB40\uDD00': '\uDB83\uDCDB',  // MJ015571
-  '\u6E74\uDB40\uDD00': '\uDB83\uDCDC',  // MJ015649
-  '\u6E7C\uDB40\uDD00': '\uDB83\uDCDD',  // MJ015657
-  '\u6EF0\uDB40\uDD00': '\uDB83\uDCDE',  // MJ015779
-  '\u6F28\uDB40\uDD00': '\uDB83\uDCDF',  // MJ015850
-  '\u6F7F\uDB40\uDD00': '\uDB83\uDCE0',  // MJ015960
-  '\u6FAB\uDB40\uDD00': '\uDB83\uDCE1',  // MJ016011
-  '\u6FC4\uDB40\uDD00': '\uDB83\uDCE2',  // MJ016044
-  '\u700E\uDB40\uDD00': '\uDB83\uDCE3',  // MJ057975
-  '\u7010\uDB40\uDD00': '\uDB83\uDCE4',  // MJ016138
-  '\u7013\uDB40\uDD00': '\uDB83\uDCE5',  // MJ016141
-  '\u7021\uDB40\uDD00': '\uDB83\uDCE6',  // MJ016169
-  '\u7022\uDB40\uDD00': '\uDB83\uDCE7',  // MJ016170
-  '\u7041\uDB40\uDD00': '\uDB83\uDCE8',  // MJ016211
-  '\u7068\uDB40\uDD00': '\uDB83\uDCE9',  // MJ016256
-  '\u7077\uDB40\uDD00': '\uDB83\uDCEA',  // MJ016275
-  '\u717A\uDB40\uDD00': '\uDB83\uDCEB',  // MJ016528
-  '\u71A5\uDB40\uDD00': '\uDB83\uDCEC',  // MJ016580
-  '\u71C2\uDB40\uDD00': '\uDB83\uDCED',  // MJ016615
-  '\u7297\uDB40\uDD00': '\uDB83\uDCEE',  // MJ016864
-  '\u72B3\uDB40\uDD00': '\uDB83\uDCEF',  // MJ016894
-  '\u72CA\uDB40\uDD00': '\uDB83\uDCF0',  // MJ016916
-  '\u7330\uDB40\uDD00': '\uDB83\uDCF1',  // MJ017015
-  '\u7388\uDB40\uDD00': '\uDB83\uDCF2',  // MJ017117
-  '\u73A3\uDB40\uDD00': '\uDB83\uDCF3',  // MJ017144
-  '\u744A\uDB40\uDD00': '\uDB83\uDCF4',  // MJ017332
-  '\u7465\uDB40\uDD00': '\uDB83\uDCF5',  // MJ017368
-  '\u746C\uDB40\uDD00': '\uDB83\uDCF6',  // MJ017377
-  '\u7474\uDB40\uDD00': '\uDB83\uDCF7',  // MJ017389
-  '\u748A\uDB40\uDD00': '\uDB83\uDCF8',  // MJ017418
-  '\u74CB\uDB40\uDD00': '\uDB83\uDCF9',  // MJ017498
-  '\u7583\uDB40\uDD00': '\uDB83\uDCFA',  // MJ017726
-  '\uD853\uDD38\uDB40\uDD00': '\uDB83\uDCFB',  // MJ041531
-  '\u75D0\uDB40\uDD00': '\uDB83\uDCFC',  // MJ017798
-  '\u75FB\uDB40\uDD00': '\uDB83\uDCFD',  // MJ017839
-  '\u7650\uDB40\uDD00': '\uDB83\uDCFE',  // MJ017932
-  '\u772B\uDB40\uDD00': '\uDB83\uDCFF',  // MJ018189
-  '\u776D\uDB40\uDD00': '\uDB83\uDD00',  // MJ018259
-  '\u77CC\uDB40\uDD00': '\uDB83\uDD01',  // MJ018367
-  '\u787B\uDB40\uDD00': '\uDB83\uDD02',  // MJ018535
-  '\u78CD\uDB40\uDD00': '\uDB83\uDD03',  // MJ018624
-  '\u7932\uDB40\uDD00': '\uDB83\uDD04',  // MJ018734
-  '\u7936\uDB40\uDD00': '\uDB83\uDD05',  // MJ018742
-  '\u794C\uDB40\uDD00': '\uDB83\uDD06',  // MJ018778
-  '\u7959\uDB40\uDD00': '\uDB83\uDD07',  // MJ018801
-  '\u7961\uDB40\uDD00': '\uDB83\uDD08',  // MJ018815
-  '\u7963\uDB40\uDD00': '\uDB83\uDD09',  // MJ018822
-  '\u796C\uDB40\uDD00': '\uDB83\uDD0A',  // MJ018835
-  '\u796E\uDB40\uDD00': '\uDB83\uDD0B',  // MJ018838
-  '\u7971\uDB40\uDD00': '\uDB83\uDD0C',  // MJ018845
-  '\u7973\uDB40\uDD00': '\uDB83\uDD0D',  // MJ018850
-  '\u7974\uDB40\uDD00': '\uDB83\uDD0E',  // MJ018853
-  '\u7982\uDB40\uDD00': '\uDB83\uDD0F',  // MJ018872
-  '\u7992\uDB40\uDD00': '\uDB83\uDD10',  // MJ018902
-  '\u7997\uDB40\uDD00': '\uDB83\uDD11',  // MJ018916
-  '\u799A\uDB40\uDD00': '\uDB83\uDD12',  // MJ018922
-  '\u79A0\uDB40\uDD00': '\uDB83\uDD13',  // MJ018936
-  '\u79AC\uDB40\uDD00': '\uDB83\uDD14',  // MJ018959
-  '\u79AD\uDB40\uDD00': '\uDB83\uDD15',  // MJ018961
-  '\u7A4B\uDB40\uDD00': '\uDB83\uDD16',  // MJ019153
-  '\u7A99\uDB40\uDD00': '\uDB83\uDD17',  // MJ019248
-  '\u7AA8\uDB40\uDD00': '\uDB83\uDD18',  // MJ019262
-  '\u7AAB\uDB40\uDD00': '\uDB83\uDD19',  // MJ019266
-  '\u7AB4\uDB40\uDD00': '\uDB83\uDD1A',  // MJ019280
-  '\u7AEE\uDB40\uDD00': '\uDB83\uDD1B',  // MJ019351
-  '\uD878\uDD52\uDB40\uDD00': '\uDB83\uDD1C',  // MJ019541
-  '\u7BE3\uDB40\uDD00': '\uDB83\uDD1D',  // MJ019618
-  '\u7C3B\uDB40\uDD00': '\uDB83\uDD1E',  // MJ019717
-  '\u7C6A\uDB40\uDD00': '\uDB83\uDD1F',  // MJ019781
-  '\u7CE1\uDB40\uDD00': '\uDB83\uDD20',  // MJ019920
-  '\u7D58\uDB40\uDD00': '\uDB83\uDD21',  // MJ020075
-  '\u7D6F\uDB40\uDD00': '\uDB83\uDD22',  // MJ020104
-  '\u7DF0\uDB40\uDD00': '\uDB83\uDD23',  // MJ020272
-  '\u7E02\uDB40\uDD00': '\uDB83\uDD24',  // MJ020291
-  '\u7E0C\uDB40\uDD00': '\uDB83\uDD25',  // MJ020303
-  '\u7E68\uDB40\uDD00': '\uDB83\uDD26',  // MJ020423
-  '\u7E76\uDB40\uDD00': '\uDB83\uDD27',  // MJ020442
-  '\u7F48\uDB40\uDD00': '\uDB83\uDD28',  // MJ020517
-  '\u7F76\uDB40\uDD00': '\uDB83\uDD29',  // MJ020567
-  '\u7F7A\uDB40\uDD00': '\uDB83\uDD2A',  // MJ020572
-  '\u7F95\uDB40\uDD00': '\uDB83\uDD2B',  // MJ020604
-  '\u7FB5\uDB40\uDD00': '\uDB83\uDD2C',  // MJ020643
-  '\u7FBB\uDB40\uDD00': '\uDB83\uDD2D',  // MJ020652
-  '\u807C\uDB40\uDD00': '\uDB83\uDD2E',  // MJ020894
-  '\u80A8\uDB40\uDD00': '\uDB83\uDD2F',  // MJ020945
-  '\u8164\uDB40\uDD00': '\uDB83\uDD30',  // MJ021138
-  '\u8187\uDB40\uDD00': '\uDB83\uDD31',  // MJ021180
-  '\u81A7\uDB40\uDD00': '\uDB83\uDD32',  // MJ021217
-  '\u81B1\uDB40\uDD00': '\uDB83\uDD33',  // MJ021227
-  '\u81B9\uDB40\uDD00': '\uDB83\uDD34',  // MJ021238
-  '\u81EE\uDB40\uDD00': '\uDB83\uDD35',  // MJ021300
-  '\uD86D\uDFCB\uDB40\uDD00': '\uDB83\uDD36',  // MJ060089
-  '\u8211\uDB40\uDD00': '\uDB83\uDD37',  // MJ021351
-  '\u8255\uDB40\uDD00': '\uDB83\uDD38',  // MJ021427
-  '\u8265\uDB40\uDD00': '\uDB83\uDD39',  // MJ021450
-  '\u8275\uDB40\uDD00': '\uDB83\uDD3A',  // MJ021477
-  '\u828C\uDB40\uDD00': '\uDB83\uDD3B',  // MJ021513
-  '\uD85A\uDF0A\uDB40\uDD00': '\uDB83\uDD3C',  // MJ021523
-  '\u82D6\uDB40\uDD00': '\uDB83\uDD3D',  // MJ021646
-  '\u8326\uDB40\uDD00': '\uDB83\uDD3E',  // MJ021796
-  '\u8327\uDB40\uDD00': '\uDB83\uDD3F',  // MJ021798
-  '\uD85A\uDFA0\uDB40\uDD00': '\uDB83\uDD40',  // MJ021912
-  '\u837E\uDB40\uDD00': '\uDB83\uDD41',  // MJ021947
-  '\u8391\uDB40\uDD00': '\uDB83\uDD42',  // MJ021982
-  '\u83A4\uDB40\uDD00': '\uDB83\uDD43',  // MJ022021
-  '\u83C6\uDB40\uDD00': '\uDB83\uDD44',  // MJ022072
-  '\u83D2\uDB40\uDD00': '\uDB83\uDD45',  // MJ022093
-  '\u83F3\uDB40\uDD00': '\uDB83\uDD46',  // MJ022164
-  '\u841E\uDB40\uDD00': '\uDB83\uDD47',  // MJ022236
-  '\u842B\uDB40\uDD00': '\uDB83\uDD48',  // MJ022252
-  '\u843B\uDB40\uDD00': '\uDB83\uDD49',  // MJ022278
-  '\u8441\uDB40\uDD00': '\uDB83\uDD4A',  // MJ022288
-  '\u847B\uDB40\uDD00': '\uDB83\uDD4B',  // MJ022408
-  '\u84A7\uDB40\uDD00': '\uDB83\uDD4C',  // MJ022478
-  '\u84C5\uDB40\uDD00': '\uDB83\uDD4D',  // MJ022534
-  '\u84EB\uDB40\uDD00': '\uDB83\uDD4E',  // MJ022596
-  '\u8512\uDB40\uDD00': '\uDB83\uDD4F',  // MJ022671
-  '\u856C\uDB40\uDD00': '\uDB83\uDD50',  // MJ022845
-  '\u8570\uDB40\uDD00': '\uDB83\uDD51',  // MJ022854
-  '\u8573\uDB40\uDD00': '\uDB83\uDD52',  // MJ022856
-  '\u8578\uDB40\uDD00': '\uDB83\uDD53',  // MJ022862
-  '\u8595\uDB40\uDD00': '\uDB83\uDD54',  // MJ022928
-  '\u8596\uDB40\uDD00': '\uDB83\uDD55',  // MJ022931
-  '\u85B3\uDB40\uDD00': '\uDB83\uDD56',  // MJ022993
-  '\u85B5\uDB40\uDD00': '\uDB83\uDD57',  // MJ022996
-  '\u85EB\uDB40\uDD00': '\uDB83\uDD58',  // MJ023102
-  '\uD871\uDFD3\uDB40\uDD00': '\uDB83\uDD59',  // MJ023163
-  '\u864B\uDB40\uDD00': '\uDB83\uDD5A',  // MJ023269
-  '\u866A\uDB40\uDD00': '\uDB83\uDD5B',  // MJ023312
-  '\u86E2\uDB40\uDD00': '\uDB83\uDD5C',  // MJ023435
-  '\u86EA\uDB40\uDD00': '\uDB83\uDD5D',  // MJ023447
-  '\u86EB\uDB40\uDD00': '\uDB83\uDD5E',  // MJ023449
-  '\u8744\uDB40\uDD00': '\uDB83\uDD5F',  // MJ023546
-  '\u8750\uDB40\uDD00': '\uDB83\uDD60',  // MJ023559
-  '\u8773\uDB40\uDD00': '\uDB83\uDD61',  // MJ023602
-  '\u8777\uDB40\uDD00': '\uDB83\uDD62',  // MJ023608
-  '\u8779\uDB40\uDD00': '\uDB83\uDD63',  // MJ023612
-  '\u879B\uDB40\uDD00': '\uDB83\uDD64',  // MJ023646
-  '\u8802\uDB40\uDD00': '\uDB83\uDD65',  // MJ023760
-  '\u882A\uDB40\uDD00': '\uDB83\uDD66',  // MJ023819
-  '\u882B\uDB40\uDD00': '\uDB83\uDD67',  // MJ023821
-  '\u88A3\uDB40\uDD00': '\uDB83\uDD68',  // MJ023955
-  '\u88D7\uDB40\uDD00': '\uDB83\uDD69',  // MJ024005
-  '\u88FA\uDB40\uDD00': '\uDB83\uDD6A',  // MJ024037
-  '\u8933\uDB40\uDD00': '\uDB83\uDD6B',  // MJ024104
-  '\u893C\uDB40\uDD00': '\uDB83\uDD6C',  // MJ024117
-  '\u894A\uDB40\uDD00': '\uDB83\uDD6D',  // MJ024134
-  '\u8971\uDB40\uDD00': '\uDB83\uDD6E',  // MJ024176
-  '\u89D3\uDB40\uDD00': '\uDB83\uDD6F',  // MJ024284
-  '\u8A64\uDB40\uDD00': '\uDB83\uDD70',  // MJ024445
-  '\u8B23\uDB40\uDD00': '\uDB83\uDD71',  // MJ024703
-  '\u8B61\uDB40\uDD00': '\uDB83\uDD72',  // MJ024788
-  '\u8B6A\uDB40\uDD00': '\uDB83\uDD73',  // MJ024801
-  '\u8B89\uDB40\uDD00': '\uDB83\uDD74',  // MJ024838
-  '\u8CD4\uDB40\uDD00': '\uDB83\uDD75',  // MJ025063
-  '\u8D11\uDB40\uDD00': '\uDB83\uDD76',  // MJ025137
-  '\u8DA9\uDB40\uDD00': '\uDB83\uDD77',  // MJ025230
-  '\u8E43\uDB40\uDD00': '\uDB83\uDD78',  // MJ025385
-  '\u8E46\uDB40\uDD00': '\uDB83\uDD79',  // MJ025390
-  '\u8E6E\uDB40\uDD00': '\uDB83\uDD7A',  // MJ025436
-  '\u8EBD\uDB40\uDD00': '\uDB83\uDD7B',  // MJ025526
-  '\u8F24\uDB40\uDD00': '\uDB83\uDD7C',  // MJ025645
-  '\u8FAC\uDB40\uDD00': '\uDB83\uDD7D',  // MJ025740
-  '\u8FC3\uDB40\uDD00': '\uDB83\uDD7E',  // MJ025774
-  '\u8FE1\uDB40\uDD00': '\uDB83\uDD7F',  // MJ025819
-  '\u8FEC\uDB40\uDD00': '\uDB83\uDD80',  // MJ025843
-  '\u8FFF\uDB40\uDD00': '\uDB83\uDD81',  // MJ025876
-  '\u9024\uDB40\uDD00': '\uDB83\uDD82',  // MJ025955
-  '\u902B\uDB40\uDD00': '\uDB83\uDD83',  // MJ025966
-  '\u9040\uDB40\uDD00': '\uDB83\uDD84',  // MJ026010
-  '\u905F\uDB40\uDD00': '\uDB83\uDD85',  // MJ026084
-  '\u9073\uDB40\uDD00': '\uDB83\uDD86',  // MJ026128
-  '\u907B\uDB40\uDD00': '\uDB83\uDD87',  // MJ026153
-  '\u908D\uDB40\uDD00': '\uDB83\uDD88',  // MJ026213
-  '\u90AB\uDB40\uDD00': '\uDB83\uDD89',  // MJ026257
-  '\u90F1\uDB40\uDD00': '\uDB83\uDD8A',  // MJ026330
-  '\u911B\uDB40\uDD00': '\uDB83\uDD8B',  // MJ026377
-  '\u9145\uDB40\uDD00': '\uDB83\uDD8C',  // MJ026427
-  '\u919A\uDB40\uDD00': '\uDB83\uDD8D',  // MJ026523
-  '\u91B7\uDB40\uDD00': '\uDB83\uDD8E',  // MJ026564
-  '\u91EB\uDB40\uDD00': '\uDB83\uDD8F',  // MJ026626
-  '\u9252\uDB40\uDD00': '\uDB83\uDD90',  // MJ026747
-  '\u92A2\uDB40\uDD00': '\uDB83\uDD91',  // MJ026837
-  '\u93E0\uDB40\uDD00': '\uDB83\uDD92',  // MJ027196
-  '\u93F3\uDB40\uDD00': '\uDB83\uDD93',  // MJ027214
-  '\u9429\uDB40\uDD00': '\uDB83\uDD94',  // MJ027274
-  '\u942A\uDB40\uDD00': '\uDB83\uDD95',  // MJ027277
-  '\u9439\uDB40\uDD00': '\uDB83\uDD96',  // MJ027295
-  '\u9476\uDB40\uDD00': '\uDB83\uDD97',  // MJ027372
-  '\u972E\uDB40\uDD00': '\uDB83\uDD98',  // MJ027854
-  '\u975D\uDB40\uDD00': '\uDB83\uDD99',  // MJ027919
-  '\u977E\uDB40\uDD00': '\uDB83\uDD9A',  // MJ027963
-  '\u97F0\uDB40\uDD00': '\uDB83\uDD9B',  // MJ028119
-  '\u97F9\uDB40\uDD00': '\uDB83\uDD9C',  // MJ028131
-  '\u980B\uDB40\uDD00': '\uDB83\uDD9D',  // MJ028161
-  '\u9829\uDB40\uDD00': '\uDB83\uDD9E',  // MJ028201
-  '\u98BE\uDB40\uDD00': '\uDB83\uDD9F',  // MJ028317
-  '\u98E4\uDB40\uDD00': '\uDB83\uDDA0',  // MJ028347
-  '\u98F5\uDB40\uDD00': '\uDB83\uDDA1',  // MJ028371
-  '\u98FB\uDB40\uDD00': '\uDB83\uDDA2',  // MJ028379
-  '\u9901\uDB40\uDD00': '\uDB83\uDDA3',  // MJ028390
-  '\u9923\uDB40\uDD00': '\uDB83\uDDA4',  // MJ028454
-  '\u9929\uDB40\uDD00': '\uDB83\uDDA5',  // MJ028465
-  '\u992A\uDB40\uDD00': '\uDB83\uDDA6',  // MJ028468
-  '\u992D\uDB40\uDD00': '\uDB83\uDDA7',  // MJ028474
-  '\u9930\uDB40\uDD00': '\uDB83\uDDA8',  // MJ028479
-  '\u9936\uDB40\uDD00': '\uDB83\uDDA9',  // MJ028491
-  '\u993F\uDB40\uDD00': '\uDB83\uDDAA',  // MJ028507
-  '\u9944\uDB40\uDD00': '\uDB83\uDDAB',  // MJ028520
-  '\u994A\uDB40\uDD00': '\uDB83\uDDAC',  // MJ028537
-  '\u9956\uDB40\uDD00': '\uDB83\uDDAD',  // MJ028562
-  '\u995D\uDB40\uDD00': '\uDB83\uDDAE',  // MJ028584
-  '\u9961\uDB40\uDD00': '\uDB83\uDDAF',  // MJ028592
-  '\u99A7\uDB40\uDD00': '\uDB83\uDDB0',  // MJ028614
-  '\u99B7\uDB40\uDD00': '\uDB83\uDDB1',  // MJ028631
-  '\u9A15\uDB40\uDD00': '\uDB83\uDDB2',  // MJ028736
-  '\u9A2F\uDB40\uDD00': '\uDB83\uDDB3',  // MJ028767
-  '\u9C1F\uDB40\uDD00': '\uDB83\uDDB4',  // MJ029290
-  '\u9C74\uDB40\uDD00': '\uDB83\uDDB5',  // MJ029400
-  '\u9CFD\uDB40\uDD00': '\uDB83\uDDB6',  // MJ029436
-  '\u9D2E\uDB40\uDD00': '\uDB83\uDDB7',  // MJ029491
-  '\u9D55\uDB40\uDD00': '\uDB83\uDDB8',  // MJ029534
-  '\u9DB7\uDB40\uDD00': '\uDB83\uDDB9',  // MJ029643
-  '\u9E17\uDB40\uDD00': '\uDB83\uDDBA',  // MJ029759
-  '\u9EC2\uDB40\uDD00': '\uDB83\uDDBB',  // MJ029866
-  '\u9EF3\uDB40\uDD00': '\uDB83\uDDBC',  // MJ029935
-  '\u9F05\uDB40\uDD00': '\uDB83\uDDBD',  // MJ029962
-  '\u9F25\uDB40\uDD00': '\uDB83\uDDBE',  // MJ030008
-  '\u9F28\uDB40\uDD00': '\uDB83\uDDBF',  // MJ030012
-  '\u9F29\uDB40\uDD00': '\uDB83\uDDC0',  // MJ030014
-  '\u9F2E\uDB40\uDD00': '\uDB83\uDDC1',  // MJ030021
-  '\u9F4D\uDB40\uDD00': '\uDB83\uDDC2',  // MJ030065
-  '\u9F93\uDB40\uDD00': '\uDB83\uDDC3',  // MJ030141
-  '\u9F98\uDB40\uDD00': '\uDB83\uDDC4',  // MJ030150
-  '\u9FAC\uDB40\uDD00': '\uDB83\uDDC5',  // MJ030171
-  '\uD840\uDC00\uDB40\uDD00': '\uDB83\uDDC6',  // MJ030312
-  '\uD840\uDC41\uDB40\uDD00': '\uDB83\uDDC7',  // MJ030345
-  '\uD840\uDCE4\uDB40\uDD00': '\uDB83\uDDC8',  // MJ030427
-  '\uD840\uDD0C\uDB40\uDD00': '\uDB83\uDDC9',  // MJ030446
-  '\uD840\uDD22\uDB40\uDD00': '\uDB83\uDDCA',  // MJ030466
-  '\uD840\uDD5E\uDB40\uDD00': '\uDB83\uDDCB',  // MJ030496
-  '\uD840\uDDBB\uDB40\uDD00': '\uDB83\uDDCC',  // MJ030551
-  '\uD840\uDDFE\uDB40\uDD00': '\uDB83\uDDCD',  // MJ030573
-  '\uD840\uDE37\uDB40\uDD00': '\uDB83\uDDCE',  // MJ030613
-  '\uD840\uDE55\uDB40\uDD00': '\uDB83\uDDCF',  // MJ030629
-  '\uD840\uDEEC\uDB40\uDD00': '\uDB83\uDDD0',  // MJ030707
-  '\uD840\uDF18\uDB40\uDD00': '\uDB83\uDDD1',  // MJ030732
-  '\uD840\uDFB9\uDB40\uDD00': '\uDB83\uDDD2',  // MJ030811
-  '\uD841\uDC57\uDB40\uDD00': '\uDB83\uDDD3',  // MJ030887
-  '\uD841\uDC96\uDB40\uDD00': '\uDB83\uDDD4',  // MJ030926
-  '\uD841\uDD25\uDB40\uDD00': '\uDB83\uDDD5',  // MJ031010
-  '\uD841\uDD40\uDB40\uDD00': '\uDB83\uDDD6',  // MJ031028
-  '\uD841\uDD4B\uDB40\uDD00': '\uDB83\uDDD7',  // MJ031035
-  '\uD841\uDE2F\uDB40\uDD00': '\uDB83\uDDD8',  // MJ031160
-  '\uD841\uDEA3\uDB40\uDD00': '\uDB83\uDDD9',  // MJ031235
-  '\uD841\uDEC9\uDB40\uDD00': '\uDB83\uDDDA',  // MJ031264
-  '\uD841\uDEEE\uDB40\uDD00': '\uDB83\uDDDB',  // MJ031291
-  '\uD841\uDEF9\uDB40\uDD00': '\uDB83\uDDDC',  // MJ031302
-  '\uD842\uDCE5\uDB40\uDD00': '\uDB83\uDDDD',  // MJ031618
-  '\uD842\uDE27\uDB40\uDD00': '\uDB83\uDDDE',  // MJ031841
-  '\uD842\uDEE4\uDB40\uDD00': '\uDB83\uDDDF',  // MJ031974
-  '\uD842\uDF63\uDB40\uDD00': '\uDB83\uDDE0',  // MJ032063
-  '\uD842\uDF6F\uDB40\uDD00': '\uDB83\uDDE1',  // MJ032069
-  '\uD842\uDF93\uDB40\uDD00': '\uDB83\uDDE2',  // MJ032097
-  '\uD842\uDFB1\uDB40\uDD00': '\uDB83\uDDE3',  // MJ032123
-  '\uD842\uDFCC\uDB40\uDD00': '\uDB83\uDDE4',  // MJ032141
-  '\uD843\uDC50\uDB40\uDD00': '\uDB83\uDDE5',  // MJ032210
-  '\uD843\uDD4A\uDB40\uDD00': '\uDB83\uDDE6',  // MJ032338
-  '\uD843\uDDAE\uDB40\uDD00': '\uDB83\uDDE7',  // MJ032368
-  '\uD843\uDDB7\uDB40\uDD00': '\uDB83\uDDE8',  // MJ032376
-  '\uD843\uDDB8\uDB40\uDD00': '\uDB83\uDDE9',  // MJ032378
-  '\uD843\uDDD4\uDB40\uDD00': '\uDB83\uDDEA',  // MJ032407
-  '\uD843\uDEDB\uDB40\uDD00': '\uDB83\uDDEB',  // MJ032504
-  '\uD843\uDFCB\uDB40\uDD00': '\uDB83\uDDEC',  // MJ032603
-  '\uD843\uDFD5\uDB40\uDD00': '\uDB83\uDDED',  // MJ032671
-  '\uD844\uDD3B\uDB40\uDD00': '\uDB83\uDDEE',  // MJ032763
-  '\uD844\uDE75\uDB40\uDD00': '\uDB83\uDDEF',  // MJ057209
-  '\uD844\uDE8F\uDB40\uDD00': '\uDB83\uDDF0',  // MJ032980
-  '\uD844\uDEA5\uDB40\uDD00': '\uDB83\uDDF1',  // MJ057212
-  '\uD844\uDEF3\uDB40\uDD00': '\uDB83\uDDF2',  // MJ033026
-  '\uD844\uDF28\uDB40\uDD00': '\uDB83\uDDF3',  // MJ057222
-  '\uD844\uDF69\uDB40\uDD00': '\uDB83\uDDF4',  // MJ033083
-  '\uD844\uDF6E\uDB40\uDD00': '\uDB83\uDDF5',  // MJ033088
-  '\uD845\uDC5E\uDB40\uDD00': '\uDB83\uDDF6',  // MJ033195
-  '\uD845\uDC5F\uDB40\uDD00': '\uDB83\uDDF7',  // MJ033197
-  '\uD845\uDCE4\uDB40\uDD00': '\uDB83\uDDF8',  // MJ033254
-  '\uD845\uDD52\uDB40\uDD00': '\uDB83\uDDF9',  // MJ033317
-  '\uD845\uDD56\uDB40\uDD00': '\uDB83\uDDFA',  // MJ033321
-  '\uD845\uDD69\uDB40\uDD00': '\uDB83\uDDFB',  // MJ033336
-  '\uD845\uDDD2\uDB40\uDD00': '\uDB83\uDDFC',  // MJ033409
-  '\uD845\uDE06\uDB40\uDD00': '\uDB83\uDDFD',  // MJ033440
-  '\uD845\uDF64\uDB40\uDD00': '\uDB83\uDDFE',  // MJ033638
-  '\uD846\uDC98\uDB40\uDD00': '\uDB83\uDDFF',  // MJ033773
-  '\uD846\uDCEA\uDB40\uDD00': '\uDB83\uDE00',  // MJ033818
-  '\uD846\uDDC8\uDB40\uDD00': '\uDB83\uDE01',  // MJ033942
-  '\uD846\uDDF1\uDB40\uDD00': '\uDB83\uDE02',  // MJ033973
-  '\uD846\uDE0B\uDB40\uDD00': '\uDB83\uDE03',  // MJ033991
-  '\uD846\uDEA2\uDB40\uDD00': '\uDB83\uDE04',  // MJ034079
-  '\uD846\uDF4E\uDB40\uDD00': '\uDB83\uDE05',  // MJ034187
-  '\uD846\uDFED\uDB40\uDD00': '\uDB83\uDE06',  // MJ034265
-  '\uD847\uDC12\uDB40\uDD00': '\uDB83\uDE07',  // MJ034292
-  '\uD847\uDC31\uDB40\uDD00': '\uDB83\uDE08',  // MJ057366
-  '\uD847\uDDE4\uDB40\uDD00': '\uDB83\uDE09',  // MJ034584
-  '\uD847\uDDE6\uDB40\uDD00': '\uDB83\uDE0A',  // MJ034588
-  '\uD847\uDF19\uDB40\uDD00': '\uDB83\uDE0B',  // MJ034773
-  '\uD847\uDFD6\uDB40\uDD00': '\uDB83\uDE0C',  // MJ034886
-  '\uD847\uDFE7\uDB40\uDD00': '\uDB83\uDE0D',  // MJ034900
-  '\uD847\uDFE9\uDB40\uDD00': '\uDB83\uDE0E',  // MJ034903
-  '\u5DDF\uDB40\uDD00': '\uDB83\uDE0F',  // MJ034906
-  '\uD847\uDFEE\uDB40\uDD00': '\uDB83\uDE10',  // MJ034910
-  '\uD848\uDC29\uDB40\uDD00': '\uDB83\uDE11',  // MJ034953
-  '\uD848\uDC37\uDB40\uDD00': '\uDB83\uDE12',  // MJ034961
-  '\uD848\uDD9F\uDB40\uDD00': '\uDB83\uDE13',  // MJ035226
-  '\uD848\uDDB0\uDB40\uDD00': '\uDB83\uDE14',  // MJ035232
-  '\uD848\uDE3B\uDB40\uDD00': '\uDB83\uDE15',  // MJ035336
-  '\uD848\uDE56\uDB40\uDD00': '\uDB83\uDE16',  // MJ035353
-  '\uD848\uDEF1\uDB40\uDD00': '\uDB83\uDE17',  // MJ035446
-  '\uD848\uDEFF\uDB40\uDD00': '\uDB83\uDE18',  // MJ035453
-  '\uD848\uDF1B\uDB40\uDD00': '\uDB83\uDE19',  // MJ035470
-  '\uD848\uDF31\uDB40\uDD00': '\uDB83\uDE1A',  // MJ035483
-  '\uD848\uDF41\uDB40\uDD00': '\uDB83\uDE1B',  // MJ035497
-  '\uD849\uDCED\uDB40\uDD00': '\uDB83\uDE1C',  // MJ035829
-  '\uD849\uDD37\uDB40\uDD00': '\uDB83\uDE1D',  // MJ035890
-  '\uD849\uDD52\uDB40\uDD00': '\uDB83\uDE1E',  // MJ035901
-  '\uD849\uDED4\uDB40\uDD00': '\uDB83\uDE1F',  // MJ036142
-  '\uD849\uDFFA\uDB40\uDD00': '\uDB83\uDE20',  // MJ036311
-  '\uD84A\uDC35\uDB40\uDD00': '\uDB83\uDE21',  // MJ036335
-  '\uD84A\uDC43\uDB40\uDD00': '\uDB83\uDE22',  // MJ036350
-  '\uD84A\uDC5A\uDB40\uDD00': '\uDB83\uDE23',  // MJ036372
-  '\uD84A\uDC94\uDB40\uDD00': '\uDB83\uDE24',  // MJ036395
-  '\uD84A\uDD26\uDB40\uDD00': '\uDB83\uDE25',  // MJ036476
-  '\uD84A\uDD85\uDB40\uDD00': '\uDB83\uDE26',  // MJ036532
-  '\uD84A\uDFF1\uDB40\uDD00': '\uDB83\uDE27',  // MJ036872
-  '\uD84B\uDC72\uDB40\uDD00': '\uDB83\uDE28',  // MJ036938
-  '\uD84B\uDD3C\uDB40\uDD00': '\uDB83\uDE29',  // MJ037021
-  '\uD84B\uDD8A\uDB40\uDD00': '\uDB83\uDE2A',  // MJ057573
-  '\uD84B\uDDD0\uDB40\uDD00': '\uDB83\uDE2B',  // MJ037078
-  '\uD84B\uDE09\uDB40\uDD00': '\uDB83\uDE2C',  // MJ037116
-  '\uD84B\uDE2D\uDB40\uDD00': '\uDB83\uDE2D',  // MJ037127
-  '\uD84B\uDEEC\uDB40\uDD00': '\uDB83\uDE2E',  // MJ037219
-  '\uD84B\uDF22\uDB40\uDD00': '\uDB83\uDE2F',  // MJ037262
-  '\uD84B\uDFCC\uDB40\uDD00': '\uDB83\uDE30',  // MJ037369
-  '\uD84B\uDFD8\uDB40\uDD00': '\uDB83\uDE31',  // MJ057612
-  '\uD84B\uDFD9\uDB40\uDD00': '\uDB83\uDE32',  // MJ037378
-  '\uD84B\uDFE0\uDB40\uDD00': '\uDB83\uDE33',  // MJ037384
-  '\uD84C\uDC5D\uDB40\uDD00': '\uDB83\uDE34',  // MJ037452
-  '\uD84C\uDCB0\uDB40\uDD00': '\uDB83\uDE35',  // MJ037510
-  '\uD84C\uDCD4\uDB40\uDD00': '\uDB83\uDE36',  // MJ037540
-  '\uD84C\uDD06\uDB40\uDD00': '\uDB83\uDE37',  // MJ037570
-  '\uD84C\uDD1E\uDB40\uDD00': '\uDB83\uDE38',  // MJ037586
-  '\uD84C\uDD22\uDB40\uDD00': '\uDB83\uDE39',  // MJ037591
-  '\uD84C\uDD4D\uDB40\uDD00': '\uDB83\uDE3A',  // MJ037624
-  '\uD84C\uDEB8\uDB40\uDD00': '\uDB83\uDE3B',  // MJ037805
-  '\uD84C\uDF5F\uDB40\uDD00': '\uDB83\uDE3C',  // MJ037876
-  '\uD84C\uDF6E\uDB40\uDD00': '\uDB83\uDE3D',  // MJ037888
-  '\uD84C\uDFB5\uDB40\uDD00': '\uDB83\uDE3E',  // MJ037921
-  '\uD84C\uDFE0\uDB40\uDD00': '\uDB83\uDE3F',  // MJ037953
-  '\uD84D\uDC6D\uDB40\uDD00': '\uDB83\uDE40',  // MJ038010
-  '\uD84D\uDCC9\uDB40\uDD00': '\uDB83\uDE41',  // MJ038053
-  '\uD84D\uDD31\uDB40\uDD00': '\uDB83\uDE42',  // MJ038099
-  '\uD84D\uDE26\uDB40\uDD00': '\uDB83\uDE43',  // MJ038207
-  '\uD84D\uDEA3\uDB40\uDD00': '\uDB83\uDE44',  // MJ057817
-  '\uD84D\uDF4B\uDB40\uDD00': '\uDB83\uDE45',  // MJ038345
-  '\uD84D\uDF80\uDB40\uDD00': '\uDB83\uDE46',  // MJ057852
-  '\uD84D\uDFF3\uDB40\uDD00': '\uDB83\uDE47',  // MJ038426
-  '\uD84E\uDCA7\uDB40\uDD00': '\uDB83\uDE48',  // MJ038532
-  '\uD84E\uDD69\uDB40\uDD00': '\uDB83\uDE49',  // MJ038677
-  '\uD84E\uDE63\uDB40\uDD00': '\uDB83\uDE4A',  // MJ038875
-  '\uD84E\uDE74\uDB40\uDD00': '\uDB83\uDE4B',  // MJ057912
-  '\uD84E\uDE8D\uDB40\uDD00': '\uDB83\uDE4C',  // MJ038908
-  '\uD84E\uDFAC\uDB40\uDD00': '\uDB83\uDE4D',  // MJ039067
-  '\uD84F\uDC10\uDB40\uDD00': '\uDB83\uDE4E',  // MJ039128
-  '\uD84F\uDC75\uDB40\uDD00': '\uDB83\uDE4F',  // MJ039189
-  '\uD84F\uDCA8\uDB40\uDD00': '\uDB83\uDE50',  // MJ039217
-  '\uD84F\uDD7D\uDB40\uDD00': '\uDB83\uDE51',  // MJ039336
-  '\uD84F\uDE32\uDB40\uDD00': '\uDB83\uDE52',  // MJ039441
-  '\uD84F\uDF1B\uDB40\uDD00': '\uDB83\uDE53',  // MJ059815
-  '\uD850\uDCA3\uDB40\uDD00': '\uDB83\uDE54',  // MJ039728
-  '\uD850\uDD38\uDB40\uDD00': '\uDB83\uDE55',  // MJ039803
-  '\uD850\uDE63\uDB40\uDD00': '\uDB83\uDE56',  // MJ039931
-  '\uD850\uDE85\uDB40\uDD00': '\uDB83\uDE57',  // MJ059861
-  '\uD850\uDFC1\uDB40\uDD00': '\uDB83\uDE58',  // MJ040070
-  '\uD851\uDD10\uDB40\uDD00': '\uDB83\uDE59',  // MJ040229
-  '\uD851\uDD14\uDB40\uDD00': '\uDB83\uDE5A',  // MJ040233
-  '\uD851\uDD64\uDB40\uDD00': '\uDB83\uDE5B',  // MJ058019
-  '\uD851\uDD68\uDB40\uDD00': '\uDB83\uDE5C',  // MJ040288
-  '\uD851\uDF35\uDB40\uDD00': '\uDB83\uDE5D',  // MJ040623
-  '\uD853\uDC1E\uDB40\uDD00': '\uDB83\uDE5E',  // MJ057093
-  '\uD853\uDC6B\uDB40\uDD00': '\uDB83\uDE5F',  // MJ041393
-  '\uD853\uDC83\uDB40\uDD00': '\uDB83\uDE60',  // MJ041408
-  '\uD853\uDCFF\uDB40\uDD00': '\uDB83\uDE61',  // MJ041491
-  '\uD853\uDD21\uDB40\uDD00': '\uDB83\uDE62',  // MJ041515
-  '\uD853\uDE84\uDB40\uDD00': '\uDB83\uDE63',  // MJ041755
-  '\uD854\uDC44\uDB40\uDD00': '\uDB83\uDE64',  // MJ042063
-  '\uD854\uDCF2\uDB40\uDD00': '\uDB83\uDE65',  // MJ042170
-  '\uD854\uDCF3\uDB40\uDD00': '\uDB83\uDE66',  // MJ042172
-  '\uD854\uDD02\uDB40\uDD00': '\uDB83\uDE67',  // MJ042189
-  '\uD854\uDD92\uDB40\uDD00': '\uDB83\uDE68',  // MJ042288
-  '\uD854\uDE4F\uDB40\uDD00': '\uDB83\uDE69',  // MJ042411
-  '\uD855\uDE07\uDB40\uDD00': '\uDB83\uDE6A',  // MJ042965
-  '\uD855\uDE26\uDB40\uDD00': '\uDB83\uDE6B',  // MJ042971
-  '\uD855\uDE2C\uDB40\uDD00': '\uDB83\uDE6C',  // MJ042976
-  '\uD855\uDE30\uDB40\uDD00': '\uDB83\uDE6D',  // MJ042981
-  '\uD855\uDE6E\uDB40\uDD00': '\uDB83\uDE6E',  // MJ043008
-  '\uD855\uDEC6\uDB40\uDD00': '\uDB83\uDE6F',  // MJ043036
-  '\uD855\uDED9\uDB40\uDD00': '\uDB83\uDE70',  // MJ043048
-  '\uD855\uDEDC\uDB40\uDD00': '\uDB83\uDE71',  // MJ043052
-  '\uD855\uDEF2\uDB40\uDD00': '\uDB83\uDE72',  // MJ043064
-  '\uD855\uDF05\uDB40\uDD00': '\uDB83\uDE73',  // MJ043076
-  '\uD855\uDF12\uDB40\uDD00': '\uDB83\uDE74',  // MJ043080
-  '\uD855\uDF26\uDB40\uDD00': '\uDB83\uDE75',  // MJ043093
-  '\uD856\uDC35\uDB40\uDD00': '\uDB83\uDE76',  // MJ043244
-  '\uD856\uDE2B\uDB40\uDD00': '\uDB83\uDE77',  // MJ043546
-  '\uD856\uDEA7\uDB40\uDD00': '\uDB83\uDE78',  // MJ043613
-  '\uD856\uDED4\uDB40\uDD00': '\uDB83\uDE79',  // MJ043638
-  '\uD856\uDEE1\uDB40\uDD00': '\uDB83\uDE7A',  // MJ043650
-  '\uD856\uDF5F\uDB40\uDD00': '\uDB83\uDE7B',  // MJ043731
-  '\uD856\uDFAB\uDB40\uDD00': '\uDB83\uDE7C',  // MJ043779
-  '\uD856\uDFFF\uDB40\uDD00': '\uDB83\uDE7D',  // MJ043832
-  '\uD857\uDC80\uDB40\uDD00': '\uDB83\uDE7E',  // MJ043899
-  '\uD857\uDE4F\uDB40\uDD00': '\uDB83\uDE7F',  // MJ044206
-  '\uD857\uDE9B\uDB40\uDD00': '\uDB83\uDE80',  // MJ058292
-  '\uD857\uDF86\uDB40\uDD00': '\uDB83\uDE81',  // MJ044396
-  '\uD857\uDF9E\uDB40\uDD00': '\uDB83\uDE82',  // MJ058300
-  '\uD858\uDCC8\uDB40\uDD00': '\uDB83\uDE83',  // MJ044581
-  '\uD858\uDDA2\uDB40\uDD00': '\uDB83\uDE84',  // MJ044706
-  '\uD858\uDDD7\uDB40\uDD00': '\uDB83\uDE85',  // MJ044739
-  '\uD858\uDDDA\uDB40\uDD00': '\uDB83\uDE86',  // MJ044742
-  '\uD858\uDE28\uDB40\uDD00': '\uDB83\uDE87',  // MJ044778
-  '\uD858\uDE47\uDB40\uDD00': '\uDB83\uDE88',  // MJ044801
-  '\uD858\uDE73\uDB40\uDD00': '\uDB83\uDE89',  // MJ044829
-  '\uD858\uDE8B\uDB40\uDD00': '\uDB83\uDE8A',  // MJ044844
-  '\uD858\uDED9\uDB40\uDD00': '\uDB83\uDE8B',  // MJ044887
-  '\uD858\uDFB1\uDB40\uDD00': '\uDB83\uDE8C',  // MJ045039
-  '\uD858\uDFC1\uDB40\uDD00': '\uDB83\uDE8D',  // MJ045052
-  '\uD859\uDC07\uDB40\uDD00': '\uDB83\uDE8E',  // MJ045109
-  '\uD859\uDC08\uDB40\uDD00': '\uDB83\uDE8F',  // MJ045112
-  '\uD859\uDC62\uDB40\uDD00': '\uDB83\uDE90',  // MJ045176
-  '\uD859\uDCB3\uDB40\uDD00': '\uDB83\uDE91',  // MJ058361
-  '\uD859\uDD18\uDB40\uDD00': '\uDB83\uDE92',  // MJ045303
-  '\uD859\uDDA2\uDB40\uDD00': '\uDB83\uDE93',  // MJ045380
-  '\uD859\uDEA8\uDB40\uDD00': '\uDB83\uDE94',  // MJ045549
-  '\uD859\uDEAF\uDB40\uDD00': '\uDB83\uDE95',  // MJ045557
-  '\uD859\uDF6B\uDB40\uDD00': '\uDB83\uDE96',  // MJ045672
-  '\uD85A\uDC73\uDB40\uDD00': '\uDB83\uDE97',  // MJ045787
-  '\uD85A\uDCAA\uDB40\uDD00': '\uDB83\uDE98',  // MJ045850
-  '\uD85A\uDCAB\uDB40\uDD00': '\uDB83\uDE99',  // MJ045853
-  '\uD85A\uDCBC\uDB40\uDD00': '\uDB83\uDE9A',  // MJ045862
-  '\uD85A\uDD1D\uDB40\uDD00': '\uDB83\uDE9B',  // MJ045932
-  '\uD85A\uDD3C\uDB40\uDD00': '\uDB83\uDE9C',  // MJ045952
-  '\uD85A\uDD5B\uDB40\uDD00': '\uDB83\uDE9D',  // MJ058415
-  '\uD85A\uDD73\uDB40\uDD00': '\uDB83\uDE9E',  // MJ045991
-  '\uD85A\uDD77\uDB40\uDD00': '\uDB83\uDE9F',  // MJ045995
-  '\uD85A\uDDE0\uDB40\uDD00': '\uDB83\uDEA0',  // MJ046074
-  '\uD85A\uDEAD\uDB40\uDD00': '\uDB83\uDEA1',  // MJ046225
-  '\uD85A\uDF1E\uDB40\uDD00': '\uDB83\uDEA2',  // MJ046308
-  '\uD85A\uDF20\uDB40\uDD00': '\uDB83\uDEA3',  // MJ046312
-  '\uD85A\uDFCC\uDB40\uDD00': '\uDB83\uDEA4',  // MJ046418
-  '\uD85B\uDC64\uDB40\uDD00': '\uDB83\uDEA5',  // MJ046522
-  '\uD85B\uDE11\uDB40\uDD00': '\uDB83\uDEA6',  // MJ046772
-  '\uD85B\uDE47\uDB40\uDD00': '\uDB83\uDEA7',  // MJ046818
-  '\uD85B\uDF2C\uDB40\uDD00': '\uDB83\uDEA8',  // MJ046950
-  '\uD85B\uDF2F\uDB40\uDD00': '\uDB83\uDEA9',  // MJ046955
-  '\uD85B\uDF8F\uDB40\uDD00': '\uDB83\uDEAA',  // MJ047027
-  '\uD85B\uDFB1\uDB40\uDD00': '\uDB83\uDEAB',  // MJ047041
-  '\uD85B\uDFD4\uDB40\uDD00': '\uDB83\uDEAC',  // MJ047079
-  '\uD85C\uDC39\uDB40\uDD00': '\uDB83\uDEAD',  // MJ047142
-  '\uD85C\uDD71\uDB40\uDD00': '\uDB83\uDEAE',  // MJ047340
-  '\uD85C\uDDFD\uDB40\uDD00': '\uDB83\uDEAF',  // MJ047433
-  '\uD85C\uDE2A\uDB40\uDD00': '\uDB83\uDEB0',  // MJ047463
-  '\uD85C\uDE9C\uDB40\uDD00': '\uDB83\uDEB1',  // MJ047541
-  '\uD85C\uDEB7\uDB40\uDD00': '\uDB83\uDEB2',  // MJ047564
-  '\uD85C\uDEDD\uDB40\uDD00': '\uDB83\uDEB3',  // MJ047591
-  '\uD85C\uDF0A\uDB40\uDD00': '\uDB83\uDEB4',  // MJ047613
-  '\uD85C\uDF69\uDB40\uDD00': '\uDB83\uDEB5',  // MJ047684
-  '\uD85C\uDFCA\uDB40\uDD00': '\uDB83\uDEB6',  // MJ047757
-  '\uD85D\uDC02\uDB40\uDD00': '\uDB83\uDEB7',  // MJ047795
-  '\uD85D\uDD25\uDB40\uDD00': '\uDB83\uDEB8',  // MJ047987
-  '\uD85D\uDE02\uDB40\uDD00': '\uDB83\uDEB9',  // MJ048161
-  '\uD85D\uDE0E\uDB40\uDD00': '\uDB83\uDEBA',  // MJ048172
-  '\uD85D\uDE19\uDB40\uDD00': '\uDB83\uDEBB',  // MJ048181
-  '\uD85D\uDE67\uDB40\uDD00': '\uDB83\uDEBC',  // MJ048245
-  '\uD85D\uDED4\uDB40\uDD00': '\uDB83\uDEBD',  // MJ048321
-  '\uD85D\uDF01\uDB40\uDD00': '\uDB83\uDEBE',  // MJ048358
-  '\uD85D\uDF05\uDB40\uDD00': '\uDB83\uDEBF',  // MJ048363
-  '\uD85D\uDF0F\uDB40\uDD00': '\uDB83\uDEC0',  // MJ048373
-  '\uD85D\uDF53\uDB40\uDD00': '\uDB83\uDEC1',  // MJ048418
-  '\uD85D\uDF71\uDB40\uDD00': '\uDB83\uDEC2',  // MJ048434
-  '\uD85D\uDFAA\uDB40\uDD00': '\uDB83\uDEC3',  // MJ048475
-  '\uD85D\uDFB8\uDB40\uDD00': '\uDB83\uDEC4',  // MJ048487
-  '\uD85D\uDFE8\uDB40\uDD00': '\uDB83\uDEC5',  // MJ048523
-  '\uD85E\uDD66\uDB40\uDD00': '\uDB83\uDEC6',  // MJ048809
-  '\uD85E\uDDDA\uDB40\uDD00': '\uDB83\uDEC7',  // MJ058741
-  '\uD85E\uDE6E\uDB40\uDD00': '\uDB83\uDEC8',  // MJ049014
-  '\uD85E\uDE7B\uDB40\uDD00': '\uDB83\uDEC9',  // MJ049028
-  '\uD85E\uDEAE\uDB40\uDD00': '\uDB83\uDECA',  // MJ049070
-  '\uD85E\uDEE2\uDB40\uDD00': '\uDB83\uDECB',  // MJ049104
-  '\uD85E\uDF2F\uDB40\uDD00': '\uDB83\uDECC',  // MJ058763
-  '\uD85E\uDF87\uDB40\uDD00': '\uDB83\uDECD',  // MJ049240
-  '\uD85E\uDFC6\uDB40\uDD00': '\uDB83\uDECE',  // MJ049295
-  '\uD85E\uDFCC\uDB40\uDD00': '\uDB83\uDECF',  // MJ049300
-  '\uD85E\uDFFE\uDB40\uDD00': '\uDB83\uDED0',  // MJ049344
-  '\uD85F\uDCA8\uDB40\uDD00': '\uDB83\uDED1',  // MJ049485
-  '\uD85F\uDD2A\uDB40\uDD00': '\uDB83\uDED2',  // MJ049589
-  '\uD85F\uDD4D\uDB40\uDD00': '\uDB83\uDED3',  // MJ049613
-  '\uD85F\uDE19\uDB40\uDD00': '\uDB83\uDED4',  // MJ049743
-  '\uD85F\uDE3D\uDB40\uDD00': '\uDB83\uDED5',  // MJ049759
-  '\uD85F\uDE79\uDB40\uDD00': '\uDB83\uDED6',  // MJ049791
-  '\uD85F\uDFA8\uDB40\uDD00': '\uDB83\uDED7',  // MJ049992
-  '\uD85F\uDFC0\uDB40\uDD00': '\uDB83\uDED8',  // MJ050013
-  '\uD860\uDD19\uDB40\uDD00': '\uDB83\uDED9',  // MJ050234
-  '\uD860\uDF8A\uDB40\uDD00': '\uDB83\uDEDA',  // MJ050631
-  '\uD861\uDC32\uDB40\uDD00': '\uDB83\uDEDB',  // MJ050748
-  '\uD861\uDC4D\uDB40\uDD00': '\uDB83\uDEDC',  // MJ050769
-  '\uD861\uDC52\uDB40\uDD00': '\uDB83\uDEDD',  // MJ050775
-  '\uD861\uDC6D\uDB40\uDD00': '\uDB83\uDEDE',  // MJ050801
-  '\uD861\uDC89\uDB40\uDD00': '\uDB83\uDEDF',  // MJ050819
-  '\uD861\uDC8C\uDB40\uDD00': '\uDB83\uDEE0',  // MJ050823
-  '\uD861\uDCAD\uDB40\uDD00': '\uDB83\uDEE1',  // MJ050849
-  '\uD861\uDCB0\uDB40\uDD00': '\uDB83\uDEE2',  // MJ050853
-  '\uD861\uDCC5\uDB40\uDD00': '\uDB83\uDEE3',  // MJ050869
-  '\uD861\uDCCD\uDB40\uDD00': '\uDB83\uDEE4',  // MJ058849
-  '\uD861\uDCE4\uDB40\uDD00': '\uDB83\uDEE5',  // MJ050889
-  '\uD861\uDCF1\uDB40\uDD00': '\uDB83\uDEE6',  // MJ050902
-  '\uD861\uDCF5\uDB40\uDD00': '\uDB83\uDEE7',  // MJ050908
-  '\uD861\uDD1D\uDB40\uDD00': '\uDB83\uDEE8',  // MJ050934
-  '\uD861\uDD1F\uDB40\uDD00': '\uDB83\uDEE9',  // MJ050937
-  '\uD861\uDD27\uDB40\uDD00': '\uDB83\uDEEA',  // MJ050945
-  '\uD861\uDD2B\uDB40\uDD00': '\uDB83\uDEEB',  // MJ050950
-  '\uD861\uDD2F\uDB40\uDD00': '\uDB83\uDEEC',  // MJ060228
-  '\uD861\uDD30\uDB40\uDD00': '\uDB83\uDEED',  // MJ050957
-  '\uD861\uDD60\uDB40\uDD00': '\uDB83\uDEEE',  // MJ050977
-  '\uD861\uDD63\uDB40\uDD00': '\uDB83\uDEEF',  // MJ050981
-  '\uD861\uDD65\uDB40\uDD00': '\uDB83\uDEF0',  // MJ050984
-  '\uD861\uDD88\uDB40\uDD00': '\uDB83\uDEF1',  // MJ051008
-  '\uD861\uDD8A\uDB40\uDD00': '\uDB83\uDEF2',  // MJ051012
-  '\uD861\uDDB9\uDB40\uDD00': '\uDB83\uDEF3',  // MJ051045
-  '\uD861\uDDBB\uDB40\uDD00': '\uDB83\uDEF4',  // MJ051047
-  '\uD861\uDDBF\uDB40\uDD00': '\uDB83\uDEF5',  // MJ051052
-  '\uD861\uDDED\uDB40\uDD00': '\uDB83\uDEF6',  // MJ051088
-  '\uD861\uDDF1\uDB40\uDD00': '\uDB83\uDEF7',  // MJ051094
-  '\uD861\uDE22\uDB40\uDD00': '\uDB83\uDEF8',  // MJ051124
-  '\uD861\uDE37\uDB40\uDD00': '\uDB83\uDEF9',  // MJ051138
-  '\uD861\uDE42\uDB40\uDD00': '\uDB83\uDEFA',  // MJ051147
-  '\uD861\uDE55\uDB40\uDD00': '\uDB83\uDEFB',  // MJ051162
-  '\uD861\uDE59\uDB40\uDD00': '\uDB83\uDEFC',  // MJ051166
-  '\uD861\uDE5A\uDB40\uDD00': '\uDB83\uDEFD',  // MJ051168
-  '\uD861\uDE5F\uDB40\uDD00': '\uDB83\uDEFE',  // MJ051173
-  '\uD861\uDF63\uDB40\uDD00': '\uDB83\uDEFF',  // MJ051374
-  '\uD862\uDC0B\uDB40\uDD00': '\uDB83\uDF00',  // MJ051498
-  '\uD862\uDD45\uDB40\uDD00': '\uDB83\uDF01',  // MJ051702
-  '\uD863\uDD84\uDB40\uDD00': '\uDB83\uDF02',  // MJ052218
-  '\uD863\uDF41\uDB40\uDD00': '\uDB83\uDF03',  // MJ052468
-  '\uD863\uDFE4\uDB40\uDD00': '\uDB83\uDF04',  // MJ052596
-  '\uD864\uDC31\uDB40\uDD00': '\uDB83\uDF05',  // MJ058985
-  '\uD864\uDD2E\uDB40\uDD00': '\uDB83\uDF06',  // MJ052839
-  '\uD864\uDD5E\uDB40\uDD00': '\uDB83\uDF07',  // MJ052866
-  '\uD864\uDD7E\uDB40\uDD00': '\uDB83\uDF08',  // MJ052888
-  '\uD864\uDDD5\uDB40\uDD00': '\uDB83\uDF09',  // MJ052943
-  '\uD864\uDE1A\uDB40\uDD00': '\uDB83\uDF0A',  // MJ052996
-  '\uD864\uDE5E\uDB40\uDD00': '\uDB83\uDF0B',  // MJ053053
-  '\uD864\uDE93\uDB40\uDD00': '\uDB83\uDF0C',  // MJ053098
-  '\uD864\uDF56\uDB40\uDD00': '\uDB83\uDF0D',  // MJ053254
-  '\uD864\uDF79\uDB40\uDD00': '\uDB83\uDF0E',  // MJ053281
-  '\uD865\uDC1A\uDB40\uDD00': '\uDB83\uDF0F',  // MJ053402
-  '\uD865\uDC1F\uDB40\uDD00': '\uDB83\uDF10',  // MJ053407
-  '\uD865\uDC20\uDB40\uDD00': '\uDB83\uDF11',  // MJ053409
-  '\uD865\uDC22\uDB40\uDD00': '\uDB83\uDF12',  // MJ053412
-  '\uD865\uDC27\uDB40\uDD00': '\uDB83\uDF13',  // MJ053418
-  '\uD865\uDC3F\uDB40\uDD00': '\uDB83\uDF14',  // MJ053437
-  '\uD865\uDD24\uDB40\uDD00': '\uDB83\uDF15',  // MJ053608
-  '\uD865\uDD3A\uDB40\uDD00': '\uDB83\uDF16',  // MJ053621
-  '\uD865\uDD48\uDB40\uDD00': '\uDB83\uDF17',  // MJ053630
-  '\uD865\uDDB6\uDB40\uDD00': '\uDB83\uDF18',  // MJ053709
-  '\uD865\uDE38\uDB40\uDD00': '\uDB83\uDF19',  // MJ059038
-  '\uD865\uDE5E\uDB40\uDD00': '\uDB83\uDF1A',  // MJ053840
-  '\uD865\uDE7A\uDB40\uDD00': '\uDB83\uDF1B',  // MJ053853
-  '\uD865\uDE82\uDB40\uDD00': '\uDB83\uDF1C',  // MJ053862
-  '\uD865\uDE85\uDB40\uDD00': '\uDB83\uDF1D',  // MJ053866
-  '\uD865\uDE88\uDB40\uDD00': '\uDB83\uDF1E',  // MJ053869
-  '\uD865\uDE95\uDB40\uDD00': '\uDB83\uDF1F',  // MJ053880
-  '\uD865\uDE96\uDB40\uDD00': '\uDB83\uDF20',  // MJ053882
-  '\uD865\uDEA9\uDB40\uDD00': '\uDB83\uDF21',  // MJ053895
-  '\uD865\uDEB9\uDB40\uDD00': '\uDB83\uDF22',  // MJ053912
-  '\uD865\uDEC6\uDB40\uDD00': '\uDB83\uDF23',  // MJ053921
-  '\uD865\uDEDE\uDB40\uDD00': '\uDB83\uDF24',  // MJ053939
-  '\uD865\uDEE5\uDB40\uDD00': '\uDB83\uDF25',  // MJ053947
-  '\uD865\uDEFA\uDB40\uDD00': '\uDB83\uDF26',  // MJ053964
-  '\uD865\uDF06\uDB40\uDD00': '\uDB83\uDF27',  // MJ053978
-  '\uD865\uDF08\uDB40\uDD00': '\uDB83\uDF28',  // MJ053981
-  '\uD865\uDF0B\uDB40\uDD00': '\uDB83\uDF29',  // MJ053985
-  '\uD865\uDF0F\uDB40\uDD00': '\uDB83\uDF2A',  // MJ053991
-  '\uD865\uDF15\uDB40\uDD00': '\uDB83\uDF2B',  // MJ053996
-  '\uD865\uDF17\uDB40\uDD00': '\uDB83\uDF2C',  // MJ054000
-  '\uD865\uDF2F\uDB40\uDD00': '\uDB83\uDF2D',  // MJ054010
-  '\uD865\uDF34\uDB40\uDD00': '\uDB83\uDF2E',  // MJ054017
-  '\uD865\uDF39\uDB40\uDD00': '\uDB83\uDF2F',  // MJ054023
-  '\uD865\uDF3F\uDB40\uDD00': '\uDB83\uDF30',  // MJ054028
-  '\uD865\uDF59\uDB40\uDD00': '\uDB83\uDF31',  // MJ054041
-  '\uD865\uDF5D\uDB40\uDD00': '\uDB83\uDF32',  // MJ054045
-  '\uD865\uDF80\uDB40\uDD00': '\uDB83\uDF33',  // MJ054075
-  '\uD865\uDF83\uDB40\uDD00': '\uDB83\uDF34',  // MJ054079
-  '\uD865\uDF8D\uDB40\uDD00': '\uDB83\uDF35',  // MJ054090
-  '\uD865\uDF8F\uDB40\uDD00': '\uDB83\uDF36',  // MJ054093
-  '\uD865\uDF91\uDB40\uDD00': '\uDB83\uDF37',  // MJ054096
-  '\uD865\uDFA1\uDB40\uDD00': '\uDB83\uDF38',  // MJ054100
-  '\uD865\uDFA5\uDB40\uDD00': '\uDB83\uDF39',  // MJ054105
-  '\uD865\uDFA7\uDB40\uDD00': '\uDB83\uDF3A',  // MJ054108
-  '\uD865\uDFAB\uDB40\uDD00': '\uDB83\uDF3B',  // MJ054113
-  '\uD865\uDFAD\uDB40\uDD00': '\uDB83\uDF3C',  // MJ054117
-  '\uD865\uDFB7\uDB40\uDD00': '\uDB83\uDF3D',  // MJ054125
-  '\uD865\uDFC4\uDB40\uDD00': '\uDB83\uDF3E',  // MJ054137
-  '\uD865\uDFCB\uDB40\uDD00': '\uDB83\uDF3F',  // MJ054144
-  '\uD865\uDFF1\uDB40\uDD00': '\uDB83\uDF40',  // MJ054174
-  '\uD865\uDFFD\uDB40\uDD00': '\uDB83\uDF41',  // MJ054181
-  '\uD866\uDC94\uDB40\uDD00': '\uDB83\uDF42',  // MJ054275
-  '\uD866\uDC9D\uDB40\uDD00': '\uDB83\uDF43',  // MJ054284
-  '\uD866\uDD00\uDB40\uDD00': '\uDB83\uDF44',  // MJ054361
-  '\uD866\uDD18\uDB40\uDD00': '\uDB83\uDF45',  // MJ054370
-  '\uD866\uDE59\uDB40\uDD00': '\uDB83\uDF46',  // MJ059062
-  '\uD866\uDEB7\uDB40\uDD00': '\uDB83\uDF47',  // MJ054636
-  '\uD866\uDFBA\uDB40\uDD00': '\uDB83\uDF48',  // MJ054792
-  '\uD867\uDC13\uDB40\uDD00': '\uDB83\uDF49',  // MJ054845
-  '\uD867\uDC7F\uDB40\uDD00': '\uDB83\uDF4A',  // MJ054933
-  '\uD867\uDD34\uDB40\uDD00': '\uDB83\uDF4B',  // MJ055064
-  '\uD867\uDD49\uDB40\uDD00': '\uDB83\uDF4C',  // MJ059085
-  '\uD867\uDDF8\uDB40\uDD00': '\uDB83\uDF4D',  // MJ055180
-  '\uD867\uDE77\uDB40\uDD00': '\uDB83\uDF4E',  // MJ055248
-  '\uD867\uDE7A\uDB40\uDD00': '\uDB83\uDF4F',  // MJ055250
-  '\uD867\uDEE0\uDB40\uDD00': '\uDB83\uDF50',  // MJ055306
-  '\uD867\uDEE1\uDB40\uDD00': '\uDB83\uDF51',  // MJ055308
-  '\uD868\uDC4B\uDB40\uDD00': '\uDB83\uDF52',  // MJ055524
-  '\uD868\uDC61\uDB40\uDD00': '\uDB83\uDF53',  // MJ055546
-  '\uD868\uDCC8\uDB40\uDD00': '\uDB83\uDF54',  // MJ055624
-  '\uD868\uDDF4\uDB40\uDD00': '\uDB83\uDF55',  // MJ055824
-  '\uD868\uDE91\uDB40\uDD00': '\uDB83\uDF56',  // MJ055927
-  '\uD868\uDE96\uDB40\uDD00': '\uDB83\uDF57',  // MJ055933
-  '\uD868\uDEA8\uDB40\uDD00': '\uDB83\uDF58',  // MJ055944
-  '\uD868\uDF01\uDB40\uDD00': '\uDB83\uDF59',  // MJ056012
-  '\uD868\uDF08\uDB40\uDD00': '\uDB83\uDF5A',  // MJ056020
-  '\uD868\uDF33\uDB40\uDD00': '\uDB83\uDF5B',  // MJ056052
-  '\uD868\uDF47\uDB40\uDD00': '\uDB83\uDF5C',  // MJ056070
-  '\uD868\uDF52\uDB40\uDD00': '\uDB83\uDF5D',  // MJ056081
-  '\uD868\uDF6A\uDB40\uDD00': '\uDB83\uDF5E',  // MJ056102
-  '\uD868\uDF92\uDB40\uDD00': '\uDB83\uDF5F',  // MJ056129
-  '\uD868\uDFB0\uDB40\uDD00': '\uDB83\uDF60',  // MJ056155
-  '\uD869\uDC72\uDB40\uDD00': '\uDB83\uDF61',  // MJ056316
-  '\uD869\uDD02\uDB40\uDD00': '\uDB83\uDF62',  // MJ056429
-  '\uD869\uDD04\uDB40\uDD00': '\uDB83\uDF63',  // MJ056432
-  '\uD869\uDD08\uDB40\uDD00': '\uDB83\uDF64',  // MJ056436
-  '\uD869\uDD0D\uDB40\uDD00': '\uDB83\uDF65',  // MJ057575
-  '\uD869\uDD4D\uDB40\uDD00': '\uDB83\uDF66',  // MJ056492
-  '\uD869\uDD64\uDB40\uDD00': '\uDB83\uDF67',  // MJ056510
-  '\uD869\uDD6F\uDB40\uDD00': '\uDB83\uDF68',  // MJ056521
-  '\uD869\uDD85\uDB40\uDD00': '\uDB83\uDF69',  // MJ056539
-  '\uD869\uDDC7\uDB40\uDD00': '\uDB83\uDF6A',  // MJ056585
-  '\uD869\uDE00\uDB40\uDD00': '\uDB83\uDF6B',  // MJ056635
-  '\uD869\uDE95\uDB40\uDD00': '\uDB83\uDF6C',  // MJ056762
-  '\uD869\uDE96\uDB40\uDD00': '\uDB83\uDF6D',  // MJ056764
-  '\uD869\uDE99\uDB40\uDD00': '\uDB83\uDF6E',  // MJ056768
-  '\uD86D\uDF41\uDB40\uDD00': '\uDB83\uDF6F',  // MJ059299
-  '\uD86D\uDF42\uDB40\uDD00': '\uDB83\uDF70',  // MJ057546
-  '\uD873\uDED0\uDB40\uDD00': '\uDB83\uDF71',  // MJ056838
-  '\uD873\uDEDC\uDB40\uDD00': '\uDB83\uDF72',  // MJ056843
-  '\uD873\uDF4C\uDB40\uDD00': '\uDB83\uDF73',  // MJ056862
-  '\uD869\uDF46\uDB40\uDD00': '\uDB83\uDF74',  // MJ056923
-  '\uD877\uDD48\uDB40\uDD00': '\uDB83\uDF75',  // MJ056944
-  '\uD874\uDC20\uDB40\uDD00': '\uDB83\uDF76',  // MJ056969
-  '\uD86D\uDF4C\uDB40\uDD00': '\uDB83\uDF77',  // MJ056984
-  '\uD874\uDDA2\uDB40\uDD00': '\uDB83\uDF78',  // MJ056986
-  '\uD877\uDD44\uDB40\uDD00': '\uDB83\uDF79',  // MJ056993
-  '\uD840\uDC4A\uDB40\uDD00': '\uDB83\uDF7A',  // MJ056998
-  '\uD874\uDC6B\uDB40\uDD00': '\uDB83\uDF7B',  // MJ057014
-  '\uD874\uDC6F\uDB40\uDD00': '\uDB83\uDF7C',  // MJ057017
-  '\uD874\uDC77\uDB40\uDD00': '\uDB83\uDF7D',  // MJ057026
-  '\uD86E\uDD7B\uDB40\uDD00': '\uDB83\uDF7E',  // MJ057044
-  '\uD874\uDCDA\uDB40\uDD00': '\uDB83\uDF7F',  // MJ057048
-  '\uD86D\uDF62\uDB40\uDD00': '\uDB83\uDF80',  // MJ057091
-  '\uD874\uDD69\uDB40\uDD00': '\uDB83\uDF81',  // MJ057102
-  '\uD874\uDD86\uDB40\uDD00': '\uDB83\uDF82',  // MJ057115
-  '\uD874\uDD8F\uDB40\uDD00': '\uDB83\uDF83',  // MJ057120
-  '\uD874\uDD99\uDB40\uDD00': '\uDB83\uDF84',  // MJ057126
-  '\uD843\uDDF0\uDB40\uDD00': '\uDB83\uDF85',  // MJ057130
-  '\uD874\uDDAB\uDB40\uDD00': '\uDB83\uDF86',  // MJ057137
-  '\uD874\uDE39\uDB40\uDD00': '\uDB83\uDF87',  // MJ057174
-  '\uD874\uDEDB\uDB40\uDD00': '\uDB83\uDF88',  // MJ057197
-  '\uD86D\uDF5D\uDB40\uDD00': '\uDB83\uDF89',  // MJ057394
-  '\uD844\uDE99\uDB40\uDD00': '\uDB83\uDF8A',  // MJ057214
-  '\uD874\uDFDB\uDB40\uDD00': '\uDB83\uDF8B',  // MJ057238
-  '\uD875\uDC23\uDB40\uDD00': '\uDB83\uDF8C',  // MJ057254
-  '\uD86D\uDF63\uDB40\uDD00': '\uDB83\uDF8D',  // MJ058425
-  '\uD875\uDC33\uDB40\uDD00': '\uDB83\uDF8E',  // MJ057265
-  '\uD875\uDC45\uDB40\uDD00': '\uDB83\uDF8F',  // MJ057274
-  '\uD875\uDC55\uDB40\uDD00': '\uDB83\uDF90',  // MJ057283
-  '\uD86D\uDF6F\uDB40\uDD00': '\uDB83\uDF91',  // MJ057326
-  '\uD875\uDCE9\uDB40\uDD00': '\uDB83\uDF92',  // MJ057329
-  '\uD846\uDF36\uDB40\uDD00': '\uDB83\uDF93',  // MJ057349
-  '\uD875\uDE3E\uDB40\uDD00': '\uDB83\uDF94',  // MJ057430
-  '\uD875\uDE4C\uDB40\uDD00': '\uDB83\uDF95',  // MJ057433
-  '\uD861\uDC82\uDB40\uDD00': '\uDB83\uDF96',  // MJ057455
-  '\uD875\uDE98\uDB40\uDD00': '\uDB83\uDF97',  // MJ057456
-  '\uD875\uDEB6\uDB40\uDD00': '\uDB83\uDF98',  // MJ057466
-  '\uD86D\uDF78\uDB40\uDD00': '\uDB83\uDF99',  // MJ059587
-  '\u3900\uDB40\uDD00': '\uDB83\uDF9A',  // MJ057490
-  '\uD875\uDF33\uDB40\uDD00': '\uDB83\uDF9B',  // MJ057506
-  '\uD86B\uDDC2\uDB40\uDD00': '\uDB83\uDF9C',  // MJ057522
-  '\uD86F\uDEDB\uDB40\uDD00': '\uDB83\uDF9D',  // MJ057527
-  '\uD876\uDC05\uDB40\uDD00': '\uDB83\uDF9E',  // MJ057548
-  '\uD876\uDC86\uDB40\uDD00': '\uDB83\uDF9F',  // MJ057564
-  '\uD86D\uDF80\uDB40\uDD00': '\uDB83\uDFA0',  // MJ057640
-  '\uD876\uDD97\uDB40\uDD00': '\uDB83\uDFA1',  // MJ057668
-  '\uD876\uDE99\uDB40\uDD00': '\uDB83\uDFA2',  // MJ057756
-  '\uD870\uDCFE\uDB40\uDD00': '\uDB83\uDFA3',  // MJ057767
-  '\uD870\uDD55\uDB40\uDD00': '\uDB83\uDFA4',  // MJ057871
-  '\uD876\uDF4B\uDB40\uDD00': '\uDB83\uDFA5',  // MJ057878
-  '\uD876\uDF4E\uDB40\uDD00': '\uDB83\uDFA6',  // MJ057882
-  '\uD873\uDF18\uDB40\uDD00': '\uDB83\uDFA7',  // MJ057888
-  '\uD86D\uDF93\uDB40\uDD00': '\uDB83\uDFA8',  // MJ057896
-  '\uD86B\uDD89\uDB40\uDD00': '\uDB83\uDFA9',  // MJ059779
-  '\uD86D\uDF9C\uDB40\uDD00': '\uDB83\uDFAA',  // MJ057968
-  '\uD877\uDEBE\uDB40\uDD00': '\uDB83\uDFAB',  // MJ058090
-  '\uD877\uDF3D\uDB40\uDD00': '\uDB83\uDFAC',  // MJ058128
-  '\uD877\uDF41\uDB40\uDD00': '\uDB83\uDFAD',  // MJ058132
-  '\u3E14\uDB40\uDD00': '\uDB83\uDFAE',  // MJ058161
-  '\uD86B\uDFB2\uDB40\uDD00': '\uDB83\uDFAF',  // MJ059939
-  '\uD877\uDFF5\uDB40\uDD00': '\uDB83\uDFB0',  // MJ058190
-  '\uD86C\uDC03\uDB40\uDD00': '\uDB83\uDFB1',  // MJ058200
-  '\uD878\uDC68\uDB40\uDD00': '\uDB83\uDFB2',  // MJ058205
-  '\uD86C\uDC48\uDB40\uDD00': '\uDB83\uDFB3',  // MJ059999
-  '\uD86D\uDFB9\uDB40\uDD00': '\uDB83\uDFB4',  // MJ060003
-  '\uD878\uDE84\uDB40\uDD00': '\uDB83\uDFB5',  // MJ058338
-  '\uD86D\uDFC8\uDB40\uDD00': '\uDB83\uDFB6',  // MJ058345
-  '\uD878\uDEAB\uDB40\uDD00': '\uDB83\uDFB7',  // MJ058349
-  '\uD878\uDF06\uDB40\uDD00': '\uDB83\uDFB8',  // MJ058375
-  '\uD878\uDF07\uDB40\uDD00': '\uDB83\uDFB9',  // MJ058377
-  '\uD874\uDC48\uDB40\uDD00': '\uDB83\uDFBA',  // MJ058413
-  '\uD86D\uDFCD\uDB40\uDD00': '\uDB83\uDFBB',  // MJ058443
-  '\uD878\uDFB0\uDB40\uDD00': '\uDB83\uDFBC',  // MJ058447
-  '\uD871\uDF37\uDB40\uDD00': '\uDB83\uDFBD',  // MJ058461
-  '\uD878\uDFC0\uDB40\uDD00': '\uDB83\uDFBE',  // MJ058472
-  '\uD871\uDF3B\uDB40\uDD00': '\uDB83\uDFBF',  // MJ058476
-  '\uD879\uDC3C\uDB40\uDD00': '\uDB83\uDFC0',  // MJ058533
-  '\uD879\uDCD9\uDB40\uDD00': '\uDB83\uDFC1',  // MJ058580
-  '\uD879\uDCDC\uDB40\uDD00': '\uDB83\uDFC2',  // MJ058586
-  '\uD840\uDC45\uDB40\uDD00': '\uDB83\uDFC3',  // MJ058590
-  '\uD879\uDD09\uDB40\uDD00': '\uDB83\uDFC4',  // MJ058623
-  '\uD879\uDDE8\uDB40\uDD00': '\uDB83\uDFC5',  // MJ058732
-  '\uD86D\uDF55\uDB40\uDD00': '\uDB83\uDFC6',  // MJ058834
-  '\u903A\uDB40\uDD00': '\uDB83\uDFC7',  // MJ058857
-  '\uD86D\uDFEA\uDB40\uDD00': '\uDB83\uDFC8',  // MJ060241
-  '\uD86D\uDCBC\uDB40\uDD00': '\uDB83\uDFC9',  // MJ058929
-  '\u49DF\uDB40\uDD00': '\uDB83\uDFCA',  // MJ058975
-  '\uD87A\uDDCA\uDB40\uDD00': '\uDB83\uDFCB',  // MJ059001
-  '\uD87A\uDDD3\uDB40\uDD00': '\uDB83\uDFCC',  // MJ059005
-  '\uD87A\uDDF0\uDB40\uDD00': '\uDB83\uDFCD',  // MJ059015
-  '\uD873\uDD6B\uDB40\uDD00': '\uDB83\uDFCE',  // MJ059156
-  '\uD87A\uDF71\uDB40\uDD00': '\uDB83\uDFCF',  // MJ059251
-  '\uD87A\uDF79\uDB40\uDD00': '\uDB83\uDFD0',  // MJ059255
-  '\uD873\uDECE\uDB40\uDD00': '\uDB83\uDFD1',  // MJ059298
-  '\uD874\uDC28\uDB40\uDD00': '\uDB83\uDFD2',  // MJ059338
-  '\uD86E\uDD30\uDB40\uDD00': '\uDB83\uDFD3',  // MJ059346
-  '\uD874\uDCB2\uDB40\uDD00': '\uDB83\uDFD4',  // MJ059372
-  '\uD86E\uDDE4\uDB40\uDD00': '\uDB83\uDFD5',  // MJ059399
-  '\uD874\uDE60\uDB40\uDD00': '\uDB83\uDFD6',  // MJ059425
-  '\uD874\uDF80\uDB40\uDD00': '\uDB83\uDFD7',  // MJ059445
-  '\uD86E\uDFF1\uDB40\uDD00': '\uDB83\uDFD8',  // MJ059482
-  '\uD875\uDCF1\uDB40\uDD00': '\uDB83\uDFD9',  // MJ059505
-  '\uD86A\uDDE8\uDB40\uDD00': '\uDB83\uDFDA',  // MJ059509
-  '\uD875\uDDD5\uDB40\uDD00': '\uDB83\uDFDB',  // MJ059531
-  '\uD875\uDEDD\uDB40\uDD00': '\uDB83\uDFDC',  // MJ059588
-  '\uD875\uDF10\uDB40\uDD00': '\uDB83\uDFDD',  // MJ059600
-  '\uD875\uDF2E\uDB40\uDD00': '\uDB83\uDFDE',  // MJ059608
-  '\uD875\uDFBE\uDB40\uDD00': '\uDB83\uDFDF',  // MJ059635
-  '\uD875\uDFF1\uDB40\uDD00': '\uDB83\uDFE0',  // MJ059640
-  '\uD876\uDD18\uDB40\uDD00': '\uDB83\uDFE1',  // MJ059661
-  '\uD876\uDD16\uDB40\uDD00': '\uDB83\uDFE2',  // MJ059663
-  '\uD876\uDD67\uDB40\uDD00': '\uDB83\uDFE3',  // MJ059677
-  '\uD86B\uDD03\uDB40\uDD00': '\uDB83\uDFE4',  // MJ059743
-  '\uD877\uDC7D\uDB40\uDD00': '\uDB83\uDFE5',  // MJ059820
-  '\uD877\uDC9E\uDB40\uDD00': '\uDB83\uDFE6',  // MJ059830
-  '\uD877\uDCD3\uDB40\uDD00': '\uDB83\uDFE7',  // MJ059843
-  '\uD877\uDCEF\uDB40\uDD00': '\uDB83\uDFE8',  // MJ059854
-  '\uD842\uDD24\uDB40\uDD00': '\uDB83\uDFE9',  // MJ059937
-  '\uD878\uDCBA\uDB40\uDD00': '\uDB83\uDFEA',  // MJ059983
-  '\uD878\uDCEC\uDB40\uDD00': '\uDB83\uDFEB',  // MJ059995
-  '\uD878\uDD70\uDB40\uDD00': '\uDB83\uDFEC',  // MJ060024
-  '\uD879\uDF89\uDB40\uDD00': '\uDB83\uDFED',  // MJ060224
-  '\uD879\uDFD0\uDB40\uDD00': '\uDB83\uDFEE',  // MJ060244
-  '\uD86D\uDC68\uDB40\uDD00': '\uDB83\uDFEF',  // MJ060252
-  '\uD87A\uDDC0\uDB40\uDD00': '\uDB83\uDFF0',  // MJ060330
-  '\uD87A\uDDF2\uDB40\uDD00': '\uDB83\uDFF1',  // MJ060334
-  '\uD87A\uDE41\uDB40\uDD00': '\uDB83\uDFF2',  // MJ060341
-  '\u4E0E\uDB40\uDD04': '\uDB83\uDFF3',  // MJ006312
-  '\u4E11\uDB40\uDD04': '\uDB83\uDFF4',  // MJ006320
-  '\u4E19\uDB40\uDD04': '\uDB83\uDFF5',  // MJ006329
-  '\u4EA2\uDB40\uDD04': '\uDB83\uDFF6',  // MJ006465
-  '\u4EA4\uDB40\uDD04': '\uDB83\uDFF7',  // MJ006469
-  '\u4ED7\uDB40\uDD04': '\uDB83\uDFF8',  // MJ006519
-  '\u4F60\uDB40\uDD04': '\uDB83\uDFF9',  // MJ059316
-  '\u5065\uDB40\uDD04': '\uDB83\uDFFA',  // MJ006934
-  '\u5091\uDB40\uDD04': '\uDB83\uDFFB',  // MJ006986
-  '\u50CA\uDB40\uDD04': '\uDB83\uDFFC',  // MJ007054
-  '\u50CF\uDB40\uDD04': '\uDB83\uDFFD',  // MJ007064
-  '\u50E7\uDB40\uDD04': '\uDB83\uDFFE',  // MJ007096
-  '\u50F2\uDB40\uDD04': '\uDB83\uDFFF',  // MJ007112
-  '\u513C\uDB40\uDD04': '\uDB84\uDC00',  // MJ056960
-  '\u5142\uDB40\uDD04': '\uDB84\uDC01',  // MJ056966
-  '\u514A\uDB40\uDD04': '\uDB84\uDC02',  // MJ007223
-  '\u514D\uDB40\uDD04': '\uDB84\uDC03',  // MJ030246
-  '\u5154\uDB40\uDD04': '\uDB84\uDC04',  // MJ007243
-  '\u5177\uDB40\uDD04': '\uDB84\uDC05',  // MJ007289
-  '\u517C\uDB40\uDD04': '\uDB84\uDC06',  // MJ007296
-  '\u518D\uDB40\uDD04': '\uDB84\uDC07',  // MJ057004
-  '\u5193\uDB40\uDD04': '\uDB84\uDC08',  // MJ007322
-  '\u5195\uDB40\uDD04': '\uDB84\uDC09',  // MJ007326
-  '\u51A2\uDB40\uDD04': '\uDB84\uDC0A',  // MJ007344
-  '\u51A4\uDB40\uDD04': '\uDB84\uDC0B',  // MJ007349
-  '\u51B4\uDB40\uDD04': '\uDB84\uDC0C',  // MJ007367
-  '\u5207\uDB40\uDD04': '\uDB84\uDC0D',  // MJ057061
-  '\u5224\uDB40\uDD04': '\uDB84\uDC0E',  // MJ007492
-  '\u5271\uDB40\uDD04': '\uDB84\uDC0F',  // MJ007568
-  '\u5272\uDB40\uDD04': '\uDB84\uDC10',  // MJ007572
-  '\u5294\uDB40\uDD04': '\uDB84\uDC11',  // MJ007615
-  '\u52CC\uDB40\uDD04': '\uDB84\uDC12',  // MJ007674
-  '\u52E4\uDB40\uDD04': '\uDB84\uDC13',  // MJ059388
-  '\u5308\uDB40\uDD04': '\uDB84\uDC14',  // MJ057081
-  '\u535A\uDB40\uDD04': '\uDB84\uDC15',  // MJ007859
-  '\u5371\uDB40\uDD04': '\uDB84\uDC16',  // MJ007887
-  '\u5377\uDB40\uDD04': '\uDB84\uDC17',  // MJ057415
-  '\u537F\uDB40\uDD04': '\uDB84\uDC18',  // MJ007915
-  '\u53DB\uDB40\uDD04': '\uDB84\uDC19',  // MJ008011
-  '\u53DF\uDB40\uDD04': '\uDB84\uDC1A',  // MJ008017
-  '\u540F\uDB40\uDD04': '\uDB84\uDC1B',  // MJ008071
-  '\u5448\uDB40\uDD04': '\uDB84\uDC1C',  // MJ008132
-  '\u5533\uDB40\uDD04': '\uDB84\uDC1D',  // MJ008351
-  '\u5544\uDB40\uDD04': '\uDB84\uDC1E',  // MJ008372
-  '\u5546\uDB40\uDD04': '\uDB84\uDC1F',  // MJ057166
-  '\u5584\uDB40\uDD04': '\uDB84\uDC20',  // MJ008432
-  '\u5599\uDB40\uDD04': '\uDB84\uDC21',  // MJ008459
-  '\u559C\uDB40\uDD04': '\uDB84\uDC22',  // MJ057175
-  '\u55A9\uDB40\uDD04': '\uDB84\uDC23',  // MJ008483
-  '\u55AB\uDB40\uDD04': '\uDB84\uDC24',  // MJ008485
-  '\u55E4\uDB40\uDD04': '\uDB84\uDC25',  // MJ008550
-  '\u5605\uDB40\uDD04': '\uDB84\uDC26',  // MJ008575
-  '\u5609\uDB40\uDD04': '\uDB84\uDC27',  // MJ008583
-  '\u5642\uDB40\uDD04': '\uDB84\uDC28',  // MJ008643
-  '\u5668\uDB40\uDD04': '\uDB84\uDC29',  // MJ057164
-  '\u5674\uDB40\uDD04': '\uDB84\uDC2A',  // MJ008699
-  '\u56AE\uDB40\uDD04': '\uDB84\uDC2B',  // MJ008764
-  '\u56C1\uDB40\uDD04': '\uDB84\uDC2C',  // MJ008787
-  '\u56CE\uDB40\uDD04': '\uDB84\uDC2D',  // MJ008803
-  '\u570D\uDB40\uDD04': '\uDB84\uDC2E',  // MJ008870
-  '\u57F4\uDB40\uDD04': '\uDB84\uDC2F',  // MJ009106
-  '\u5859\uDB40\uDD04': '\uDB84\uDC30',  // MJ009213
-  '\u585A\uDB40\uDD04': '\uDB84\uDC31',  // MJ009216
-  '\u589C\uDB40\uDD04': '\uDB84\uDC32',  // MJ009285
-  '\u58AB\uDB40\uDD04': '\uDB84\uDC33',  // MJ009306
-  '\u5900\uDB40\uDD04': '\uDB84\uDC34',  // MJ057357
-  '\u5951\uDB40\uDD04': '\uDB84\uDC35',  // MJ009490
-  '\u5960\uDB40\uDD04': '\uDB84\uDC36',  // MJ009517
-  '\u59FF\uDB40\uDD04': '\uDB84\uDC37',  // MJ009690
-  '\u5ABE\uDB40\uDD04': '\uDB84\uDC38',  // MJ009887
-  '\u5AC2\uDB40\uDD04': '\uDB84\uDC39',  // MJ009895
-  '\u5BB3\uDB40\uDD04': '\uDB84\uDC3A',  // MJ010160
-  '\u5BC3\uDB40\uDD04': '\uDB84\uDC3B',  // MJ010180
-  '\u5BD7\uDB40\uDD04': '\uDB84\uDC3C',  // MJ010208
-  '\u5BDB\uDB40\uDD04': '\uDB84\uDC3D',  // MJ059508
-  '\u5C06\uDB40\uDD04': '\uDB84\uDC3E',  // MJ010268
-  '\u5C07\uDB40\uDD04': '\uDB84\uDC3F',  // MJ058022
-  '\u5C0A\uDB40\uDD04': '\uDB84\uDC40',  // MJ010275
-  '\u5C28\uDB40\uDD04': '\uDB84\uDC41',  // MJ010309
-  '\u5DCD\uDB40\uDD04': '\uDB84\uDC42',  // MJ068060
-  '\u5DD3\uDB40\uDD04': '\uDB84\uDC43',  // MJ010752
-  '\u5DFD\uDB40\uDD04': '\uDB84\uDC44',  // MJ010802
-  '\u5E2B\uDB40\uDD04': '\uDB84\uDC45',  // MJ057424
-  '\u5E30\uDB40\uDD04': '\uDB84\uDC46',  // MJ010857
-  '\u5E43\uDB40\uDD04': '\uDB84\uDC47',  // MJ010878
-  '\u5E64\uDB40\uDD04': '\uDB84\uDC48',  // MJ059550
-  '\u5E6D\uDB40\uDD04': '\uDB84\uDC49',  // MJ010933
-  '\u5E7E\uDB40\uDD04': '\uDB84\uDC4A',  // MJ057437
-  '\u5EAD\uDB40\uDD04': '\uDB84\uDC4B',  // MJ011005
-  '\u5ECA\uDB40\uDD04': '\uDB84\uDC4C',  // MJ030184
-  '\u5ED0\uDB40\uDD04': '\uDB84\uDC4D',  // MJ011051
-  '\u5EE3\uDB40\uDD04': '\uDB84\uDC4E',  // MJ011075
-  '\u5EF6\uDB40\uDD04': '\uDB84\uDC4F',  // MJ011102
-  '\u5EF7\uDB40\uDD04': '\uDB84\uDC50',  // MJ011105
-  '\u5EFA\uDB40\uDD04': '\uDB84\uDC51',  // MJ011110
-  '\u5F45\uDB40\uDD04': '\uDB84\uDC52',  // MJ059583
-  '\u5F50\uDB40\uDD04': '\uDB84\uDC53',  // MJ011227
-  '\u5F5A\uDB40\uDD04': '\uDB84\uDC54',  // MJ068054
-  '\u5FA1\uDB40\uDD04': '\uDB84\uDC55',  // MJ057489
-  '\u5FAE\uDB40\uDD04': '\uDB84\uDC56',  // MJ011344
-  '\u5FCD\uDB40\uDD04': '\uDB84\uDC57',  // MJ011378
-  '\u6062\uDB40\uDD04': '\uDB84\uDC58',  // MJ011537
-  '\u6097\uDB40\uDD04': '\uDB84\uDC59',  // MJ011595
-  '\u60A4\uDB40\uDD04': '\uDB84\uDC5A',  // MJ057507
-  '\u60D8\uDB40\uDD04': '\uDB84\uDC5B',  // MJ011671
-  '\u6108\uDB40\uDD04': '\uDB84\uDC5C',  // MJ011723
-  '\u613C\uDB40\uDD04': '\uDB84\uDC5D',  // MJ011785
-  '\u613D\uDB40\uDD04': '\uDB84\uDC5E',  // MJ011789
-  '\u6148\uDB40\uDD04': '\uDB84\uDC5F',  // MJ011803
-  '\u614C\uDB40\uDD04': '\uDB84\uDC60',  // MJ011811
-  '\u6167\uDB40\uDD04': '\uDB84\uDC61',  // MJ011847
-  '\u6190\uDB40\uDD04': '\uDB84\uDC62',  // MJ011908
-  '\u61A4\uDB40\uDD04': '\uDB84\uDC63',  // MJ011932
-  '\u61B2\uDB40\uDD04': '\uDB84\uDC64',  // MJ011951
-  '\u61F2\uDB40\uDD04': '\uDB84\uDC65',  // MJ012027
-  '\u623F\uDB40\uDD04': '\uDB84\uDC66',  // MJ012118
-  '\u6249\uDB40\uDD04': '\uDB84\uDC67',  // MJ012134
-  '\u6268\uDB40\uDD04': '\uDB84\uDC68',  // MJ012171
-  '\u62D0\uDB40\uDD04': '\uDB84\uDC69',  // MJ012274
-  '\u6308\uDB40\uDD04': '\uDB84\uDC6A',  // MJ012330
-  '\u6428\uDB40\uDD04': '\uDB84\uDC6B',  // MJ012634
-  '\u64F2\uDB40\uDD04': '\uDB84\uDC6C',  // MJ012867
-  '\u651D\uDB40\uDD04': '\uDB84\uDC6D',  // MJ012919
-  '\u655D\uDB40\uDD04': '\uDB84\uDC6E',  // MJ012991
-  '\u6578\uDB40\uDD04': '\uDB84\uDC6F',  // MJ013024
-  '\u6583\uDB40\uDD04': '\uDB84\uDC70',  // MJ013035
-  '\u6590\uDB40\uDD04': '\uDB84\uDC71',  // MJ013053
-  '\u65E2\uDB40\uDD04': '\uDB84\uDC72',  // MJ030263
-  '\u661E\uDB40\uDD04': '\uDB84\uDC73',  // MJ013221
-  '\u665F\uDB40\uDD04': '\uDB84\uDC74',  // MJ013288
-  '\u6677\uDB40\uDD04': '\uDB84\uDC75',  // MJ013318
-  '\u66B3\uDB40\uDD04': '\uDB84\uDC76',  // MJ068052
-  '\u66C1\uDB40\uDD04': '\uDB84\uDC77',  // MJ013412
-  '\u66F5\uDB40\uDD04': '\uDB84\uDC78',  // MJ013486
-  '\u66FB\uDB40\uDD04': '\uDB84\uDC79',  // MJ013497
-  '\u6715\uDB40\uDD04': '\uDB84\uDC7A',  // MJ013539
-  '\u6717\uDB40\uDD04': '\uDB84\uDC7B',  // MJ013542
-  '\u671B\uDB40\uDD04': '\uDB84\uDC7C',  // MJ013554
-  '\u671D\uDB40\uDD04': '\uDB84\uDC7D',  // MJ057690
-  '\u67A9\uDB40\uDD04': '\uDB84\uDC7E',  // MJ013582
-  '\u6840\uDB40\uDD04': '\uDB84\uDC7F',  // MJ057740
-  '\u6852\uDB40\uDD04': '\uDB84\uDC80',  // MJ013907
-  '\u685D\uDB40\uDD04': '\uDB84\uDC81',  // MJ013918
-  '\u690D\uDB40\uDD04': '\uDB84\uDC82',  // MJ057753
-  '\u693D\uDB40\uDD04': '\uDB84\uDC83',  // MJ014167
-  '\u6954\uDB40\uDD04': '\uDB84\uDC84',  // MJ057766
-  '\u696F\uDB40\uDD04': '\uDB84\uDC85',  // MJ014230
-  '\u6982\uDB40\uDD04': '\uDB84\uDC86',  // MJ014250
-  '\u69BA\uDB40\uDD04': '\uDB84\uDC87',  // MJ014313
-  '\u69BB\uDB40\uDD04': '\uDB84\uDC88',  // MJ014318
-  '\u69EA\uDB40\uDD04': '\uDB84\uDC89',  // MJ014373
-  '\u6A73\uDB40\uDD04': '\uDB84\uDC8A',  // MJ014546
-  '\u6A9C\uDB40\uDD04': '\uDB84\uDC8B',  // MJ014589
-  '\u6AAC\uDB40\uDD04': '\uDB84\uDC8C',  // MJ014611
-  '\u6ADB\uDB40\uDD04': '\uDB84\uDC8D',  // MJ014671
-  '\u6ADE\uDB40\uDD04': '\uDB84\uDC8E',  // MJ014679
-  '\u6B21\uDB40\uDD04': '\uDB84\uDC8F',  // MJ014748
-  '\u6B4E\uDB40\uDD04': '\uDB84\uDC90',  // MJ057884
-  '\u6B72\uDB40\uDD04': '\uDB84\uDC91',  // MJ014841
-  '\u6C08\uDB40\uDD04': '\uDB84\uDC92',  // MJ014994
-  '\u6C13\uDB40\uDD04': '\uDB84\uDC93',  // MJ015010
-  '\u6CAA\uDB40\uDD04': '\uDB84\uDC94',  // MJ015164
-  '\u6CBF\uDB40\uDD04': '\uDB84\uDC95',  // MJ015187
-  '\u6CE8\uDB40\uDD04': '\uDB84\uDC96',  // MJ015236
-  '\u6D3E\uDB40\uDD04': '\uDB84\uDC97',  // MJ015324
-  '\u6DF5\uDB40\uDD04': '\uDB84\uDC98',  // MJ059783
-  '\u6E23\uDB40\uDD04': '\uDB84\uDC99',  // MJ015550
-  '\u6E2F\uDB40\uDD04': '\uDB84\uDC9A',  // MJ015566
-  '\u6E5B\uDB40\uDD04': '\uDB84\uDC9B',  // MJ060382
-  '\u6E6E\uDB40\uDD04': '\uDB84\uDC9C',  // MJ015640
-  '\u6EA2\uDB40\uDD04': '\uDB84\uDC9D',  // MJ015692
-  '\u6EB2\uDB40\uDD04': '\uDB84\uDC9E',  // MJ015715
-  '\u6ECB\uDB40\uDD04': '\uDB84\uDC9F',  // MJ015746
-  '\u6ED5\uDB40\uDD04': '\uDB84\uDCA0',  // MJ015759
-  '\u6EFF\uDB40\uDD04': '\uDB84\uDCA1',  // MJ059814
-  '\u6F11\uDB40\uDD04': '\uDB84\uDCA2',  // MJ015820
-  '\u6F54\uDB40\uDD04': '\uDB84\uDCA3',  // MJ015896
-  '\u6F5B\uDB40\uDD04': '\uDB84\uDCA4',  // MJ015910
-  '\u6FEF\uDB40\uDD04': '\uDB84\uDCA5',  // MJ016099
-  '\u701B\uDB40\uDD04': '\uDB84\uDCA6',  // MJ016153
-  '\u701E\uDB40\uDD04': '\uDB84\uDCA7',  // MJ016162
-  '\u7027\uDB40\uDD04': '\uDB84\uDCA8',  // MJ016179
-  '\u7152\uDB40\uDD04': '\uDB84\uDCA9',  // MJ016488
-  '\u7162\uDB40\uDD04': '\uDB84\uDCAA',  // MJ016506
-  '\u717D\uDB40\uDD04': '\uDB84\uDCAB',  // MJ016532
-  '\u71C1\uDB40\uDD04': '\uDB84\uDCAC',  // MJ016612
-  '\u71D0\uDB40\uDD04': '\uDB84\uDCAD',  // MJ016632
-  '\u71E7\uDB40\uDD04': '\uDB84\uDCAE',  // MJ016654
-  '\u7228\uDB40\uDD04': '\uDB84\uDCAF',  // MJ016731
-  '\u7235\uDB40\uDD04': '\uDB84\uDCB0',  // MJ016748
-  '\u7259\uDB40\uDD04': '\uDB84\uDCB1',  // MJ016803
-  '\u7336\uDB40\uDD04': '\uDB84\uDCB2',  // MJ017024
-  '\u7337\uDB40\uDD04': '\uDB84\uDCB3',  // MJ017027
-  '\u73CA\uDB40\uDD04': '\uDB84\uDCB4',  // MJ017188
-  '\u7422\uDB40\uDD04': '\uDB84\uDCB5',  // MJ017283
-  '\u74CA\uDB40\uDD04': '\uDB84\uDCB6',  // MJ017497
-  '\u74DC\uDB40\uDD04': '\uDB84\uDCB7',  // MJ017519
-  '\u74E0\uDB40\uDD04': '\uDB84\uDCB8',  // MJ017528
-  '\u7504\uDB40\uDD04': '\uDB84\uDCB9',  // MJ017576
-  '\u750D\uDB40\uDD04': '\uDB84\uDCBA',  // MJ017593
-  '\u7511\uDB40\uDD04': '\uDB84\uDCBB',  // MJ017599
-  '\u7515\uDB40\uDD04': '\uDB84\uDCBC',  // MJ017608
-  '\u7608\uDB40\uDD04': '\uDB84\uDCBD',  // MJ058122
-  '\u7652\uDB40\uDD04': '\uDB84\uDCBE',  // MJ017937
-  '\u7662\uDB40\uDD04': '\uDB84\uDCBF',  // MJ017953
-  '\u7672\uDB40\uDD04': '\uDB84\uDCC0',  // MJ017973
-  '\u76CA\uDB40\uDD04': '\uDB84\uDCC1',  // MJ058674
-  '\u76F4\uDB40\uDD04': '\uDB84\uDCC2',  // MJ056839
-  '\u771E\uDB40\uDD04': '\uDB84\uDCC3',  // MJ058159
-  '\u77AC\uDB40\uDD04': '\uDB84\uDCC4',  // MJ018332
-  '\u78D4\uDB40\uDD04': '\uDB84\uDCC5',  // MJ018636
-  '\u78EF\uDB40\uDD04': '\uDB84\uDCC6',  // MJ018663
-  '\u7934\uDB40\uDD04': '\uDB84\uDCC7',  // MJ018737
-  '\u793E\uDB40\uDD04': '\uDB84\uDCC8',  // MJ058201
-  '\u7940\uDB40\uDD04': '\uDB84\uDCC9',  // MJ018761
-  '\u7953\uDB40\uDD04': '\uDB84\uDCCA',  // MJ018786
-  '\u7956\uDB40\uDD04': '\uDB84\uDCCB',  // MJ059956
-  '\u7958\uDB40\uDD04': '\uDB84\uDCCC',  // MJ018800
-  '\u7962\uDB40\uDD04': '\uDB84\uDCCD',  // MJ018819
-  '\u798A\uDB40\uDD04': '\uDB84\uDCCE',  // MJ018885
-  '\u798D\uDB40\uDD04': '\uDB84\uDCCF',  // MJ058212
-  '\u798F\uDB40\uDD04': '\uDB84\uDCD0',  // MJ018897
-  '\u799D\uDB40\uDD04': '\uDB84\uDCD1',  // MJ018930
-  '\u79AA\uDB40\uDD04': '\uDB84\uDCD2',  // MJ058215
-  '\u79B0\uDB40\uDD04': '\uDB84\uDCD3',  // MJ018970
-  '\u7A31\uDB40\uDD04': '\uDB84\uDCD4',  // MJ019118
-  '\u7A74\uDB40\uDD04': '\uDB84\uDCD5',  // MJ019204
-  '\u7A7F\uDB40\uDD04': '\uDB84\uDCD6',  // MJ019218
-  '\u7B08\uDB40\uDD04': '\uDB84\uDCD7',  // MJ019380
-  '\u7B51\uDB40\uDD04': '\uDB84\uDCD8',  // MJ019456
-  '\u7B75\uDB40\uDD04': '\uDB84\uDCD9',  // MJ019494
-  '\u7B9E\uDB40\uDD04': '\uDB84\uDCDA',  // MJ019543
-  '\u7BC0\uDB40\uDD04': '\uDB84\uDCDB',  // MJ019577
-  '\u7C2A\uDB40\uDD04': '\uDB84\uDCDC',  // MJ019701
-  '\u7C3E\uDB40\uDD04': '\uDB84\uDCDD',  // MJ019721
-  '\u7C50\uDB40\uDD04': '\uDB84\uDCDE',  // MJ019741
-  '\u7C58\uDB40\uDD04': '\uDB84\uDCDF',  // MJ019754
-  '\u7C60\uDB40\uDD04': '\uDB84\uDCE0',  // MJ019766
-  '\u7C69\uDB40\uDD04': '\uDB84\uDCE1',  // MJ019780
-  '\u7C7E\uDB40\uDD04': '\uDB84\uDCE2',  // MJ019806
-  '\u7D00\uDB40\uDD04': '\uDB84\uDCE3',  // MJ019958
-  '\u7D0D\uDB40\uDD04': '\uDB84\uDCE4',  // MJ019982
-  '\u7D5C\uDB40\uDD04': '\uDB84\uDCE5',  // MJ020081
-  '\u7D73\uDB40\uDD04': '\uDB84\uDCE6',  // MJ020112
-  '\u7D9B\uDB40\uDD04': '\uDB84\uDCE7',  // MJ020162
-  '\u7DB2\uDB40\uDD04': '\uDB84\uDCE8',  // MJ020194
-  '\u7DEF\uDB40\uDD04': '\uDB84\uDCE9',  // MJ020271
-  '\u7E22\uDB40\uDD04': '\uDB84\uDCEA',  // MJ020330
-  '\u7E35\uDB40\uDD04': '\uDB84\uDCEB',  // MJ020357
-  '\u7E6D\uDB40\uDD04': '\uDB84\uDCEC',  // MJ020433
-  '\u7FA1\uDB40\uDD04': '\uDB84\uDCED',  // MJ020620
-  '\u7FBD\uDB40\uDD04': '\uDB84\uDCEE',  // MJ058352
-  '\u7FC1\uDB40\uDD04': '\uDB84\uDCEF',  // MJ020659
-  '\u7FE0\uDB40\uDD04': '\uDB84\uDCF0',  // MJ020696
-  '\u7FE1\uDB40\uDD04': '\uDB84\uDCF1',  // MJ020701
-  '\u7FE9\uDB40\uDD04': '\uDB84\uDCF2',  // MJ020714
-  '\u7FEB\uDB40\uDD04': '\uDB84\uDCF3',  // MJ020718
-  '\u7FF0\uDB40\uDD04': '\uDB84\uDCF4',  // MJ020725
-  '\u7FFC\uDB40\uDD04': '\uDB84\uDCF5',  // MJ020743
-  '\u8056\uDB40\uDD04': '\uDB84\uDCF6',  // MJ020847
-  '\u8070\uDB40\uDD04': '\uDB84\uDCF7',  // MJ020873
-  '\u8077\uDB40\uDD04': '\uDB84\uDCF8',  // MJ020887
-  '\u807E\uDB40\uDD04': '\uDB84\uDCF9',  // MJ020899
-  '\u8108\uDB40\uDD04': '\uDB84\uDCFA',  // MJ021042
-  '\u81B5\uDB40\uDD04': '\uDB84\uDCFB',  // MJ021233
-  '\u8200\uDB40\uDD04': '\uDB84\uDCFC',  // MJ021325
-  '\u820E\uDB40\uDD04': '\uDB84\uDCFD',  // MJ060095
-  '\u8218\uDB40\uDD04': '\uDB84\uDCFE',  // MJ021355
-  '\u821C\uDB40\uDD04': '\uDB84\uDCFF',  // MJ021369
-  '\u8239\uDB40\uDD04': '\uDB84\uDD00',  // MJ021401
-  '\u8258\uDB40\uDD04': '\uDB84\uDD01',  // MJ021433
-  '\u8279\uDB40\uDD04': '\uDB84\uDD02',  // MJ030293
-  '\u827E\uDB40\uDD04': '\uDB84\uDD03',  // MJ021491
-  '\u828D\uDB40\uDD04': '\uDB84\uDD04',  // MJ021517
-  '\u8292\uDB40\uDD04': '\uDB84\uDD05',  // MJ021526
-  '\u82A6\uDB40\uDD04': '\uDB84\uDD06',  // MJ021565
-  '\u82B1\uDB40\uDD04': '\uDB84\uDD07',  // MJ021593
-  '\u82BD\uDB40\uDD04': '\uDB84\uDD08',  // MJ021615
-  '\u82D2\uDB40\uDD04': '\uDB84\uDD09',  // MJ021638
-  '\u82E3\uDB40\uDD04': '\uDB84\uDD0A',  // MJ021674
-  '\u82F1\uDB40\uDD04': '\uDB84\uDD0B',  // MJ021701
-  '\u8323\uDB40\uDD04': '\uDB84\uDD0C',  // MJ021789
-  '\u8328\uDB40\uDD04': '\uDB84\uDD0D',  // MJ021801
-  '\u8330\uDB40\uDD04': '\uDB84\uDD0E',  // MJ021821
-  '\u8343\uDB40\uDD04': '\uDB84\uDD0F',  // MJ021861
-  '\u8346\uDB40\uDD04': '\uDB84\uDD10',  // MJ021871
-  '\u834A\uDB40\uDD04': '\uDB84\uDD11',  // MJ021879
-  '\u8352\uDB40\uDD04': '\uDB84\uDD12',  // MJ021899
-  '\u8353\uDB40\uDD04': '\uDB84\uDD13',  // MJ021903
-  '\u8375\uDB40\uDD04': '\uDB84\uDD14',  // MJ021932
-  '\u837F\uDB40\uDD04': '\uDB84\uDD15',  // MJ021953
-  '\u83B5\uDB40\uDD04': '\uDB84\uDD16',  // MJ068065
-  '\u83BD\uDB40\uDD04': '\uDB84\uDD17',  // MJ022051
-  '\u83C1\uDB40\uDD04': '\uDB84\uDD18',  // MJ022062
-  '\u83DC\uDB40\uDD04': '\uDB84\uDD19',  // MJ022111
-  '\u83DF\uDB40\uDD04': '\uDB84\uDD1A',  // MJ022116
-  '\u83EF\uDB40\uDD04': '\uDB84\uDD1B',  // MJ068053
-  '\u83F1\uDB40\uDD04': '\uDB84\uDD1C',  // MJ022158
-  '\u83F2\uDB40\uDD04': '\uDB84\uDD1D',  // MJ022161
-  '\u8420\uDB40\uDD04': '\uDB84\uDD1E',  // MJ022241
-  '\u8422\uDB40\uDD04': '\uDB84\uDD1F',  // MJ022244
-  '\u842C\uDB40\uDD04': '\uDB84\uDD20',  // MJ022255
-  '\u8457\uDB40\uDD04': '\uDB84\uDD21',  // MJ030294
-  '\u845B\uDB40\uDD04': '\uDB84\uDD22',  // MJ022340
-  '\u845C\uDB40\uDD04': '\uDB84\uDD23',  // MJ022344
-  '\u8466\uDB40\uDD04': '\uDB84\uDD24',  // MJ022366
-  '\u847A\uDB40\uDD04': '\uDB84\uDD25',  // MJ022407
-  '\u847D\uDB40\uDD04': '\uDB84\uDD26',  // MJ022414
-  '\u8481\uDB40\uDD04': '\uDB84\uDD27',  // MJ022422
-  '\u8499\uDB40\uDD04': '\uDB84\uDD28',  // MJ022455
-  '\u84C8\uDB40\uDD04': '\uDB84\uDD29',  // MJ060115
-  '\u84CA\uDB40\uDD04': '\uDB84\uDD2A',  // MJ022547
-  '\u84EC\uDB40\uDD04': '\uDB84\uDD2B',  // MJ022600
-  '\u84EE\uDB40\uDD04': '\uDB84\uDD2C',  // MJ022605
-  '\u84F4\uDB40\uDD04': '\uDB84\uDD2D',  // MJ022621
-  '\u8511\uDB40\uDD04': '\uDB84\uDD2E',  // MJ022668
-  '\u8513\uDB40\uDD04': '\uDB84\uDD2F',  // MJ022676
-  '\u8517\uDB40\uDD04': '\uDB84\uDD30',  // MJ022683
-  '\u8525\uDB40\uDD04': '\uDB84\uDD31',  // MJ058531
-  '\u853D\uDB40\uDD04': '\uDB84\uDD32',  // MJ022746
-  '\u8555\uDB40\uDD04': '\uDB84\uDD33',  // MJ022793
-  '\u8556\uDB40\uDD04': '\uDB84\uDD34',  // MJ022795
-  '\u8559\uDB40\uDD04': '\uDB84\uDD35',  // MJ022806
-  '\u855D\uDB40\uDD04': '\uDB84\uDD36',  // MJ022813
-  '\u8563\uDB40\uDD04': '\uDB84\uDD37',  // MJ022827
-  '\u8584\uDB40\uDD04': '\uDB84\uDD38',  // MJ022887
-  '\u8587\uDB40\uDD04': '\uDB84\uDD39',  // MJ022899
-  '\u858C\uDB40\uDD04': '\uDB84\uDD3A',  // MJ022910
-  '\u85A9\uDB40\uDD04': '\uDB84\uDD3B',  // MJ022967
-  '\u85AF\uDB40\uDD04': '\uDB84\uDD3C',  // MJ022985
-  '\u85CF\uDB40\uDD04': '\uDB84\uDD3D',  // MJ023047
-  '\u85D5\uDB40\uDD04': '\uDB84\uDD3E',  // MJ023055
-  '\u85E4\uDB40\uDD04': '\uDB84\uDD3F',  // MJ023081
-  '\u85F7\uDB40\uDD04': '\uDB84\uDD40',  // MJ023117
-  '\u8607\uDB40\uDD04': '\uDB84\uDD41',  // MJ023152
-  '\u8612\uDB40\uDD04': '\uDB84\uDD42',  // MJ023173
-  '\u862D\uDB40\uDD04': '\uDB84\uDD43',  // MJ023222
-  '\u8641\uDB40\uDD04': '\uDB84\uDD44',  // MJ023256
-  '\u8782\uDB40\uDD04': '\uDB84\uDD45',  // MJ023620
-  '\u87D2\uDB40\uDD04': '\uDB84\uDD46',  // MJ023707
-  '\u8805\uDB40\uDD04': '\uDB84\uDD47',  // MJ023767
-  '\u880E\uDB40\uDD04': '\uDB84\uDD48',  // MJ023782
-  '\u8836\uDB40\uDD04': '\uDB84\uDD49',  // MJ023833
-  '\u8842\uDB40\uDD04': '\uDB84\uDD4A',  // MJ023849
-  '\u8846\uDB40\uDD04': '\uDB84\uDD4B',  // MJ058675
-  '\u8853\uDB40\uDD04': '\uDB84\uDD4C',  // MJ058680
-  '\u885B\uDB40\uDD04': '\uDB84\uDD4D',  // MJ058685
-  '\u8870\uDB40\uDD04': '\uDB84\uDD4E',  // MJ058692
-  '\u896A\uDB40\uDD04': '\uDB84\uDD4F',  // MJ024166
-  '\u8986\uDB40\uDD04': '\uDB84\uDD50',  // MJ024208
-  '\u89D2\uDB40\uDD04': '\uDB84\uDD51',  // MJ024282
-  '\u8A0A\uDB40\uDD04': '\uDB84\uDD52',  // MJ024341
-  '\u8A1D\uDB40\uDD04': '\uDB84\uDD53',  // MJ024363
-  '\u8A3B\uDB40\uDD04': '\uDB84\uDD54',  // MJ024401
-  '\u8A95\uDB40\uDD04': '\uDB84\uDD55',  // MJ024502
-  '\u8AA4\uDB40\uDD04': '\uDB84\uDD56',  // MJ024522
-  '\u8ADB\uDB40\uDD04': '\uDB84\uDD57',  // MJ024594
-  '\u8AED\uDB40\uDD04': '\uDB84\uDD58',  // MJ024619
-  '\u8AEE\uDB40\uDD04': '\uDB84\uDD59',  // MJ024622
-  '\u8B04\uDB40\uDD04': '\uDB84\uDD5A',  // MJ024655
-  '\u8B0A\uDB40\uDD04': '\uDB84\uDD5B',  // MJ024663
-  '\u8B39\uDB40\uDD04': '\uDB84\uDD5C',  // MJ030298
-  '\u8B41\uDB40\uDD04': '\uDB84\uDD5D',  // MJ024741
-  '\u8B56\uDB40\uDD04': '\uDB84\uDD5E',  // MJ024774
-  '\u8C3A\uDB40\uDD04': '\uDB84\uDD5F',  // MJ024872
-  '\u8C41\uDB40\uDD04': '\uDB84\uDD60',  // MJ024884
-  '\u8C6A\uDB40\uDD04': '\uDB84\uDD61',  // MJ024938
-  '\u8CA0\uDB40\uDD04': '\uDB84\uDD62',  // MJ024998
-  '\u8CAB\uDB40\uDD04': '\uDB84\uDD63',  // MJ025015
-  '\u8CC7\uDB40\uDD04': '\uDB84\uDD64',  // MJ025046
-  '\u8CCA\uDB40\uDD04': '\uDB84\uDD65',  // MJ025050
-  '\u8CD3\uDB40\uDD04': '\uDB84\uDD66',  // MJ030300
-  '\u8CFC\uDB40\uDD04': '\uDB84\uDD67',  // MJ025106
-  '\u8D0F\uDB40\uDD04': '\uDB84\uDD68',  // MJ025134
-  '\u8D73\uDB40\uDD04': '\uDB84\uDD69',  // MJ025173
-  '\u8DDA\uDB40\uDD04': '\uDB84\uDD6A',  // MJ025284
-  '\u8E91\uDB40\uDD04': '\uDB84\uDD6B',  // MJ025476
-  '\u8EA1\uDB40\uDD04': '\uDB84\uDD6C',  // MJ025494
-  '\u8F44\uDB40\uDD04': '\uDB84\uDD6D',  // MJ025682
-  '\u8FB6\uDB40\uDD04': '\uDB84\uDD6E',  // MJ058837
-  '\u8FC5\uDB40\uDD04': '\uDB84\uDD6F',  // MJ025780
-  '\u8FD4\uDB40\uDD04': '\uDB84\uDD70',  // MJ025806
-  '\u8FE9\uDB40\uDD04': '\uDB84\uDD71',  // MJ025837
-  '\u8FEF\uDB40\uDD04': '\uDB84\uDD72',  // MJ025849
-  '\u8FF0\uDB40\uDD04': '\uDB84\uDD73',  // MJ058845
-  '\u9003\uDB40\uDD04': '\uDB84\uDD74',  // MJ025885
-  '\u900E\uDB40\uDD04': '\uDB84\uDD75',  // MJ025907
-  '\u9010\uDB40\uDD04': '\uDB84\uDD76',  // MJ025912
-  '\u901E\uDB40\uDD04': '\uDB84\uDD77',  // MJ025940
-  '\u9022\uDB40\uDD04': '\uDB84\uDD78',  // MJ025952
-  '\u9035\uDB40\uDD04': '\uDB84\uDD79',  // MJ025986
-  '\u9038\uDB40\uDD04': '\uDB84\uDD7A',  // MJ025996
-  '\u9039\uDB40\uDD04': '\uDB84\uDD7B',  // MJ026000
-  '\u9041\uDB40\uDD04': '\uDB84\uDD7C',  // MJ026013
-  '\u9042\uDB40\uDD04': '\uDB84\uDD7D',  // MJ026016
-  '\u9047\uDB40\uDD04': '\uDB84\uDD7E',  // MJ026027
-  '\u904E\uDB40\uDD04': '\uDB84\uDD7F',  // MJ058856
-  '\u904F\uDB40\uDD04': '\uDB84\uDD80',  // MJ026043
-  '\u9050\uDB40\uDD04': '\uDB84\uDD81',  // MJ026047
-  '\u9052\uDB40\uDD04': '\uDB84\uDD82',  // MJ026052
-  '\u9055\uDB40\uDD04': '\uDB84\uDD83',  // MJ026066
-  '\u9058\uDB40\uDD04': '\uDB84\uDD84',  // MJ026072
-  '\u9060\uDB40\uDD04': '\uDB84\uDD85',  // MJ026087
-  '\u9069\uDB40\uDD04': '\uDB84\uDD86',  // MJ026107
-  '\u906E\uDB40\uDD04': '\uDB84\uDD87',  // MJ026116
-  '\u906F\uDB40\uDD04': '\uDB84\uDD88',  // MJ026120
-  '\u9074\uDB40\uDD04': '\uDB84\uDD89',  // MJ026132
-  '\u9075\uDB40\uDD04': '\uDB84\uDD8A',  // MJ026136
-  '\u9077\uDB40\uDD04': '\uDB84\uDD8B',  // MJ026140
-  '\u9078\uDB40\uDD04': '\uDB84\uDD8C',  // MJ026148
-  '\u907D\uDB40\uDD04': '\uDB84\uDD8D',  // MJ026160
-  '\u9081\uDB40\uDD04': '\uDB84\uDD8E',  // MJ026170
-  '\u9083\uDB40\uDD04': '\uDB84\uDD8F',  // MJ026179
-  '\u9084\uDB40\uDD04': '\uDB84\uDD90',  // MJ058868
-  '\u9087\uDB40\uDD04': '\uDB84\uDD91',  // MJ026185
-  '\u90A6\uDB40\uDD04': '\uDB84\uDD92',  // MJ026246
-  '\u90AA\uDB40\uDD04': '\uDB84\uDD93',  // MJ026254
-  '\u9130\uDB40\uDD04': '\uDB84\uDD94',  // MJ026405
-  '\u914D\uDB40\uDD04': '\uDB84\uDD95',  // MJ026442
-  '\u91C1\uDB40\uDD04': '\uDB84\uDD96',  // MJ026580
-  '\u91FC\uDB40\uDD04': '\uDB84\uDD97',  // MJ026647
-  '\u925B\uDB40\uDD04': '\uDB84\uDD98',  // MJ026758
-  '\u92E9\uDB40\uDD04': '\uDB84\uDD99',  // MJ026917
-  '\u9365\uDB40\uDD04': '\uDB84\uDD9A',  // MJ027051
-  '\u93A1\uDB40\uDD04': '\uDB84\uDD9B',  // MJ027117
-  '\u93B9\uDB40\uDD04': '\uDB84\uDD9C',  // MJ027151
-  '\u9477\uDB40\uDD04': '\uDB84\uDD9D',  // MJ027376
-  '\u964D\uDB40\uDD04': '\uDB84\uDD9E',  // MJ027576
-  '\u9686\uDB40\uDD04': '\uDB84\uDD9F',  // MJ027640
-  '\u968A\uDB40\uDD04': '\uDB84\uDDA0',  // MJ027644
-  '\u9698\uDB40\uDD04': '\uDB84\uDDA1',  // MJ027662
-  '\u96A3\uDB40\uDD04': '\uDB84\uDDA2',  // MJ027678
-  '\u96A7\uDB40\uDD04': '\uDB84\uDDA3',  // MJ027684
-  '\u96C5\uDB40\uDD04': '\uDB84\uDDA4',  // MJ027721
-  '\u96D8\uDB40\uDD04': '\uDB84\uDDA5',  // MJ027748
-  '\u96DA\uDB40\uDD04': '\uDB84\uDDA6',  // MJ027751
-  '\u96E3\uDB40\uDD04': '\uDB84\uDDA7',  // MJ030304
-  '\u9706\uDB40\uDD04': '\uDB84\uDDA8',  // MJ027808
-  '\u9721\uDB40\uDD04': '\uDB84\uDDA9',  // MJ027840
-  '\u9755\uDB40\uDD04': '\uDB84\uDDAA',  // MJ027899
-  '\u975C\uDB40\uDD04': '\uDB84\uDDAB',  // MJ027914
-  '\u9760\uDB40\uDD04': '\uDB84\uDDAC',  // MJ027925
-  '\u976D\uDB40\uDD04': '\uDB84\uDDAD',  // MJ027941
-  '\u9771\uDB40\uDD04': '\uDB84\uDDAE',  // MJ027947
-  '\u97C6\uDB40\uDD04': '\uDB84\uDDAF',  // MJ028048
-  '\u97C8\uDB40\uDD04': '\uDB84\uDDB0',  // MJ028054
-  '\u97DC\uDB40\uDD04': '\uDB84\uDDB1',  // MJ028095
-  '\u97DE\uDB40\uDD04': '\uDB84\uDDB2',  // MJ028099
-  '\u985E\uDB40\uDD04': '\uDB84\uDDB3',  // MJ059027
-  '\u9873\uDB40\uDD04': '\uDB84\uDDB4',  // MJ028288
-  '\u98E2\uDB40\uDD04': '\uDB84\uDDB5',  // MJ028342
-  '\u98EF\uDB40\uDD04': '\uDB84\uDDB6',  // MJ030240
-  '\u98FD\uDB40\uDD04': '\uDB84\uDDB7',  // MJ028383
-  '\u9903\uDB40\uDD04': '\uDB84\uDDB8',  // MJ028395
-  '\u990A\uDB40\uDD04': '\uDB84\uDDB9',  // MJ028406
-  '\u990C\uDB40\uDD04': '\uDB84\uDDBA',  // MJ028409
-  '\u9942\uDB40\uDD04': '\uDB84\uDDBB',  // MJ028518
-  '\u9945\uDB40\uDD04': '\uDB84\uDDBC',  // MJ028523
-  '\u9951\uDB40\uDD04': '\uDB84\uDDBD',  // MJ028554
-  '\u9957\uDB40\uDD04': '\uDB84\uDDBE',  // MJ028564
-  '\u995B\uDB40\uDD04': '\uDB84\uDDBF',  // MJ028579
-  '\u9A4A\uDB40\uDD04': '\uDB84\uDDC0',  // MJ068073
-  '\u9B2D\uDB40\uDD04': '\uDB84\uDDC1',  // MJ028995
-  '\u9B2E\uDB40\uDD04': '\uDB84\uDDC2',  // MJ028998
-  '\u9BAB\uDB40\uDD04': '\uDB84\uDDC3',  // MJ029141
-  '\u9BDB\uDB40\uDD04': '\uDB84\uDDC4',  // MJ029201
-  '\u9C52\uDB40\uDD04': '\uDB84\uDDC5',  // MJ029359
-  '\u9D09\uDB40\uDD04': '\uDB84\uDDC6',  // MJ029453
-  '\u9DBF\uDB40\uDD04': '\uDB84\uDDC7',  // MJ029655
-  '\u9DC0\uDB40\uDD04': '\uDB84\uDDC8',  // MJ029659
-  '\u9E9F\uDB40\uDD04': '\uDB84\uDDC9',  // MJ029816
-  '\u9EAD\uDB40\uDD04': '\uDB84\uDDCA',  // MJ029839
-  '\u9F08\uDB40\uDD04': '\uDB84\uDDCB',  // MJ029972
-  '\u9F4B\uDB40\uDD04': '\uDB84\uDDCC',  // MJ030061
-  '\u9F67\uDB40\uDD04': '\uDB84\uDDCD',  // MJ030097
-  '\u9F8D\uDB40\uDD04': '\uDB84\uDDCE',  // MJ030125
-  '\u9F8F\uDB40\uDD04': '\uDB84\uDDCF',  // MJ060378
-  '\u9F9C\uDB40\uDD04': '\uDB84\uDDD0',  // MJ030154
-  '\u9F9D\uDB40\uDD04': '\uDB84\uDDD1',  // MJ030161
-  '\uFA24\uDB40\uDD04': '\uDB84\uDDD2',  // MJ030230
-  '\uD841\uDD25\uDB40\uDD04': '\uDB84\uDDD3',  // MJ031011
-  '\uD84D\uDDC4\uDB40\uDD04': '\uDB84\uDDD4',  // MJ038175
-  '\uD84F\uDF1B\uDB40\uDD04': '\uDB84\uDDD5',  // MJ059819
-  '\uD867\uDE3D\uDB40\uDD04': '\uDB84\uDDD6',  // MJ055218
-  '\uD86D\uDF62\uDB40\uDD04': '\uDB84\uDDD7',  // MJ059474
-  '\uD875\uDEB6\uDB40\uDD04': '\uDB84\uDDD8',  // MJ059577
-  '\uD877\uDCD3\uDB40\uDD04': '\uDB84\uDDD9',  // MJ059850
-  '\u4EA2\uDB40\uDD05': '\uDB84\uDDDA',  // MJ056979
-  '\u5049\uDB40\uDD05': '\uDB84\uDDDB',  // MJ006900
-  '\u5091\uDB40\uDD05': '\uDB84\uDDDC',  // MJ006988
-  '\u50CA\uDB40\uDD05': '\uDB84\uDDDD',  // MJ007055
-  '\u50E7\uDB40\uDD05': '\uDB84\uDDDE',  // MJ030245
-  '\u5154\uDB40\uDD05': '\uDB84\uDDDF',  // MJ007241
-  '\u517C\uDB40\uDD05': '\uDB84\uDDE0',  // MJ056985
-  '\u518D\uDB40\uDD05': '\uDB84\uDDE1',  // MJ057010
-  '\u5193\uDB40\uDD05': '\uDB84\uDDE2',  // MJ057016
-  '\u5195\uDB40\uDD05': '\uDB84\uDDE3',  // MJ007325
-  '\u51A2\uDB40\uDD05': '\uDB84\uDDE4',  // MJ068058
-  '\u51A4\uDB40\uDD05': '\uDB84\uDDE5',  // MJ007348
-  '\u51B4\uDB40\uDD05': '\uDB84\uDDE6',  // MJ007368
-  '\u5271\uDB40\uDD05': '\uDB84\uDDE7',  // MJ007570
-  '\u5272\uDB40\uDD05': '\uDB84\uDDE8',  // MJ007573
-  '\u52E4\uDB40\uDD05': '\uDB84\uDDE9',  // MJ059389
-  '\u535A\uDB40\uDD05': '\uDB84\uDDEA',  // MJ059398
-  '\u537F\uDB40\uDD05': '\uDB84\uDDEB',  // MJ007913
-  '\u53DB\uDB40\uDD05': '\uDB84\uDDEC',  // MJ008012
-  '\u5533\uDB40\uDD05': '\uDB84\uDDED',  // MJ008350
-  '\u5544\uDB40\uDD05': '\uDB84\uDDEE',  // MJ008371
-  '\u5584\uDB40\uDD05': '\uDB84\uDDEF',  // MJ008433
-  '\u55AB\uDB40\uDD05': '\uDB84\uDDF0',  // MJ008487
-  '\u55E4\uDB40\uDD05': '\uDB84\uDDF1',  // MJ008551
-  '\u5605\uDB40\uDD05': '\uDB84\uDDF2',  // MJ008577
-  '\u5668\uDB40\uDD05': '\uDB84\uDDF3',  // MJ058033
-  '\u56AE\uDB40\uDD05': '\uDB84\uDDF4',  // MJ008765
-  '\u56CE\uDB40\uDD05': '\uDB84\uDDF5',  // MJ059441
-  '\u570D\uDB40\uDD05': '\uDB84\uDDF6',  // MJ008871
-  '\u585A\uDB40\uDD05': '\uDB84\uDDF7',  // MJ030194
-  '\u5951\uDB40\uDD05': '\uDB84\uDDF8',  // MJ009493
-  '\u5960\uDB40\uDD05': '\uDB84\uDDF9',  // MJ009515
-  '\u5BB3\uDB40\uDD05': '\uDB84\uDDFA',  // MJ010159
-  '\u5C0A\uDB40\uDD05': '\uDB84\uDDFB',  // MJ010277
-  '\u5ED0\uDB40\uDD05': '\uDB84\uDDFC',  // MJ011049
-  '\u5EE3\uDB40\uDD05': '\uDB84\uDDFD',  // MJ011076
-  '\u5EF6\uDB40\uDD05': '\uDB84\uDDFE',  // MJ011100
-  '\u5FA1\uDB40\uDD05': '\uDB84\uDDFF',  // MJ011324
-  '\u5FAE\uDB40\uDD05': '\uDB84\uDE00',  // MJ011342
-  '\u6062\uDB40\uDD05': '\uDB84\uDE01',  // MJ011539
-  '\u6097\uDB40\uDD05': '\uDB84\uDE02',  // MJ011596
-  '\u6167\uDB40\uDD05': '\uDB84\uDE03',  // MJ059630
-  '\u61B2\uDB40\uDD05': '\uDB84\uDE04',  // MJ011948
-  '\u61F2\uDB40\uDD05': '\uDB84\uDE05',  // MJ030260
-  '\u6249\uDB40\uDD05': '\uDB84\uDE06',  // MJ012133
-  '\u6268\uDB40\uDD05': '\uDB84\uDE07',  // MJ012172
-  '\u64F2\uDB40\uDD05': '\uDB84\uDE08',  // MJ012865
-  '\u651D\uDB40\uDD05': '\uDB84\uDE09',  // MJ012920
-  '\u65E1\uDB40\uDD05': '\uDB84\uDE0A',  // MJ013144
-  '\u65E2\uDB40\uDD05': '\uDB84\uDE0B',  // MJ057647
-  '\u665F\uDB40\uDD05': '\uDB84\uDE0C',  // MJ013289
-  '\u66C1\uDB40\uDD05': '\uDB84\uDE0D',  // MJ013413
-  '\u6717\uDB40\uDD05': '\uDB84\uDE0E',  // MJ013543
-  '\u671B\uDB40\uDD05': '\uDB84\uDE0F',  // MJ013553
-  '\u6756\uDB40\uDD05': '\uDB84\uDE10',  // MJ013620
-  '\u6852\uDB40\uDD05': '\uDB84\uDE11',  // MJ013906
-  '\u685D\uDB40\uDD05': '\uDB84\uDE12',  // MJ013920
-  '\u6962\uDB40\uDD05': '\uDB84\uDE13',  // MJ014215
-  '\u696F\uDB40\uDD05': '\uDB84\uDE14',  // MJ014231
-  '\u6982\uDB40\uDD05': '\uDB84\uDE15',  // MJ014251
-  '\u6A9C\uDB40\uDD05': '\uDB84\uDE16',  // MJ014591
-  '\u6ADB\uDB40\uDD05': '\uDB84\uDE17',  // MJ014670
-  '\u6B72\uDB40\uDD05': '\uDB84\uDE18',  // MJ057897
-  '\u6CBF\uDB40\uDD05': '\uDB84\uDE19',  // MJ015188
-  '\u6EA2\uDB40\uDD05': '\uDB84\uDE1A',  // MJ015694
-  '\u6ECB\uDB40\uDD05': '\uDB84\uDE1B',  // MJ015744
-  '\u6F11\uDB40\uDD05': '\uDB84\uDE1C',  // MJ015816
-  '\u6F54\uDB40\uDD05': '\uDB84\uDE1D',  // MJ015899
-  '\u6F5B\uDB40\uDD05': '\uDB84\uDE1E',  // MJ015909
-  '\u701B\uDB40\uDD05': '\uDB84\uDE1F',  // MJ016154
-  '\u701E\uDB40\uDD05': '\uDB84\uDE20',  // MJ016163
-  '\u7027\uDB40\uDD05': '\uDB84\uDE21',  // MJ016181
-  '\u717D\uDB40\uDD05': '\uDB84\uDE22',  // MJ016534
-  '\u7228\uDB40\uDD05': '\uDB84\uDE23',  // MJ016730
-  '\u7336\uDB40\uDD05': '\uDB84\uDE24',  // MJ017022
-  '\u73CA\uDB40\uDD05': '\uDB84\uDE25',  // MJ017189
-  '\u7422\uDB40\uDD05': '\uDB84\uDE26',  // MJ030271
-  '\u7504\uDB40\uDD05': '\uDB84\uDE27',  // MJ017578
-  '\u750D\uDB40\uDD05': '\uDB84\uDE28',  // MJ017594
-  '\u7511\uDB40\uDD05': '\uDB84\uDE29',  // MJ017601
-  '\u7515\uDB40\uDD05': '\uDB84\uDE2A',  // MJ017607
-  '\u7672\uDB40\uDD05': '\uDB84\uDE2B',  // MJ017974
-  '\u76CA\uDB40\uDD05': '\uDB84\uDE2C',  // MJ059934
-  '\u76F4\uDB40\uDD05': '\uDB84\uDE2D',  // MJ056840
-  '\u771E\uDB40\uDD05': '\uDB84\uDE2E',  // MJ056990
-  '\u771F\uDB40\uDD05': '\uDB84\uDE2F',  // MJ018174
-  '\u78D4\uDB40\uDD05': '\uDB84\uDE30',  // MJ018637
-  '\u7934\uDB40\uDD05': '\uDB84\uDE31',  // MJ018740
-  '\u7940\uDB40\uDD05': '\uDB84\uDE32',  // MJ018758
-  '\u7962\uDB40\uDD05': '\uDB84\uDE33',  // MJ018820
-  '\u798A\uDB40\uDD05': '\uDB84\uDE34',  // MJ018889
-  '\u7A7F\uDB40\uDD05': '\uDB84\uDE35',  // MJ019219
-  '\u7B08\uDB40\uDD05': '\uDB84\uDE36',  // MJ019382
-  '\u7B75\uDB40\uDD05': '\uDB84\uDE37',  // MJ019495
-  '\u7BC0\uDB40\uDD05': '\uDB84\uDE38',  // MJ030285
-  '\u7C3E\uDB40\uDD05': '\uDB84\uDE39',  // MJ019723
-  '\u7C50\uDB40\uDD05': '\uDB84\uDE3A',  // MJ019743
-  '\u7C7E\uDB40\uDD05': '\uDB84\uDE3B',  // MJ019805
-  '\u7D5C\uDB40\uDD05': '\uDB84\uDE3C',  // MJ020083
-  '\u7DB2\uDB40\uDD05': '\uDB84\uDE3D',  // MJ060050
-  '\u7E22\uDB40\uDD05': '\uDB84\uDE3E',  // MJ020332
-  '\u7E35\uDB40\uDD05': '\uDB84\uDE3F',  // MJ020359
-  '\u7FC1\uDB40\uDD05': '\uDB84\uDE40',  // MJ020661
-  '\u7FE1\uDB40\uDD05': '\uDB84\uDE41',  // MJ020699
-  '\u7FE9\uDB40\uDD05': '\uDB84\uDE42',  // MJ020712
-  '\u7FFC\uDB40\uDD05': '\uDB84\uDE43',  // MJ020742
-  '\u8108\uDB40\uDD05': '\uDB84\uDE44',  // MJ021044
-  '\u8200\uDB40\uDD05': '\uDB84\uDE45',  // MJ058416
-  '\u8239\uDB40\uDD05': '\uDB84\uDE46',  // MJ021402
-  '\u8279\uDB40\uDD05': '\uDB84\uDE47',  // MJ021481
-  '\u82A6\uDB40\uDD05': '\uDB84\uDE48',  // MJ021566
-  '\u8323\uDB40\uDD05': '\uDB84\uDE49',  // MJ021787
-  '\u8330\uDB40\uDD05': '\uDB84\uDE4A',  // MJ021820
-  '\u8352\uDB40\uDD05': '\uDB84\uDE4B',  // MJ060100
-  '\u8375\uDB40\uDD05': '\uDB84\uDE4C',  // MJ021930
-  '\u837F\uDB40\uDD05': '\uDB84\uDE4D',  // MJ021949
-  '\u83BD\uDB40\uDD05': '\uDB84\uDE4E',  // MJ022054
-  '\u83DF\uDB40\uDD05': '\uDB84\uDE4F',  // MJ022120
-  '\u83F2\uDB40\uDD05': '\uDB84\uDE50',  // MJ022163
-  '\u845B\uDB40\uDD05': '\uDB84\uDE51',  // MJ022341
-  '\u8466\uDB40\uDD05': '\uDB84\uDE52',  // MJ022363
-  '\u84EC\uDB40\uDD05': '\uDB84\uDE53',  // MJ022598
-  '\u84EE\uDB40\uDD05': '\uDB84\uDE54',  // MJ022604
-  '\u8511\uDB40\uDD05': '\uDB84\uDE55',  // MJ022670
-  '\u853D\uDB40\uDD05': '\uDB84\uDE56',  // MJ022745
-  '\u8555\uDB40\uDD05': '\uDB84\uDE57',  // MJ022794
-  '\u8563\uDB40\uDD05': '\uDB84\uDE58',  // MJ022828
-  '\u8581\uDB40\uDD05': '\uDB84\uDE59',  // MJ022881
-  '\u8587\uDB40\uDD05': '\uDB84\uDE5A',  // MJ022898
-  '\u85A9\uDB40\uDD05': '\uDB84\uDE5B',  // MJ022968
-  '\u85CF\uDB40\uDD05': '\uDB84\uDE5C',  // MJ023045
-  '\u85E4\uDB40\uDD05': '\uDB84\uDE5D',  // MJ023082
-  '\u8612\uDB40\uDD05': '\uDB84\uDE5E',  // MJ030224
-  '\u8782\uDB40\uDD05': '\uDB84\uDE5F',  // MJ023619
-  '\u87D2\uDB40\uDD05': '\uDB84\uDE60',  // MJ023705
-  '\u880E\uDB40\uDD05': '\uDB84\uDE61',  // MJ023783
-  '\u8836\uDB40\uDD05': '\uDB84\uDE62',  // MJ023835
-  '\u8842\uDB40\uDD05': '\uDB84\uDE63',  // MJ023850
-  '\u8846\uDB40\uDD05': '\uDB84\uDE64',  // MJ058677
-  '\u885B\uDB40\uDD05': '\uDB84\uDE65',  // MJ023880
-  '\u896A\uDB40\uDD05': '\uDB84\uDE66',  // MJ024168
-  '\u8A1D\uDB40\uDD05': '\uDB84\uDE67',  // MJ024365
-  '\u8A95\uDB40\uDD05': '\uDB84\uDE68',  // MJ024504
-  '\u8B39\uDB40\uDD05': '\uDB84\uDE69',  // MJ060186
-  '\u8CA0\uDB40\uDD05': '\uDB84\uDE6A',  // MJ025000
-  '\u8CFC\uDB40\uDD05': '\uDB84\uDE6B',  // MJ025108
-  '\u8D0F\uDB40\uDD05': '\uDB84\uDE6C',  // MJ025133
-  '\u8DDA\uDB40\uDD05': '\uDB84\uDE6D',  // MJ025285
-  '\u8E91\uDB40\uDD05': '\uDB84\uDE6E',  // MJ025477
-  '\u8F44\uDB40\uDD05': '\uDB84\uDE6F',  // MJ025684
-  '\u900E\uDB40\uDD05': '\uDB84\uDE70',  // MJ025906
-  '\u901E\uDB40\uDD05': '\uDB84\uDE71',  // MJ025942
-  '\u9038\uDB40\uDD05': '\uDB84\uDE72',  // MJ025995
-  '\u9041\uDB40\uDD05': '\uDB84\uDE73',  // MJ026014
-  '\u9042\uDB40\uDD05': '\uDB84\uDE74',  // MJ026017
-  '\u9052\uDB40\uDD05': '\uDB84\uDE75',  // MJ026056
-  '\u9055\uDB40\uDD05': '\uDB84\uDE76',  // MJ026062
-  '\u9058\uDB40\uDD05': '\uDB84\uDE77',  // MJ026069
-  '\u906E\uDB40\uDD05': '\uDB84\uDE78',  // MJ026115
-  '\u906F\uDB40\uDD05': '\uDB84\uDE79',  // MJ026122
-  '\u9075\uDB40\uDD05': '\uDB84\uDE7A',  // MJ026137
-  '\u9077\uDB40\uDD05': '\uDB84\uDE7B',  // MJ026142
-  '\u907D\uDB40\uDD05': '\uDB84\uDE7C',  // MJ026161
-  '\u9081\uDB40\uDD05': '\uDB84\uDE7D',  // MJ026168
-  '\u9083\uDB40\uDD05': '\uDB84\uDE7E',  // MJ026178
-  '\u90A6\uDB40\uDD05': '\uDB84\uDE7F',  // MJ026244
-  '\u90AA\uDB40\uDD05': '\uDB84\uDE80',  // MJ026256
-  '\u9115\uDB40\uDD05': '\uDB84\uDE81',  // MJ026368
-  '\u914B\uDB40\uDD05': '\uDB84\uDE82',  // MJ059344
-  '\u914D\uDB40\uDD05': '\uDB84\uDE83',  // MJ026439
-  '\u91C1\uDB40\uDD05': '\uDB84\uDE84',  // MJ026576
-  '\u91FC\uDB40\uDD05': '\uDB84\uDE85',  // MJ026649
-  '\u925B\uDB40\uDD05': '\uDB84\uDE86',  // MJ026759
-  '\u93A1\uDB40\uDD05': '\uDB84\uDE87',  // MJ058932
-  '\u93B9\uDB40\uDD05': '\uDB84\uDE88',  // MJ027147
-  '\u9686\uDB40\uDD05': '\uDB84\uDE89',  // MJ030190
-  '\u9698\uDB40\uDD05': '\uDB84\uDE8A',  // MJ027664
-  '\u96A3\uDB40\uDD05': '\uDB84\uDE8B',  // MJ027680
-  '\u96A7\uDB40\uDD05': '\uDB84\uDE8C',  // MJ027687
-  '\u96C5\uDB40\uDD05': '\uDB84\uDE8D',  // MJ027723
-  '\u975C\uDB40\uDD05': '\uDB84\uDE8E',  // MJ027915
-  '\u9760\uDB40\uDD05': '\uDB84\uDE8F',  // MJ027923
-  '\u9771\uDB40\uDD05': '\uDB84\uDE90',  // MJ027945
-  '\u97C6\uDB40\uDD05': '\uDB84\uDE91',  // MJ028046
-  '\u97D3\uDB40\uDD05': '\uDB84\uDE92',  // MJ028079
-  '\u97DE\uDB40\uDD05': '\uDB84\uDE93',  // MJ028102
-  '\u97FF\uDB40\uDD05': '\uDB84\uDE94',  // MJ028143
-  '\u990A\uDB40\uDD05': '\uDB84\uDE95',  // MJ068101
-  '\u990C\uDB40\uDD05': '\uDB84\uDE96',  // MJ028411
-  '\u9945\uDB40\uDD05': '\uDB84\uDE97',  // MJ028522
-  '\u9957\uDB40\uDD05': '\uDB84\uDE98',  // MJ028567
-  '\u9B2E\uDB40\uDD05': '\uDB84\uDE99',  // MJ028997
-  '\u9BAB\uDB40\uDD05': '\uDB84\uDE9A',  // MJ029142
-  '\u9C57\uDB40\uDD05': '\uDB84\uDE9B',  // MJ029368
-  '\u9DBF\uDB40\uDD05': '\uDB84\uDE9C',  // MJ029657
-  '\u9DC0\uDB40\uDD05': '\uDB84\uDE9D',  // MJ029658
-  '\u9E9F\uDB40\uDD05': '\uDB84\uDE9E',  // MJ029818
-  '\u9F08\uDB40\uDD05': '\uDB84\uDE9F',  // MJ029969
-  '\u9F4B\uDB40\uDD05': '\uDB84\uDEA0',  // MJ059306
-  '\u9F8D\uDB40\uDD05': '\uDB84\uDEA1',  // MJ030127
-  '\u9F9C\uDB40\uDD05': '\uDB84\uDEA2',  // MJ030158
-  '\u9F9D\uDB40\uDD05': '\uDB84\uDEA3',  // MJ060002
-  '\uFA24\uDB40\uDD05': '\uDB84\uDEA4',  // MJ030231
-  '\uD841\uDD25\uDB40\uDD05': '\uDB84\uDEA5',  // MJ031012
-  '\uD84F\uDF1B\uDB40\uDD05': '\uDB84\uDEA6',  // MJ039540
-  '\uD875\uDEB6\uDB40\uDD05': '\uDB84\uDEA7',  // MJ059578
-  '\uD86D\uDF8E\uDB40\uDD05': '\uDB84\uDEA8',  // MJ059736
-  '\u4E55\uDB40\uDD06': '\uDB84\uDEA9',  // MJ006396
-  '\u50CA\uDB40\uDD06': '\uDB84\uDEAA',  // MJ007057
-  '\u517C\uDB40\uDD06': '\uDB84\uDEAB',  // MJ056989
-  '\u5195\uDB40\uDD06': '\uDB84\uDEAC',  // MJ007327
-  '\u51A4\uDB40\uDD06': '\uDB84\uDEAD',  // MJ068059
-  '\u51B4\uDB40\uDD06': '\uDB84\uDEAE',  // MJ007370
-  '\u51DE\uDB40\uDD06': '\uDB84\uDEAF',  // MJ007413
-  '\u535A\uDB40\uDD06': '\uDB84\uDEB0',  // MJ007861
-  '\u5377\uDB40\uDD06': '\uDB84\uDEB1',  // MJ007899
-  '\u537F\uDB40\uDD06': '\uDB84\uDEB2',  // MJ007914
-  '\u53A9\uDB40\uDD06': '\uDB84\uDEB3',  // MJ007948
-  '\u53DB\uDB40\uDD06': '\uDB84\uDEB4',  // MJ057140
-  '\u5544\uDB40\uDD06': '\uDB84\uDEB5',  // MJ008373
-  '\u5584\uDB40\uDD06': '\uDB84\uDEB6',  // MJ008430
-  '\u55AB\uDB40\uDD06': '\uDB84\uDEB7',  // MJ008488
-  '\u56AE\uDB40\uDD06': '\uDB84\uDEB8',  // MJ008766
-  '\u585A\uDB40\uDD06': '\uDB84\uDEB9',  // MJ030195
-  '\u5951\uDB40\uDD06': '\uDB84\uDEBA',  // MJ009492
-  '\u5BB3\uDB40\uDD06': '\uDB84\uDEBB',  // MJ010161
-  '\u5ED0\uDB40\uDD06': '\uDB84\uDEBC',  // MJ011050
-  '\u5FA1\uDB40\uDD06': '\uDB84\uDEBD',  // MJ011326
-  '\u6168\uDB40\uDD06': '\uDB84\uDEBE',  // MJ011849
-  '\u61B2\uDB40\uDD06': '\uDB84\uDEBF',  // MJ011950
-  '\u61F2\uDB40\uDD06': '\uDB84\uDEC0',  // MJ030261
-  '\u6249\uDB40\uDD06': '\uDB84\uDEC1',  // MJ012135
-  '\u66C1\uDB40\uDD06': '\uDB84\uDEC2',  // MJ013414
-  '\u6717\uDB40\uDD06': '\uDB84\uDEC3',  // MJ030185
-  '\u671B\uDB40\uDD06': '\uDB84\uDEC4',  // MJ013552
-  '\u6756\uDB40\uDD06': '\uDB84\uDEC5',  // MJ013622
-  '\u6ADB\uDB40\uDD06': '\uDB84\uDEC6',  // MJ014672
-  '\u6C08\uDB40\uDD06': '\uDB84\uDEC7',  // MJ014995
-  '\u6ECB\uDB40\uDD06': '\uDB84\uDEC8',  // MJ015745
-  '\u6F11\uDB40\uDD06': '\uDB84\uDEC9',  // MJ015817
-  '\u6F5B\uDB40\uDD06': '\uDB84\uDECA',  // MJ015908
-  '\u701B\uDB40\uDD06': '\uDB84\uDECB',  // MJ016156
-  '\u701E\uDB40\uDD06': '\uDB84\uDECC',  // MJ016159
-  '\u7027\uDB40\uDD06': '\uDB84\uDECD',  // MJ016178
-  '\u7336\uDB40\uDD06': '\uDB84\uDECE',  // MJ017025
-  '\u73CA\uDB40\uDD06': '\uDB84\uDECF',  // MJ058043
-  '\u7511\uDB40\uDD06': '\uDB84\uDED0',  // MJ017600
-  '\u771E\uDB40\uDD06': '\uDB84\uDED1',  // MJ018172
-  '\u7953\uDB40\uDD06': '\uDB84\uDED2',  // MJ018785
-  '\u7962\uDB40\uDD06': '\uDB84\uDED3',  // MJ018818
-  '\u7DB2\uDB40\uDD06': '\uDB84\uDED4',  // MJ058313
-  '\u7FE1\uDB40\uDD06': '\uDB84\uDED5',  // MJ020700
-  '\u7FFC\uDB40\uDD06': '\uDB84\uDED6',  // MJ020744
-  '\u821B\uDB40\uDD06': '\uDB84\uDED7',  // MJ021366
-  '\u82A6\uDB40\uDD06': '\uDB84\uDED8',  // MJ021568
-  '\u82B1\uDB40\uDD06': '\uDB84\uDED9',  // MJ021594
-  '\u82BD\uDB40\uDD06': '\uDB84\uDEDA',  // MJ021617
-  '\u8323\uDB40\uDD06': '\uDB84\uDEDB',  // MJ021791
-  '\u8352\uDB40\uDD06': '\uDB84\uDEDC',  // MJ058459
-  '\u83BD\uDB40\uDD06': '\uDB84\uDEDD',  // MJ022053
-  '\u83DF\uDB40\uDD06': '\uDB84\uDEDE',  // MJ022118
-  '\u845B\uDB40\uDD06': '\uDB84\uDEDF',  // MJ022338
-  '\u8466\uDB40\uDD06': '\uDB84\uDEE0',  // MJ022367
-  '\u84EC\uDB40\uDD06': '\uDB84\uDEE1',  // MJ022601
-  '\u84EE\uDB40\uDD06': '\uDB84\uDEE2',  // MJ022607
-  '\u8511\uDB40\uDD06': '\uDB84\uDEE3',  // MJ058507
-  '\u8563\uDB40\uDD06': '\uDB84\uDEE4',  // MJ022829
-  '\u8587\uDB40\uDD06': '\uDB84\uDEE5',  // MJ022895
-  '\u85E4\uDB40\uDD06': '\uDB84\uDEE6',  // MJ060144
-  '\u8612\uDB40\uDD06': '\uDB84\uDEE7',  // MJ060150
-  '\u87D2\uDB40\uDD06': '\uDB84\uDEE8',  // MJ023706
-  '\u8A1D\uDB40\uDD06': '\uDB84\uDEE9',  // MJ024366
-  '\u8B44\uDB40\uDD06': '\uDB84\uDEEA',  // MJ068067
-  '\u9038\uDB40\uDD06': '\uDB84\uDEEB',  // MJ025994
-  '\u9039\uDB40\uDD06': '\uDB84\uDEEC',  // MJ026001
-  '\u9042\uDB40\uDD06': '\uDB84\uDEED',  // MJ026018
-  '\u9052\uDB40\uDD06': '\uDB84\uDEEE',  // MJ026057
-  '\u9055\uDB40\uDD06': '\uDB84\uDEEF',  // MJ026063
-  '\u9077\uDB40\uDD06': '\uDB84\uDEF0',  // MJ026144
-  '\u90A6\uDB40\uDD06': '\uDB84\uDEF1',  // MJ026243
-  '\u914D\uDB40\uDD06': '\uDB84\uDEF2',  // MJ026441
-  '\u91C1\uDB40\uDD06': '\uDB84\uDEF3',  // MJ026578
-  '\u9686\uDB40\uDD06': '\uDB84\uDEF4',  // MJ030189
-  '\u9698\uDB40\uDD06': '\uDB84\uDEF5',  // MJ027663
-  '\u9760\uDB40\uDD06': '\uDB84\uDEF6',  // MJ027924
-  '\u9771\uDB40\uDD06': '\uDB84\uDEF7',  // MJ027946
-  '\u97FF\uDB40\uDD06': '\uDB84\uDEF8',  // MJ028145
-  '\u990C\uDB40\uDD06': '\uDB84\uDEF9',  // MJ028410
-  '\u9957\uDB40\uDD06': '\uDB84\uDEFA',  // MJ028566
-  '\u9B2E\uDB40\uDD06': '\uDB84\uDEFB',  // MJ029000
-  '\u9F08\uDB40\uDD06': '\uDB84\uDEFC',  // MJ029971
-  '\u9F4B\uDB40\uDD06': '\uDB84\uDEFD',  // MJ030063
-  '\u9F8D\uDB40\uDD06': '\uDB84\uDEFE',  // MJ030126
-  '\u9F9C\uDB40\uDD06': '\uDB84\uDEFF',  // MJ030156
-  '\uFA24\uDB40\uDD06': '\uDB84\uDF00',  // MJ030232
-  '\u51DE\uDB40\uDD07': '\uDB84\uDF01',  // MJ007414
-  '\u537F\uDB40\uDD07': '\uDB84\uDF02',  // MJ007912
-  '\u53A9\uDB40\uDD07': '\uDB84\uDF03',  // MJ007953
-  '\u56AE\uDB40\uDD07': '\uDB84\uDF04',  // MJ008767
-  '\u5ED0\uDB40\uDD07': '\uDB84\uDF05',  // MJ011052
-  '\u6168\uDB40\uDD07': '\uDB84\uDF06',  // MJ011853
-  '\u61F2\uDB40\uDD07': '\uDB84\uDF07',  // MJ012028
-  '\u6249\uDB40\uDD07': '\uDB84\uDF08',  // MJ012136
-  '\u671B\uDB40\uDD07': '\uDB84\uDF09',  // MJ013549
-  '\u6F11\uDB40\uDD07': '\uDB84\uDF0A',  // MJ015819
-  '\u6F22\uDB40\uDD07': '\uDB84\uDF0B',  // MJ015842
-  '\u6F5B\uDB40\uDD07': '\uDB84\uDF0C',  // MJ015911
-  '\u7027\uDB40\uDD07': '\uDB84\uDF0D',  // MJ016182
-  '\u7511\uDB40\uDD07': '\uDB84\uDF0E',  // MJ017602
-  '\u771F\uDB40\uDD07': '\uDB84\uDF0F',  // MJ018175
-  '\u7995\uDB40\uDD07': '\uDB84\uDF10',  // MJ018909
-  '\u821B\uDB40\uDD07': '\uDB84\uDF11',  // MJ021368
-  '\u82A6\uDB40\uDD07': '\uDB84\uDF12',  // MJ021567
-  '\u8352\uDB40\uDD07': '\uDB84\uDF13',  // MJ060106
-  '\u83BD\uDB40\uDD07': '\uDB84\uDF14',  // MJ058462
-  '\u83DF\uDB40\uDD07': '\uDB84\uDF15',  // MJ022121
-  '\u845B\uDB40\uDD07': '\uDB84\uDF16',  // MJ022337
-  '\u8612\uDB40\uDD07': '\uDB84\uDF17',  // MJ030221
-  '\u9038\uDB40\uDD07': '\uDB84\uDF18',  // MJ030303
-  '\u9052\uDB40\uDD07': '\uDB84\uDF19',  // MJ026054
-  '\u9055\uDB40\uDD07': '\uDB84\uDF1A',  // MJ026065
-  '\u9077\uDB40\uDD07': '\uDB84\uDF1B',  // MJ026143
-  '\u9083\uDB40\uDD07': '\uDB84\uDF1C',  // MJ026175
-  '\u9760\uDB40\uDD07': '\uDB84\uDF1D',  // MJ027926
-  '\u97FF\uDB40\uDD07': '\uDB84\uDF1E',  // MJ028144
-  '\u990C\uDB40\uDD07': '\uDB84\uDF1F',  // MJ028413
-  '\u9957\uDB40\uDD07': '\uDB84\uDF20',  // MJ028568
-  '\u9F08\uDB40\uDD07': '\uDB84\uDF21',  // MJ029970
-  '\u9F8D\uDB40\uDD07': '\uDB84\uDF22',  // MJ030124
-  '\uFA24\uDB40\uDD07': '\uDB84\uDF23',  // MJ030228
-  '\u51DE\uDB40\uDD08': '\uDB84\uDF24',  // MJ030203
-  '\u53A9\uDB40\uDD08': '\uDB84\uDF25',  // MJ007951
-  '\u6168\uDB40\uDD08': '\uDB84\uDF26',  // MJ030258
-  '\u6F11\uDB40\uDD08': '\uDB84\uDF27',  // MJ015821
-  '\u76F4\uDB40\uDD08': '\uDB84\uDF28',  // MJ056841
-  '\u7995\uDB40\uDD08': '\uDB84\uDF29',  // MJ018911
-  '\u82A6\uDB40\uDD08': '\uDB84\uDF2A',  // MJ021564
-  '\u8352\uDB40\uDD08': '\uDB84\uDF2B',  // MJ060384
-  '\u83DF\uDB40\uDD08': '\uDB84\uDF2C',  // MJ022119
-  '\u845B\uDB40\uDD08': '\uDB84\uDF2D',  // MJ022339
-  '\u8612\uDB40\uDD08': '\uDB84\uDF2E',  // MJ030222
-  '\u864E\uDB40\uDD08': '\uDB84\uDF2F',  // MJ058583
-  '\u9038\uDB40\uDD08': '\uDB84\uDF30',  // MJ030234
-  '\u9077\uDB40\uDD08': '\uDB84\uDF31',  // MJ026141
-  '\u9083\uDB40\uDD08': '\uDB84\uDF32',  // MJ026177
-  '\u908A\uDB40\uDD08': '\uDB84\uDF33',  // MJ026200
-  '\u90A6\uDB40\uDD08': '\uDB84\uDF34',  // MJ026245
-  '\u96E3\uDB40\uDD08': '\uDB84\uDF35',  // MJ058983
-  '\u97FF\uDB40\uDD08': '\uDB84\uDF36',  // MJ030305
-  '\u990C\uDB40\uDD08': '\uDB84\uDF37',  // MJ028408
-  '\u9957\uDB40\uDD08': '\uDB84\uDF38',  // MJ028569
-  '\uD841\uDD25\uDB40\uDD08': '\uDB84\uDF39',  // MJ059329
-  '\u51DE\uDB40\uDD09': '\uDB84\uDF3A',  // MJ030204
-  '\u53A9\uDB40\uDD09': '\uDB84\uDF3B',  // MJ007950
-  '\u6168\uDB40\uDD09': '\uDB84\uDF3C',  // MJ011852
-  '\u6F11\uDB40\uDD09': '\uDB84\uDF3D',  // MJ015822
-  '\u76F4\uDB40\uDD09': '\uDB84\uDF3E',  // MJ056845
-  '\u82A6\uDB40\uDD09': '\uDB84\uDF3F',  // MJ021563
-  '\u83DF\uDB40\uDD09': '\uDB84\uDF40',  // MJ022117
-  '\u8612\uDB40\uDD09': '\uDB84\uDF41',  // MJ030220
-  '\u9077\uDB40\uDD09': '\uDB84\uDF42',  // MJ058865
-  '\u908A\uDB40\uDD09': '\uDB84\uDF43',  // MJ060240
-  '\u97FF\uDB40\uDD09': '\uDB84\uDF44',  // MJ030306
-  '\u990C\uDB40\uDD09': '\uDB84\uDF45',  // MJ028412
-  '\u9957\uDB40\uDD09': '\uDB84\uDF46',  // MJ028565
-  '\u9F9C\uDB40\uDD09': '\uDB84\uDF47',  // MJ059288
-  '\u51DE\uDB40\uDD0A': '\uDB84\uDF48',  // MJ030205
-  '\u53A9\uDB40\uDD0A': '\uDB84\uDF49',  // MJ007952
-  '\u6168\uDB40\uDD0A': '\uDB84\uDF4A',  // MJ011851
-  '\u671B\uDB40\uDD0A': '\uDB84\uDF4B',  // MJ013551
-  '\u83DF\uDB40\uDD0A': '\uDB84\uDF4C',  // MJ022122
-  '\u8612\uDB40\uDD0A': '\uDB84\uDF4D',  // MJ030223
-  '\u9077\uDB40\uDD0A': '\uDB84\uDF4E',  // MJ026145
-  '\u908A\uDB40\uDD0A': '\uDB84\uDF4F',  // MJ026205
-  '\u97FF\uDB40\uDD0A': '\uDB84\uDF50',  // MJ068072
-  '\u9957\uDB40\uDD0A': '\uDB84\uDF51',  // MJ028570
-  '\u51DE\uDB40\uDD0B': '\uDB84\uDF52',  // MJ059370
-  '\u53A9\uDB40\uDD0B': '\uDB84\uDF53',  // MJ007955
-  '\u6168\uDB40\uDD0B': '\uDB84\uDF54',  // MJ011856
-  '\u83DF\uDB40\uDD0B': '\uDB84\uDF55',  // MJ022124
-  '\u908A\uDB40\uDD0B': '\uDB84\uDF56',  // MJ026204
-  '\u53A9\uDB40\uDD0C': '\uDB84\uDF57',  // MJ007949
-  '\u5EE3\uDB40\uDD0C': '\uDB84\uDF58',  // MJ011078
-  '\u83DF\uDB40\uDD0C': '\uDB84\uDF59',  // MJ022125
-  '\u908A\uDB40\uDD0C': '\uDB84\uDF5A',  // MJ026203
-  '\u53A9\uDB40\uDD0D': '\uDB84\uDF5B',  // MJ007954
-  '\u6168\uDB40\uDD0D': '\uDB84\uDF5C',  // MJ011850
-  '\u908A\uDB40\uDD0D': '\uDB84\uDF5D',  // MJ026202
-  '\u6168\uDB40\uDD0E': '\uDB84\uDF5E',  // MJ011854
-  '\u908A\uDB40\uDD0E': '\uDB84\uDF5F',  // MJ026201
-  '\u9F8D\uDB40\uDD0E': '\uDB84\uDF60',  // MJ059285
-  '\u6168\uDB40\uDD0F': '\uDB84\uDF61',  // MJ011855
-  '\u9089\uDB40\uDD0F': '\uDB84\uDF62',  // MJ026190
-  '\u908A\uDB40\uDD0F': '\uDB84\uDF63',  // MJ026199
-  '\u9089\uDB40\uDD10': '\uDB84\uDF64',  // MJ060248
-  '\u908A\uDB40\uDD10': '\uDB84\uDF65',  // MJ026206
-  '\u9089\uDB40\uDD11': '\uDB84\uDF66',  // MJ060239
-  '\u908A\uDB40\uDD11': '\uDB84\uDF67',  // MJ058870
-  '\u9089\uDB40\uDD12': '\uDB84\uDF68',  // MJ060238
-  '\u908A\uDB40\uDD12': '\uDB84\uDF69',  // MJ026207
-  '\u9089\uDB40\uDD13': '\uDB84\uDF6A',  // MJ060237
-  '\u9089\uDB40\uDD14': '\uDB84\uDF6B',  // MJ060235
-  '\u9089\uDB40\uDD15': '\uDB84\uDF6C',  // MJ060234
-  '\u9089\uDB40\uDD16': '\uDB84\uDF6D',  // MJ058866
-  '\u9089\uDB40\uDD17': '\uDB84\uDF6E',  // MJ026197
-  '\u9089\uDB40\uDD18': '\uDB84\uDF6F',  // MJ060236
-  '\u9089\uDB40\uDD19': '\uDB84\uDF70',  // MJ026191
-  '\u9089\uDB40\uDD1A': '\uDB84\uDF71',  // MJ026194
-  '\u9089\uDB40\uDD1B': '\uDB84\uDF72',  // MJ026192
-  '\u9089\uDB40\uDD1C': '\uDB84\uDF73',  // MJ026195
-  '\u9089\uDB40\uDD1D': '\uDB84\uDF74',  // MJ026196
-  '\u9089\uDB40\uDD1F': '\uDB84\uDF75',  // MJ026193
-};
-export const cjkCompatibilityMap = {
-  '\uF91D': '\u6B04',
-  '\uF928': '\u5ECA',
-  '\uF929': '\u6717',
-  '\uF936': '\u865C',
-  '\uF970': '\u6BBA',
-  '\uF9D0': '\u985E',
-  '\uF9DC': '\u9686',
-  '\uFA10': '\u585A',
-  '\uFA12': '\u6674',
-  '\uFA15': '\u51DE',
-  '\uFA16': '\u732A',
-  '\uFA17': '\u76CA',
-  '\uFA18': '\u793C',
-  '\uFA19': '\u795E',
-  '\uFA1A': '\u7965',
-  '\uFA1B': '\u798F',
-  '\uFA1C': '\u9756',
-  '\uFA1D': '\u7CBE',
-  '\uFA1E': '\u7FBD',
-  '\uFA20': '\u8612',
-  '\uFA22': '\u8AF8',
-  '\uFA25': '\u9038',
-  '\uFA26': '\u90FD',
-  '\uFA2A': '\u98EF',
-  '\uFA2B': '\u98FC',
-  '\uFA2C': '\u9928',
-  '\uFA2D': '\u9DB4',
-  '\uFA30': '\u4FAE',
-  '\uFA31': '\u50E7',
-  '\uFA32': '\u514D',
-  '\uFA33': '\u52C9',
-  '\uFA34': '\u52E4',
-  '\uFA35': '\u5351',
-  '\uFA36': '\u559D',
-  '\uFA37': '\u5606',
-  '\uFA38': '\u5668',
-  '\uFA39': '\u5840',
-  '\uFA3A': '\u58A8',
-  '\uFA3B': '\u5C64',
-  '\uFA3C': '\u5C6E',
-  '\uFA3D': '\u6094',
-  '\uFA3E': '\u6168',
-  '\uFA3F': '\u618E',
-  '\uFA40': '\u61F2',
-  '\uFA41': '\u654F',
-  '\uFA42': '\u65E2',
-  '\uFA43': '\u6691',
-  '\uFA44': '\u6885',
-  '\uFA45': '\u6D77',
-  '\uFA46': '\u6E1A',
-  '\uFA47': '\u6F22',
-  '\uFA48': '\u716E',
-  '\uFA49': '\u722B',
-  '\uFA4A': '\u7422',
-  '\uFA4B': '\u7891',
-  '\uFA4C': '\u793E',
-  '\uFA4D': '\u7949',
-  '\uFA4E': '\u7948',
-  '\uFA4F': '\u7950',
-  '\uFA50': '\u7956',
-  '\uFA51': '\u795D',
-  '\uFA52': '\u798D',
-  '\uFA53': '\u798E',
-  '\uFA54': '\u7A40',
-  '\uFA55': '\u7A81',
-  '\uFA56': '\u7BC0',
-  '\uFA57': '\u7DF4',
-  '\uFA58': '\u7E09',
-  '\uFA59': '\u7E41',
-  '\uFA5A': '\u7F72',
-  '\uFA5B': '\u8005',
-  '\uFA5C': '\u81ED',
-  '\uFA5D': '\u8279',
-  '\uFA5E': '\u8279',
-  '\uFA5F': '\u8457',
-  '\uFA60': '\u8910',
-  '\uFA61': '\u8996',
-  '\uFA62': '\u8B01',
-  '\uFA63': '\u8B39',
-  '\uFA64': '\u8CD3',
-  '\uFA65': '\u8D08',
-  '\uFA66': '\u8FB6',
-  '\uFA67': '\u9038',
-  '\uFA68': '\u96E3',
-  '\uFA69': '\u97FF',
-  '\uFA6A': '\u983B',
-  '\uFA6B': '\u6075',
-  '\uFA6C': '\uD850\uDEEE',
-  '\uFA6D': '\u8218'
+  "\u3404\uDB40\uDD01": "\uE000",
+  "\u342A\uDB40\uDD01": "\uE001",
+  "\u3436\uDB40\uDD01": "\uE002",
+  "\u3464\uDB40\uDD01": "\uE003",
+  "\u3479\uDB40\uDD01": "\uE004",
+  "\u34A7\uDB40\uDD01": "\uE005",
+  "\u34C3\uDB40\uDD01": "\uE006",
+  "\u34D7\uDB40\uDD01": "\uE007",
+  "\u34F5\uDB40\uDD01": "\uE008",
+  "\u34F6\uDB40\uDD01": "\uE009",
+  "\u351C\uDB40\uDD01": "\uE00A",
+  "\u3530\uDB40\uDD01": "\uE00B",
+  "\u3531\uDB40\uDD01": "\uE00C",
+  "\u3534\uDB40\uDD01": "\uE00D",
+  "\u353A\uDB40\uDD01": "\uE00E",
+  "\u3553\uDB40\uDD01": "\uE00F",
+  "\u3561\uDB40\uDD01": "\uE010",
+  "\u356F\uDB40\uDD01": "\uE011",
+  "\u35B6\uDB40\uDD01": "\uE012",
+  "\u35D4\uDB40\uDD01": "\uE013",
+  "\u35D6\uDB40\uDD01": "\uE014",
+  "\u35FB\uDB40\uDD01": "\uE015",
+  "\u361D\uDB40\uDD01": "\uE016",
+  "\u3634\uDB40\uDD01": "\uE017",
+  "\u3644\uDB40\uDD01": "\uE018",
+  "\u365B\uDB40\uDD01": "\uE019",
+  "\u3687\uDB40\uDD01": "\uE01A",
+  "\u3688\uDB40\uDD01": "\uE01B",
+  "\u3689\uDB40\uDD01": "\uE01C",
+  "\u36EE\uDB40\uDD01": "\uE01D",
+  "\u36FA\uDB40\uDD01": "\uE01E",
+  "\u36FC\uDB40\uDD01": "\uE01F",
+  "\u3732\uDB40\uDD01": "\uE020",
+  "\u3778\uDB40\uDD01": "\uE021",
+  "\u37B7\uDB40\uDD01": "\uE022",
+  "\u37D0\uDB40\uDD01": "\uE023",
+  "\u37DF\uDB40\uDD01": "\uE024",
+  "\u37E7\uDB40\uDD01": "\uE025",
+  "\u3809\uDB40\uDD01": "\uE026",
+  "\u3817\uDB40\uDD01": "\uE027",
+  "\u382F\uDB40\uDD01": "\uE028",
+  "\u384C\uDB40\uDD01": "\uE029",
+  "\u385B\uDB40\uDD01": "\uE02A",
+  "\u3862\uDB40\uDD01": "\uE02B",
+  "\u386D\uDB40\uDD01": "\uE02C",
+  "\u38B4\uDB40\uDD01": "\uE02D",
+  "\u38C7\uDB40\uDD01": "\uE02E",
+  "\u38FA\uDB40\uDD01": "\uE02F",
+  "\u3905\uDB40\uDD01": "\uE030",
+  "\u393A\uDB40\uDD01": "\uE031",
+  "\u3971\uDB40\uDD01": "\uE032",
+  "\u39AE\uDB40\uDD01": "\uE033",
+  "\u39B6\uDB40\uDD01": "\uE034",
+  "\u39DE\uDB40\uDD01": "\uE035",
+  "\u3A17\uDB40\uDD01": "\uE036",
+  "\u3A2F\uDB40\uDD01": "\uE037",
+  "\u3A3E\uDB40\uDD01": "\uE038",
+  "\u3A3F\uDB40\uDD01": "\uE039",
+  "\u3A9C\uDB40\uDD01": "\uE03A",
+  "\u3AE6\uDB40\uDD01": "\uE03B",
+  "\u3AF7\uDB40\uDD01": "\uE03C",
+  "\u3B08\uDB40\uDD01": "\uE03D",
+  "\u3B1D\uDB40\uDD01": "\uE03E",
+  "\u3B26\uDB40\uDD01": "\uE03F",
+  "\u3B3C\uDB40\uDD01": "\uE040",
+  "\u3B52\uDB40\uDD01": "\uE041",
+  "\u3B74\uDB40\uDD01": "\uE042",
+  "\u3BAE\uDB40\uDD01": "\uE043",
+  "\u3BB5\uDB40\uDD01": "\uE044",
+  "\u3BB8\uDB40\uDD01": "\uE045",
+  "\u3BFE\uDB40\uDD01": "\uE046",
+  "\u3C05\uDB40\uDD01": "\uE047",
+  "\u3C0D\uDB40\uDD01": "\uE048",
+  "\u3C4F\uDB40\uDD01": "\uE049",
+  "\u3C8A\uDB40\uDD01": "\uE04A",
+  "\u3CDF\uDB40\uDD01": "\uE04B",
+  "\u3CE4\uDB40\uDD01": "\uE04C",
+  "\u3D00\uDB40\uDD01": "\uE04D",
+  "\u3D67\uDB40\uDD01": "\uE04E",
+  "\u3D7E\uDB40\uDD01": "\uE04F",
+  "\u3D93\uDB40\uDD01": "\uE050",
+  "\u3DB3\uDB40\uDD01": "\uE051",
+  "\u3DDF\uDB40\uDD01": "\uE052",
+  "\u3DED\uDB40\uDD01": "\uE053",
+  "\u3DF1\uDB40\uDD01": "\uE054",
+  "\u3E02\uDB40\uDD01": "\uE055",
+  "\u3E0F\uDB40\uDD01": "\uE056",
+  "\u3E37\uDB40\uDD01": "\uE057",
+  "\u3E9A\uDB40\uDD01": "\uE058",
+  "\u3EE8\uDB40\uDD01": "\uE059",
+  "\u3F0B\uDB40\uDD01": "\uE05A",
+  "\u3F1B\uDB40\uDD01": "\uE05B",
+  "\u3FC2\uDB40\uDD01": "\uE05C",
+  "\u3FCA\uDB40\uDD01": "\uE05D",
+  "\u3FDF\uDB40\uDD01": "\uE05E",
+  "\u3FFC\uDB40\uDD01": "\uE05F",
+  "\u4018\uDB40\uDD01": "\uE060",
+  "\u4048\uDB40\uDD01": "\uE061",
+  "\u404F\uDB40\uDD01": "\uE062",
+  "\u4050\uDB40\uDD01": "\uE063",
+  "\u4071\uDB40\uDD01": "\uE064",
+  "\u407E\uDB40\uDD01": "\uE065",
+  "\u4096\uDB40\uDD01": "\uE066",
+  "\u40AE\uDB40\uDD01": "\uE067",
+  "\u40CD\uDB40\uDD01": "\uE068",
+  "\u40FD\uDB40\uDD01": "\uE069",
+  "\u40FE\uDB40\uDD01": "\uE06A",
+  "\u4102\uDB40\uDD01": "\uE06B",
+  "\u4103\uDB40\uDD01": "\uE06C",
+  "\u4105\uDB40\uDD01": "\uE06D",
+  "\u4107\uDB40\uDD01": "\uE06E",
+  "\u4112\uDB40\uDD01": "\uE06F",
+  "\u412A\uDB40\uDD01": "\uE070",
+  "\u412F\uDB40\uDD01": "\uE071",
+  "\u4146\uDB40\uDD01": "\uE072",
+  "\u4192\uDB40\uDD01": "\uE073",
+  "\u41B3\uDB40\uDD01": "\uE074",
+  "\u41D2\uDB40\uDD01": "\uE075",
+  "\u41F1\uDB40\uDD01": "\uE076",
+  "\u4227\uDB40\uDD01": "\uE077",
+  "\u422A\uDB40\uDD01": "\uE078",
+  "\u4275\uDB40\uDD01": "\uE079",
+  "\u42B8\uDB40\uDD01": "\uE07A",
+  "\u42C6\uDB40\uDD01": "\uE07B",
+  "\u4301\uDB40\uDD01": "\uE07C",
+  "\u4313\uDB40\uDD01": "\uE07D",
+  "\u4334\uDB40\uDD01": "\uE07E",
+  "\u4359\uDB40\uDD01": "\uE07F",
+  "\u43A9\uDB40\uDD01": "\uE080",
+  "\u43CA\uDB40\uDD01": "\uE081",
+  "\u43D5\uDB40\uDD01": "\uE082",
+  "\u446B\uDB40\uDD01": "\uE083",
+  "\u4494\uDB40\uDD01": "\uE084",
+  "\u44A2\uDB40\uDD01": "\uE085",
+  "\u44A9\uDB40\uDD01": "\uE086",
+  "\u44AB\uDB40\uDD01": "\uE087",
+  "\u44B1\uDB40\uDD01": "\uE088",
+  "\u44B6\uDB40\uDD01": "\uE089",
+  "\u44B9\uDB40\uDD01": "\uE08A",
+  "\u44C1\uDB40\uDD01": "\uE08B",
+  "\u44CC\uDB40\uDD01": "\uE08C",
+  "\u44D0\uDB40\uDD01": "\uE08D",
+  "\u44D3\uDB40\uDD01": "\uE08E",
+  "\u44E6\uDB40\uDD01": "\uE08F",
+  "\u44F2\uDB40\uDD01": "\uE090",
+  "\u44F5\uDB40\uDD01": "\uE091",
+  "\u44FA\uDB40\uDD01": "\uE092",
+  "\u4506\uDB40\uDD01": "\uE093",
+  "\u450A\uDB40\uDD01": "\uE094",
+  "\u450F\uDB40\uDD01": "\uE095",
+  "\u4524\uDB40\uDD01": "\uE096",
+  "\u4535\uDB40\uDD01": "\uE097",
+  "\u453B\uDB40\uDD01": "\uE098",
+  "\u453C\uDB40\uDD01": "\uE099",
+  "\u454C\uDB40\uDD01": "\uE09A",
+  "\u455E\uDB40\uDD01": "\uE09B",
+  "\u4572\uDB40\uDD01": "\uE09C",
+  "\u4576\uDB40\uDD01": "\uE09D",
+  "\u457E\uDB40\uDD01": "\uE09E",
+  "\u4587\uDB40\uDD01": "\uE09F",
+  "\u458D\uDB40\uDD01": "\uE0A0",
+  "\u458E\uDB40\uDD01": "\uE0A1",
+  "\u459D\uDB40\uDD01": "\uE0A2",
+  "\u459F\uDB40\uDD01": "\uE0A3",
+  "\u45C8\uDB40\uDD01": "\uE0A4",
+  "\u45CE\uDB40\uDD01": "\uE0A5",
+  "\u45CF\uDB40\uDD01": "\uE0A6",
+  "\u45D7\uDB40\uDD01": "\uE0A7",
+  "\u45E6\uDB40\uDD01": "\uE0A8",
+  "\u460D\uDB40\uDD01": "\uE0A9",
+  "\u4638\uDB40\uDD01": "\uE0AA",
+  "\u4645\uDB40\uDD01": "\uE0AB",
+  "\u465C\uDB40\uDD01": "\uE0AC",
+  "\u4674\uDB40\uDD01": "\uE0AD",
+  "\u46B0\uDB40\uDD01": "\uE0AE",
+  "\u4704\uDB40\uDD01": "\uE0AF",
+  "\u471A\uDB40\uDD01": "\uE0B0",
+  "\u475F\uDB40\uDD01": "\uE0B1",
+  "\u4768\uDB40\uDD01": "\uE0B2",
+  "\u477C\uDB40\uDD01": "\uE0B3",
+  "\u484E\uDB40\uDD01": "\uE0B4",
+  "\u4871\uDB40\uDD01": "\uE0B5",
+  "\u4889\uDB40\uDD01": "\uE0B6",
+  "\u488B\uDB40\uDD01": "\uE0B7",
+  "\u488C\uDB40\uDD01": "\uE0B8",
+  "\u4890\uDB40\uDD01": "\uE0B9",
+  "\u4894\uDB40\uDD01": "\uE0BA",
+  "\u48A6\uDB40\uDD01": "\uE0BB",
+  "\u48AB\uDB40\uDD01": "\uE0BC",
+  "\u48D0\uDB40\uDD01": "\uE0BD",
+  "\u493F\uDB40\uDD01": "\uE0BE",
+  "\u494E\uDB40\uDD01": "\uE0BF",
+  "\u496C\uDB40\uDD01": "\uE0C0",
+  "\u4995\uDB40\uDD01": "\uE0C1",
+  "\u49E2\uDB40\uDD01": "\uE0C2",
+  "\u4A22\uDB40\uDD01": "\uE0C3",
+  "\u4A24\uDB40\uDD01": "\uE0C4",
+  "\u4A28\uDB40\uDD01": "\uE0C5",
+  "\u4A3C\uDB40\uDD01": "\uE0C6",
+  "\u4A7F\uDB40\uDD01": "\uE0C7",
+  "\u4AA7\uDB40\uDD01": "\uE0C8",
+  "\u4AAB\uDB40\uDD01": "\uE0C9",
+  "\u4AB4\uDB40\uDD01": "\uE0CA",
+  "\u4AB5\uDB40\uDD01": "\uE0CB",
+  "\u4ADD\uDB40\uDD01": "\uE0CC",
+  "\u4B12\uDB40\uDD01": "\uE0CD",
+  "\u4B13\uDB40\uDD01": "\uE0CE",
+  "\u4B19\uDB40\uDD01": "\uE0CF",
+  "\u4B1F\uDB40\uDD01": "\uE0D0",
+  "\u4B22\uDB40\uDD01": "\uE0D1",
+  "\u4B2A\uDB40\uDD01": "\uE0D2",
+  "\u4B2E\uDB40\uDD01": "\uE0D3",
+  "\u4B33\uDB40\uDD01": "\uE0D4",
+  "\u4B34\uDB40\uDD01": "\uE0D5",
+  "\u4B39\uDB40\uDD01": "\uE0D6",
+  "\u4B3B\uDB40\uDD01": "\uE0D7",
+  "\u4B3C\uDB40\uDD01": "\uE0D8",
+  "\u4B40\uDB40\uDD01": "\uE0D9",
+  "\u4B43\uDB40\uDD01": "\uE0DA",
+  "\u4B45\uDB40\uDD01": "\uE0DB",
+  "\u4B47\uDB40\uDD01": "\uE0DC",
+  "\u4B49\uDB40\uDD01": "\uE0DD",
+  "\u4B4B\uDB40\uDD01": "\uE0DE",
+  "\u4B50\uDB40\uDD01": "\uE0DF",
+  "\u4B51\uDB40\uDD01": "\uE0E0",
+  "\u4B52\uDB40\uDD01": "\uE0E1",
+  "\u4B54\uDB40\uDD01": "\uE0E2",
+  "\u4B61\uDB40\uDD01": "\uE0E3",
+  "\u4B63\uDB40\uDD01": "\uE0E4",
+  "\u4B68\uDB40\uDD01": "\uE0E5",
+  "\u4B69\uDB40\uDD01": "\uE0E6",
+  "\u4BEC\uDB40\uDD01": "\uE0E7",
+  "\u4C17\uDB40\uDD01": "\uE0E8",
+  "\u4CCE\uDB40\uDD01": "\uE0E9",
+  "\u4CF1\uDB40\uDD01": "\uE0EA",
+  "\u4D1F\uDB40\uDD01": "\uE0EB",
+  "\u4D34\uDB40\uDD01": "\uE0EC",
+  "\u4D39\uDB40\uDD01": "\uE0ED",
+  "\u4D43\uDB40\uDD01": "\uE0EE",
+  "\u4EA0\uDB40\uDD01": "\uE0EF",
+  "\u4F6D\uDB40\uDD01": "\uE0F0",
+  "\u4FDE\uDB40\uDD01": "\uE0F1",
+  "\u5077\uDB40\uDD01": "\uE0F2",
+  "\u50DB\uDB40\uDD01": "\uE0F3",
+  "\u5220\uDB40\uDD01": "\uE0F4",
+  "\u5268\uDB40\uDD01": "\uE0F5",
+  "\u5304\uDB40\uDD01": "\uE0F6",
+  "\u5336\uDB40\uDD01": "\uE0F7",
+  "\u5344\uDB40\uDD01": "\uE0F8",
+  "\uD848\uDC34\uDB40\uDD01": "\uE0F9",
+  "\u53D0\uDB40\uDD01": "\uE0FA",
+  "\u53DC\uDB40\uDD01": "\uE0FB",
+  "\u5406\uDB40\uDD01": "\uE0FC",
+  "\u55BB\uDB40\uDD01": "\uE0FD",
+  "\u55C2\uDB40\uDD01": "\uE0FE",
+  "\u55D0\uDB40\uDD01": "\uE0FF",
+  "\u563E\uDB40\uDD01": "\uE100",
+  "\u5748\uDB40\uDD01": "\uE101",
+  "\u5837\uDB40\uDD01": "\uE102",
+  "\u5900\uDB40\uDD01": "\uE103",
+  "\u5917\uDB40\uDD01": "\uE104",
+  "\u5970\uDB40\uDD01": "\uE105",
+  "\u59D8\uDB40\uDD01": "\uE106",
+  "\u5A8D\uDB40\uDD01": "\uE107",
+  "\u5ADB\uDB40\uDD01": "\uE108",
+  "\u5ADF\uDB40\uDD01": "\uE109",
+  "\u5B05\uDB40\uDD01": "\uE10A",
+  "\u5B76\uDB40\uDD01": "\uE10B",
+  "\u5BBB\uDB40\uDD01": "\uE10C",
+  "\u5CC0\uDB40\uDD01": "\uE10D",
+  "\u5D21\uDB40\uDD01": "\uE10E",
+  "\u5D2A\uDB40\uDD01": "\uE10F",
+  "\u5D41\uDB40\uDD01": "\uE110",
+  "\u5D6B\uDB40\uDD01": "\uE111",
+  "\u5DC1\uDB40\uDD01": "\uE112",
+  "\u5DCD\uDB40\uDD01": "\uE113",
+  "\u5E13\uDB40\uDD01": "\uE114",
+  "\u5E59\uDB40\uDD01": "\uE115",
+  "\u5F55\uDB40\uDD01": "\uE116",
+  "\u5F5A\uDB40\uDD01": "\uE117",
+  "\u617A\uDB40\uDD01": "\uE118",
+  "\u619B\uDB40\uDD01": "\uE119",
+  "\u61AF\uDB40\uDD01": "\uE11A",
+  "\u61B4\uDB40\uDD01": "\uE11B",
+  "\u61FB\uDB40\uDD01": "\uE11C",
+  "\u625D\uDB40\uDD01": "\uE11D",
+  "\u63DE\uDB40\uDD01": "\uE11E",
+  "\u6455\uDB40\uDD01": "\uE11F",
+  "\u6477\uDB40\uDD01": "\uE120",
+  "\u64A2\uDB40\uDD01": "\uE121",
+  "\u6507\uDB40\uDD01": "\uE122",
+  "\u65DD\uDB40\uDD01": "\uE123",
+  "\u65DE\uDB40\uDD01": "\uE124",
+  "\u65E3\uDB40\uDD01": "\uE125",
+  "\u6647\uDB40\uDD01": "\uE126",
+  "\u6680\uDB40\uDD01": "\uE127",
+  "\u66B3\uDB40\uDD01": "\uE128",
+  "\u66C5\uDB40\uDD01": "\uE129",
+  "\u671A\uDB40\uDD01": "\uE12A",
+  "\u6723\uDB40\uDD01": "\uE12B",
+  "\u6757\uDB40\uDD01": "\uE12C",
+  "\u6794\uDB40\uDD01": "\uE12D",
+  "\u67FA\uDB40\uDD01": "\uE12E",
+  "\u6914\uDB40\uDD01": "\uE12F",
+  "\u69A3\uDB40\uDD01": "\uE130",
+  "\u6A59\uDB40\uDD01": "\uE131",
+  "\u6ACE\uDB40\uDD01": "\uE132",
+  "\u6B07\uDB40\uDD01": "\uE133",
+  "\u6B2E\uDB40\uDD01": "\uE134",
+  "\u6B55\uDB40\uDD01": "\uE135",
+  "\u6B72\uDB40\uDD01": "\uE136",
+  "\u6BA9\uDB40\uDD01": "\uE137",
+  "\u6C03\uDB40\uDD01": "\uE138",
+  "\u6C74\uDB40\uDD01": "\uE139",
+  "\u6CE7\uDB40\uDD01": "\uE13A",
+  "\u6DC3\uDB40\uDD01": "\uE13B",
+  "\u6E74\uDB40\uDD01": "\uE13C",
+  "\u6E7C\uDB40\uDD01": "\uE13D",
+  "\u6EF0\uDB40\uDD01": "\uE13E",
+  "\u6F7F\uDB40\uDD01": "\uE13F",
+  "\u6FAB\uDB40\uDD01": "\uE140",
+  "\u700E\uDB40\uDD01": "\uE141",
+  "\u7013\uDB40\uDD01": "\uE142",
+  "\u7021\uDB40\uDD01": "\uE143",
+  "\u7068\uDB40\uDD01": "\uE144",
+  "\u7077\uDB40\uDD01": "\uE145",
+  "\u71C2\uDB40\uDD01": "\uE146",
+  "\u727D\uDB40\uDD01": "\uE147",
+  "\u7297\uDB40\uDD01": "\uE148",
+  "\u72CA\uDB40\uDD01": "\uE149",
+  "\u7330\uDB40\uDD01": "\uE14A",
+  "\u7388\uDB40\uDD01": "\uE14B",
+  "\u744A\uDB40\uDD01": "\uE14C",
+  "\u7465\uDB40\uDD01": "\uE14D",
+  "\u746C\uDB40\uDD01": "\uE14E",
+  "\u7474\uDB40\uDD01": "\uE14F",
+  "\u7488\uDB40\uDD01": "\uE150",
+  "\u748A\uDB40\uDD01": "\uE151",
+  "\u7583\uDB40\uDD01": "\uE152",
+  "\uD853\uDD38\uDB40\uDD01": "\uE153",
+  "\u75D0\uDB40\uDD01": "\uE154",
+  "\u75FB\uDB40\uDD01": "\uE155",
+  "\u7650\uDB40\uDD01": "\uE156",
+  "\u772B\uDB40\uDD01": "\uE157",
+  "\u77CC\uDB40\uDD01": "\uE158",
+  "\u78CD\uDB40\uDD01": "\uE159",
+  "\u7932\uDB40\uDD01": "\uE15A",
+  "\u7936\uDB40\uDD01": "\uE15B",
+  "\u9FC6\uDB40\uDD01": "\uE15C",
+  "\u7959\uDB40\uDD01": "\uE15D",
+  "\u796C\uDB40\uDD01": "\uE15E",
+  "\u796E\uDB40\uDD01": "\uE15F",
+  "\u7974\uDB40\uDD01": "\uE160",
+  "\u7992\uDB40\uDD01": "\uE161",
+  "\u799A\uDB40\uDD01": "\uE162",
+  "\u79A0\uDB40\uDD01": "\uE163",
+  "\u7A99\uDB40\uDD01": "\uE164",
+  "\u7AA8\uDB40\uDD01": "\uE165",
+  "\u7AAB\uDB40\uDD01": "\uE166",
+  "\u7AB4\uDB40\uDD01": "\uE167",
+  "\u7AEE\uDB40\uDD01": "\uE168",
+  "\u7BE3\uDB40\uDD01": "\uE169",
+  "\u7C6A\uDB40\uDD01": "\uE16A",
+  "\u7CE1\uDB40\uDD01": "\uE16B",
+  "\u7D2B\uDB40\uDD01": "\uE16C",
+  "\u7D6F\uDB40\uDD01": "\uE16D",
+  "\u7E02\uDB40\uDD01": "\uE16E",
+  "\u7E76\uDB40\uDD01": "\uE16F",
+  "\u7F3C\uDB40\uDD01": "\uE170",
+  "\u7F48\uDB40\uDD01": "\uE171",
+  "\u7F76\uDB40\uDD01": "\uE172",
+  "\u7F7A\uDB40\uDD01": "\uE173",
+  "\u7F95\uDB40\uDD01": "\uE174",
+  "\u7FB5\uDB40\uDD01": "\uE175",
+  "\u7FBB\uDB40\uDD01": "\uE176",
+  "\u807C\uDB40\uDD01": "\uE177",
+  "\u80A8\uDB40\uDD01": "\uE178",
+  "\u8164\uDB40\uDD01": "\uE179",
+  "\u8173\uDB40\uDD01": "\uE17A",
+  "\u81A7\uDB40\uDD01": "\uE17B",
+  "\u81B1\uDB40\uDD01": "\uE17C",
+  "\u81B9\uDB40\uDD01": "\uE17D",
+  "\u81EE\uDB40\uDD01": "\uE17E",
+  "\uD86D\uDFCB\uDB40\uDD01": "\uE17F",
+  "\u8255\uDB40\uDD01": "\uE180",
+  "\u8265\uDB40\uDD01": "\uE181",
+  "\u828C\uDB40\uDD01": "\uE182",
+  "\u82D6\uDB40\uDD01": "\uE183",
+  "\u8326\uDB40\uDD01": "\uE184",
+  "\u8327\uDB40\uDD01": "\uE185",
+  "\uD85A\uDFA0\uDB40\uDD01": "\uE186",
+  "\u837E\uDB40\uDD01": "\uE187",
+  "\u8391\uDB40\uDD01": "\uE188",
+  "\u83A4\uDB40\uDD01": "\uE189",
+  "\u83C6\uDB40\uDD01": "\uE18A",
+  "\u83D2\uDB40\uDD01": "\uE18B",
+  "\u83F3\uDB40\uDD01": "\uE18C",
+  "\u841E\uDB40\uDD01": "\uE18D",
+  "\u842B\uDB40\uDD01": "\uE18E",
+  "\u843B\uDB40\uDD01": "\uE18F",
+  "\u8441\uDB40\uDD01": "\uE190",
+  "\u847B\uDB40\uDD01": "\uE191",
+  "\u84A7\uDB40\uDD01": "\uE192",
+  "\u84C5\uDB40\uDD01": "\uE193",
+  "\u84EB\uDB40\uDD01": "\uE194",
+  "\u8512\uDB40\uDD01": "\uE195",
+  "\u856C\uDB40\uDD01": "\uE196",
+  "\u8570\uDB40\uDD01": "\uE197",
+  "\u8573\uDB40\uDD01": "\uE198",
+  "\u8578\uDB40\uDD01": "\uE199",
+  "\u8596\uDB40\uDD01": "\uE19A",
+  "\u85B3\uDB40\uDD01": "\uE19B",
+  "\u85B5\uDB40\uDD01": "\uE19C",
+  "\u85EB\uDB40\uDD01": "\uE19D",
+  "\u864B\uDB40\uDD01": "\uE19E",
+  "\u86E2\uDB40\uDD01": "\uE19F",
+  "\u86EA\uDB40\uDD01": "\uE1A0",
+  "\u86EB\uDB40\uDD01": "\uE1A1",
+  "\u8745\uDB40\uDD01": "\uE1A2",
+  "\u8750\uDB40\uDD01": "\uE1A3",
+  "\u8777\uDB40\uDD01": "\uE1A4",
+  "\u8779\uDB40\uDD01": "\uE1A5",
+  "\u879B\uDB40\uDD01": "\uE1A6",
+  "\u8802\uDB40\uDD01": "\uE1A7",
+  "\u882A\uDB40\uDD01": "\uE1A8",
+  "\u882B\uDB40\uDD01": "\uE1A9",
+  "\u88FA\uDB40\uDD01": "\uE1AA",
+  "\u893C\uDB40\uDD01": "\uE1AB",
+  "\u894A\uDB40\uDD01": "\uE1AC",
+  "\u8971\uDB40\uDD01": "\uE1AD",
+  "\u89D3\uDB40\uDD01": "\uE1AE",
+  "\u8A64\uDB40\uDD01": "\uE1AF",
+  "\u8B23\uDB40\uDD01": "\uE1B0",
+  "\u8B61\uDB40\uDD01": "\uE1B1",
+  "\u8B6A\uDB40\uDD01": "\uE1B2",
+  "\u8C53\uDB40\uDD01": "\uE1B3",
+  "\u8CD4\uDB40\uDD01": "\uE1B4",
+  "\u8D11\uDB40\uDD01": "\uE1B5",
+  "\u8DA9\uDB40\uDD01": "\uE1B6",
+  "\u8DB9\uDB40\uDD01": "\uE1B7",
+  "\u8E43\uDB40\uDD01": "\uE1B8",
+  "\u8EBD\uDB40\uDD01": "\uE1B9",
+  "\u8F24\uDB40\uDD01": "\uE1BA",
+  "\u9073\uDB40\uDD01": "\uE1BB",
+  "\u90AB\uDB40\uDD01": "\uE1BC",
+  "\u911B\uDB40\uDD01": "\uE1BD",
+  "\u9145\uDB40\uDD01": "\uE1BE",
+  "\u91B7\uDB40\uDD01": "\uE1BF",
+  "\u91EB\uDB40\uDD01": "\uE1C0",
+  "\u91F5\uDB40\uDD01": "\uE1C1",
+  "\u9252\uDB40\uDD01": "\uE1C2",
+  "\u92A2\uDB40\uDD01": "\uE1C3",
+  "\u93F3\uDB40\uDD01": "\uE1C4",
+  "\u942A\uDB40\uDD01": "\uE1C5",
+  "\u9476\uDB40\uDD01": "\uE1C6",
+  "\u9594\uDB40\uDD01": "\uE1C7",
+  "\u96CC\uDB40\uDD01": "\uE1C8",
+  "\u972E\uDB40\uDD01": "\uE1C9",
+  "\u9744\uDB40\uDD01": "\uE1CA",
+  "\u977E\uDB40\uDD01": "\uE1CB",
+  "\u97E0\uDB40\uDD01": "\uE1CC",
+  "\u97F0\uDB40\uDD01": "\uE1CD",
+  "\u97F9\uDB40\uDD01": "\uE1CE",
+  "\u9800\uDB40\uDD01": "\uE1CF",
+  "\u980B\uDB40\uDD01": "\uE1D0",
+  "\u9829\uDB40\uDD01": "\uE1D1",
+  "\u98BE\uDB40\uDD01": "\uE1D2",
+  "\u9901\uDB40\uDD01": "\uE1D3",
+  "\u993F\uDB40\uDD01": "\uE1D4",
+  "\u9A15\uDB40\uDD01": "\uE1D5",
+  "\u9A2F\uDB40\uDD01": "\uE1D6",
+  "\u9C1F\uDB40\uDD01": "\uE1D7",
+  "\u9C74\uDB40\uDD01": "\uE1D8",
+  "\u9CFD\uDB40\uDD01": "\uE1D9",
+  "\u9D2E\uDB40\uDD01": "\uE1DA",
+  "\u9D55\uDB40\uDD01": "\uE1DB",
+  "\u9DB7\uDB40\uDD01": "\uE1DC",
+  "\u9E17\uDB40\uDD01": "\uE1DD",
+  "\u9EC2\uDB40\uDD01": "\uE1DE",
+  "\u9EF3\uDB40\uDD01": "\uE1DF",
+  "\u9F05\uDB40\uDD01": "\uE1E0",
+  "\u9F25\uDB40\uDD01": "\uE1E1",
+  "\u9F28\uDB40\uDD01": "\uE1E2",
+  "\u9F29\uDB40\uDD01": "\uE1E3",
+  "\u9F2E\uDB40\uDD01": "\uE1E4",
+  "\u9F4D\uDB40\uDD01": "\uE1E5",
+  "\u9F93\uDB40\uDD01": "\uE1E6",
+  "\u9F98\uDB40\uDD01": "\uE1E7",
+  "\u9FAC\uDB40\uDD01": "\uE1E8",
+  "\uFA0E\uDB40\uDD01": "\uE1E9",
+  "\uFA27\uDB40\uDD01": "\uE1EA",
+  "\uD840\uDC00\uDB40\uDD01": "\uE1EB",
+  "\uD840\uDC0B\uDB40\uDD01": "\uE1EC",
+  "\uD840\uDCE4\uDB40\uDD01": "\uE1ED",
+  "\uD840\uDD0C\uDB40\uDD01": "\uE1EE",
+  "\uD840\uDD22\uDB40\uDD01": "\uE1EF",
+  "\uD840\uDD5E\uDB40\uDD01": "\uE1F0",
+  "\uD840\uDDFE\uDB40\uDD01": "\uE1F1",
+  "\uD840\uDE37\uDB40\uDD01": "\uE1F2",
+  "\uD840\uDE55\uDB40\uDD01": "\uE1F3",
+  "\uD840\uDEEC\uDB40\uDD01": "\uE1F4",
+  "\uD840\uDF18\uDB40\uDD01": "\uE1F5",
+  "\uD840\uDFB9\uDB40\uDD01": "\uE1F6",
+  "\uD841\uDD25\uDB40\uDD01": "\uE1F7",
+  "\uD841\uDD40\uDB40\uDD01": "\uE1F8",
+  "\uD841\uDD4B\uDB40\uDD01": "\uE1F9",
+  "\uD841\uDE2F\uDB40\uDD01": "\uE1FA",
+  "\uD841\uDEA3\uDB40\uDD01": "\uE1FB",
+  "\uD841\uDEC9\uDB40\uDD01": "\uE1FC",
+  "\uD841\uDEEE\uDB40\uDD01": "\uE1FD",
+  "\uD841\uDEF9\uDB40\uDD01": "\uE1FE",
+  "\uD842\uDCE5\uDB40\uDD01": "\uE1FF",
+  "\uD842\uDD84\uDB40\uDD01": "\uE200",
+  "\uD842\uDE27\uDB40\uDD01": "\uE201",
+  "\uD842\uDEE4\uDB40\uDD01": "\uE202",
+  "\uD842\uDF63\uDB40\uDD01": "\uE203",
+  "\uD842\uDF6F\uDB40\uDD01": "\uE204",
+  "\uD842\uDFB1\uDB40\uDD01": "\uE205",
+  "\uD842\uDFCC\uDB40\uDD01": "\uE206",
+  "\uD843\uDC50\uDB40\uDD01": "\uE207",
+  "\uD843\uDDAE\uDB40\uDD01": "\uE208",
+  "\uD843\uDDB7\uDB40\uDD01": "\uE209",
+  "\uD843\uDDB8\uDB40\uDD01": "\uE20A",
+  "\uD843\uDDD4\uDB40\uDD01": "\uE20B",
+  "\uD843\uDFCB\uDB40\uDD01": "\uE20C",
+  "\uD843\uDFD5\uDB40\uDD01": "\uE20D",
+  "\uD844\uDD3B\uDB40\uDD01": "\uE20E",
+  "\uD844\uDE8F\uDB40\uDD01": "\uE20F",
+  "\uD844\uDEF3\uDB40\uDD01": "\uE210",
+  "\uD844\uDF28\uDB40\uDD01": "\uE211",
+  "\uD844\uDF6E\uDB40\uDD01": "\uE212",
+  "\uD845\uDCE4\uDB40\uDD01": "\uE213",
+  "\uD845\uDD52\uDB40\uDD01": "\uE214",
+  "\uD845\uDD56\uDB40\uDD01": "\uE215",
+  "\uD845\uDD69\uDB40\uDD01": "\uE216",
+  "\uD845\uDDD2\uDB40\uDD01": "\uE217",
+  "\uD845\uDE06\uDB40\uDD01": "\uE218",
+  "\uD845\uDF64\uDB40\uDD01": "\uE219",
+  "\uD846\uDC98\uDB40\uDD01": "\uE21A",
+  "\uD846\uDDC8\uDB40\uDD01": "\uE21B",
+  "\uD846\uDDF1\uDB40\uDD01": "\uE21C",
+  "\uD846\uDE0B\uDB40\uDD01": "\uE21D",
+  "\uD846\uDEA2\uDB40\uDD01": "\uE21E",
+  "\uD846\uDFED\uDB40\uDD01": "\uE21F",
+  "\uD847\uDC12\uDB40\uDD01": "\uE220",
+  "\uD847\uDDE4\uDB40\uDD01": "\uE221",
+  "\uD847\uDDE6\uDB40\uDD01": "\uE222",
+  "\uD847\uDF19\uDB40\uDD01": "\uE223",
+  "\uD847\uDFD6\uDB40\uDD01": "\uE224",
+  "\uD847\uDFE7\uDB40\uDD01": "\uE225",
+  "\uD847\uDFE9\uDB40\uDD01": "\uE226",
+  "\uD847\uDFEE\uDB40\uDD01": "\uE227",
+  "\uD848\uDC29\uDB40\uDD01": "\uE228",
+  "\uD848\uDC37\uDB40\uDD01": "\uE229",
+  "\uD848\uDD9F\uDB40\uDD01": "\uE22A",
+  "\uD848\uDDB0\uDB40\uDD01": "\uE22B",
+  "\uD848\uDE3B\uDB40\uDD01": "\uE22C",
+  "\uD848\uDE56\uDB40\uDD01": "\uE22D",
+  "\uD848\uDEF1\uDB40\uDD01": "\uE22E",
+  "\uD848\uDEFF\uDB40\uDD01": "\uE22F",
+  "\uD848\uDF31\uDB40\uDD01": "\uE230",
+  "\uD848\uDF41\uDB40\uDD01": "\uE231",
+  "\uD849\uDD52\uDB40\uDD01": "\uE232",
+  "\uD849\uDED4\uDB40\uDD01": "\uE233",
+  "\uD849\uDFFA\uDB40\uDD01": "\uE234",
+  "\uD84A\uDC5A\uDB40\uDD01": "\uE235",
+  "\uD84A\uDC94\uDB40\uDD01": "\uE236",
+  "\uD84A\uDD26\uDB40\uDD01": "\uE237",
+  "\uD84A\uDD85\uDB40\uDD01": "\uE238",
+  "\uD84A\uDFF1\uDB40\uDD01": "\uE239",
+  "\uD84B\uDC72\uDB40\uDD01": "\uE23A",
+  "\uD84B\uDD3C\uDB40\uDD01": "\uE23B",
+  "\uD84B\uDE09\uDB40\uDD01": "\uE23C",
+  "\uD84B\uDE2D\uDB40\uDD01": "\uE23D",
+  "\uD84B\uDEEC\uDB40\uDD01": "\uE23E",
+  "\uD84B\uDF22\uDB40\uDD01": "\uE23F",
+  "\uD84B\uDFCC\uDB40\uDD01": "\uE240",
+  "\uD84B\uDFD8\uDB40\uDD01": "\uE241",
+  "\uD84B\uDFD9\uDB40\uDD01": "\uE242",
+  "\uD84B\uDFE0\uDB40\uDD01": "\uE243",
+  "\uD84C\uDC5D\uDB40\uDD01": "\uE244",
+  "\uD84C\uDCB0\uDB40\uDD01": "\uE245",
+  "\uD84C\uDCD4\uDB40\uDD01": "\uE246",
+  "\uD84C\uDD06\uDB40\uDD01": "\uE247",
+  "\uD84C\uDD1E\uDB40\uDD01": "\uE248",
+  "\uD84C\uDD22\uDB40\uDD01": "\uE249",
+  "\uD84C\uDEB8\uDB40\uDD01": "\uE24A",
+  "\uD84C\uDF5F\uDB40\uDD01": "\uE24B",
+  "\uD84C\uDFE0\uDB40\uDD01": "\uE24C",
+  "\uD84D\uDC6D\uDB40\uDD01": "\uE24D",
+  "\uD84D\uDD31\uDB40\uDD01": "\uE24E",
+  "\uD84D\uDE26\uDB40\uDD01": "\uE24F",
+  "\uD84D\uDEA3\uDB40\uDD01": "\uE250",
+  "\uD84E\uDCA7\uDB40\uDD01": "\uE251",
+  "\uD84E\uDE63\uDB40\uDD01": "\uE252",
+  "\uD84E\uDE74\uDB40\uDD01": "\uE253",
+  "\uD84E\uDE8D\uDB40\uDD01": "\uE254",
+  "\uD84E\uDFAC\uDB40\uDD01": "\uE255",
+  "\uD84F\uDC75\uDB40\uDD01": "\uE256",
+  "\uD84F\uDD7D\uDB40\uDD01": "\uE257",
+  "\uD84F\uDF1B\uDB40\uDD01": "\uE258",
+  "\uD850\uDCA3\uDB40\uDD01": "\uE259",
+  "\uD850\uDE63\uDB40\uDD01": "\uE25A",
+  "\uD851\uDD10\uDB40\uDD01": "\uE25B",
+  "\uD851\uDD14\uDB40\uDD01": "\uE25C",
+  "\uD851\uDD64\uDB40\uDD01": "\uE25D",
+  "\uD851\uDD68\uDB40\uDD01": "\uE25E",
+  "\uD851\uDF35\uDB40\uDD01": "\uE25F",
+  "\uD853\uDC1E\uDB40\uDD01": "\uE260",
+  "\uD853\uDD21\uDB40\uDD01": "\uE261",
+  "\uD853\uDE84\uDB40\uDD01": "\uE262",
+  "\uD854\uDC44\uDB40\uDD01": "\uE263",
+  "\uD854\uDCF2\uDB40\uDD01": "\uE264",
+  "\uD854\uDCF3\uDB40\uDD01": "\uE265",
+  "\uD854\uDD02\uDB40\uDD01": "\uE266",
+  "\uD854\uDD92\uDB40\uDD01": "\uE267",
+  "\uD854\uDE4F\uDB40\uDD01": "\uE268",
+  "\uD855\uDF12\uDB40\uDD01": "\uE269",
+  "\uD856\uDEA7\uDB40\uDD01": "\uE26A",
+  "\uD856\uDED4\uDB40\uDD01": "\uE26B",
+  "\uD856\uDFAB\uDB40\uDD01": "\uE26C",
+  "\uD857\uDC80\uDB40\uDD01": "\uE26D",
+  "\uD857\uDE4F\uDB40\uDD01": "\uE26E",
+  "\uD857\uDE9B\uDB40\uDD01": "\uE26F",
+  "\uD857\uDF86\uDB40\uDD01": "\uE270",
+  "\uD858\uDCC8\uDB40\uDD01": "\uE271",
+  "\uD858\uDDA2\uDB40\uDD01": "\uE272",
+  "\uD858\uDDDA\uDB40\uDD01": "\uE273",
+  "\uD858\uDE28\uDB40\uDD01": "\uE274",
+  "\uD858\uDE47\uDB40\uDD01": "\uE275",
+  "\uD858\uDE73\uDB40\uDD01": "\uE276",
+  "\uD858\uDED9\uDB40\uDD01": "\uE277",
+  "\uD858\uDFB1\uDB40\uDD01": "\uE278",
+  "\uD858\uDFC1\uDB40\uDD01": "\uE279",
+  "\uD859\uDC07\uDB40\uDD01": "\uE27A",
+  "\uD859\uDC62\uDB40\uDD01": "\uE27B",
+  "\uD859\uDD18\uDB40\uDD01": "\uE27C",
+  "\uD859\uDDA2\uDB40\uDD01": "\uE27D",
+  "\uD859\uDEA8\uDB40\uDD01": "\uE27E",
+  "\uD859\uDF6B\uDB40\uDD01": "\uE27F",
+  "\uD85A\uDC73\uDB40\uDD01": "\uE280",
+  "\uD85A\uDCAA\uDB40\uDD01": "\uE281",
+  "\uD85A\uDCAB\uDB40\uDD01": "\uE282",
+  "\uD85A\uDCBC\uDB40\uDD01": "\uE283",
+  "\uD85A\uDD1D\uDB40\uDD01": "\uE284",
+  "\uD85A\uDD3C\uDB40\uDD01": "\uE285",
+  "\uD85A\uDD5B\uDB40\uDD01": "\uE286",
+  "\uD85A\uDD73\uDB40\uDD01": "\uE287",
+  "\uD85A\uDD77\uDB40\uDD01": "\uE288",
+  "\uD85A\uDF20\uDB40\uDD01": "\uE289",
+  "\uD85A\uDFCC\uDB40\uDD01": "\uE28A",
+  "\uD85B\uDC64\uDB40\uDD01": "\uE28B",
+  "\uD85B\uDE11\uDB40\uDD01": "\uE28C",
+  "\uD85B\uDE47\uDB40\uDD01": "\uE28D",
+  "\uD85B\uDF2C\uDB40\uDD01": "\uE28E",
+  "\uD85B\uDF8F\uDB40\uDD01": "\uE28F",
+  "\uD85B\uDFB1\uDB40\uDD01": "\uE290",
+  "\uD85B\uDFD4\uDB40\uDD01": "\uE291",
+  "\uD85B\uDFF8\uDB40\uDD01": "\uE292",
+  "\uD85C\uDD71\uDB40\uDD01": "\uE293",
+  "\uD85C\uDDFD\uDB40\uDD01": "\uE294",
+  "\uD85C\uDE2A\uDB40\uDD01": "\uE295",
+  "\uD85C\uDE9C\uDB40\uDD01": "\uE296",
+  "\uD85C\uDEB7\uDB40\uDD01": "\uE297",
+  "\uD85C\uDEDD\uDB40\uDD01": "\uE298",
+  "\uD85C\uDF0A\uDB40\uDD01": "\uE299",
+  "\uD85C\uDFCA\uDB40\uDD01": "\uE29A",
+  "\uD85D\uDC02\uDB40\uDD01": "\uE29B",
+  "\uD85D\uDE0E\uDB40\uDD01": "\uE29C",
+  "\uD85D\uDE19\uDB40\uDD01": "\uE29D",
+  "\uD85D\uDE67\uDB40\uDD01": "\uE29E",
+  "\uD85D\uDED4\uDB40\uDD01": "\uE29F",
+  "\uD85D\uDF01\uDB40\uDD01": "\uE2A0",
+  "\uD85D\uDFE8\uDB40\uDD01": "\uE2A1",
+  "\uD85E\uDD66\uDB40\uDD01": "\uE2A2",
+  "\uD85E\uDE6E\uDB40\uDD01": "\uE2A3",
+  "\uD85E\uDE7B\uDB40\uDD01": "\uE2A4",
+  "\uD85E\uDEAE\uDB40\uDD01": "\uE2A5",
+  "\uD85E\uDEE2\uDB40\uDD01": "\uE2A6",
+  "\uD85E\uDF2F\uDB40\uDD01": "\uE2A7",
+  "\uD85E\uDFCC\uDB40\uDD01": "\uE2A8",
+  "\uD85E\uDFFE\uDB40\uDD01": "\uE2A9",
+  "\uD85F\uDCA8\uDB40\uDD01": "\uE2AA",
+  "\uD85F\uDD4D\uDB40\uDD01": "\uE2AB",
+  "\uD85F\uDE79\uDB40\uDD01": "\uE2AC",
+  "\uD85F\uDFA8\uDB40\uDD01": "\uE2AD",
+  "\uD860\uDD19\uDB40\uDD01": "\uE2AE",
+  "\uD860\uDF8A\uDB40\uDD01": "\uE2AF",
+  "\uD861\uDC32\uDB40\uDD01": "\uE2B0",
+  "\uD861\uDC52\uDB40\uDD01": "\uE2B1",
+  "\uD861\uDC6D\uDB40\uDD01": "\uE2B2",
+  "\uD861\uDC89\uDB40\uDD01": "\uE2B3",
+  "\uD861\uDCAD\uDB40\uDD01": "\uE2B4",
+  "\uD861\uDCB0\uDB40\uDD01": "\uE2B5",
+  "\uD861\uDCE4\uDB40\uDD01": "\uE2B6",
+  "\uD861\uDCF1\uDB40\uDD01": "\uE2B7",
+  "\uD861\uDCF5\uDB40\uDD01": "\uE2B8",
+  "\uD861\uDD2B\uDB40\uDD01": "\uE2B9",
+  "\uD861\uDD30\uDB40\uDD01": "\uE2BA",
+  "\uD861\uDD60\uDB40\uDD01": "\uE2BB",
+  "\uD861\uDD63\uDB40\uDD01": "\uE2BC",
+  "\uD861\uDD65\uDB40\uDD01": "\uE2BD",
+  "\uD861\uDD8A\uDB40\uDD01": "\uE2BE",
+  "\uD861\uDDBB\uDB40\uDD01": "\uE2BF",
+  "\uD861\uDDED\uDB40\uDD01": "\uE2C0",
+  "\uD861\uDDF1\uDB40\uDD01": "\uE2C1",
+  "\uD861\uDE37\uDB40\uDD01": "\uE2C2",
+  "\uD861\uDE42\uDB40\uDD01": "\uE2C3",
+  "\uD861\uDE55\uDB40\uDD01": "\uE2C4",
+  "\uD861\uDE59\uDB40\uDD01": "\uE2C5",
+  "\uD861\uDF63\uDB40\uDD01": "\uE2C6",
+  "\uD862\uDC0B\uDB40\uDD01": "\uE2C7",
+  "\uD862\uDD45\uDB40\uDD01": "\uE2C8",
+  "\uD863\uDD84\uDB40\uDD01": "\uE2C9",
+  "\uD863\uDF41\uDB40\uDD01": "\uE2CA",
+  "\uD863\uDFE4\uDB40\uDD01": "\uE2CB",
+  "\uD864\uDD2E\uDB40\uDD01": "\uE2CC",
+  "\uD864\uDD5E\uDB40\uDD01": "\uE2CD",
+  "\uD864\uDD7E\uDB40\uDD01": "\uE2CE",
+  "\uD864\uDDD5\uDB40\uDD01": "\uE2CF",
+  "\uD864\uDE1A\uDB40\uDD01": "\uE2D0",
+  "\uD864\uDE5E\uDB40\uDD01": "\uE2D1",
+  "\uD864\uDE93\uDB40\uDD01": "\uE2D2",
+  "\uD864\uDF56\uDB40\uDD01": "\uE2D3",
+  "\uD865\uDC1A\uDB40\uDD01": "\uE2D4",
+  "\uD865\uDC1F\uDB40\uDD01": "\uE2D5",
+  "\uD865\uDC20\uDB40\uDD01": "\uE2D6",
+  "\uD865\uDC22\uDB40\uDD01": "\uE2D7",
+  "\uD865\uDC27\uDB40\uDD01": "\uE2D8",
+  "\uD865\uDC3F\uDB40\uDD01": "\uE2D9",
+  "\uD865\uDD24\uDB40\uDD01": "\uE2DA",
+  "\uD865\uDD3A\uDB40\uDD01": "\uE2DB",
+  "\uD865\uDDB6\uDB40\uDD01": "\uE2DC",
+  "\uD865\uDE5E\uDB40\uDD01": "\uE2DD",
+  "\uD865\uDE7A\uDB40\uDD01": "\uE2DE",
+  "\uD865\uDE88\uDB40\uDD01": "\uE2DF",
+  "\uD865\uDE95\uDB40\uDD01": "\uE2E0",
+  "\uD865\uDE96\uDB40\uDD01": "\uE2E1",
+  "\uD865\uDEA9\uDB40\uDD01": "\uE2E2",
+  "\uD865\uDEB9\uDB40\uDD01": "\uE2E3",
+  "\uD865\uDEC6\uDB40\uDD01": "\uE2E4",
+  "\uD865\uDEDE\uDB40\uDD01": "\uE2E5",
+  "\uD865\uDEE5\uDB40\uDD01": "\uE2E6",
+  "\uD865\uDEFA\uDB40\uDD01": "\uE2E7",
+  "\uD865\uDF06\uDB40\uDD01": "\uE2E8",
+  "\uD865\uDF0B\uDB40\uDD01": "\uE2E9",
+  "\uD865\uDF0F\uDB40\uDD01": "\uE2EA",
+  "\uD865\uDF15\uDB40\uDD01": "\uE2EB",
+  "\uD865\uDF17\uDB40\uDD01": "\uE2EC",
+  "\uD865\uDF2F\uDB40\uDD01": "\uE2ED",
+  "\uD865\uDF34\uDB40\uDD01": "\uE2EE",
+  "\uD865\uDF39\uDB40\uDD01": "\uE2EF",
+  "\uD865\uDF3F\uDB40\uDD01": "\uE2F0",
+  "\uD865\uDF59\uDB40\uDD01": "\uE2F1",
+  "\uD865\uDF5D\uDB40\uDD01": "\uE2F2",
+  "\uD865\uDF80\uDB40\uDD01": "\uE2F3",
+  "\uD865\uDF83\uDB40\uDD01": "\uE2F4",
+  "\uD865\uDF8F\uDB40\uDD01": "\uE2F5",
+  "\uD865\uDF91\uDB40\uDD01": "\uE2F6",
+  "\uD865\uDFA1\uDB40\uDD01": "\uE2F7",
+  "\uD865\uDFA5\uDB40\uDD01": "\uE2F8",
+  "\uD865\uDFA7\uDB40\uDD01": "\uE2F9",
+  "\uD865\uDFAB\uDB40\uDD01": "\uE2FA",
+  "\uD865\uDFB7\uDB40\uDD01": "\uE2FB",
+  "\uD865\uDFC4\uDB40\uDD01": "\uE2FC",
+  "\uD865\uDFF1\uDB40\uDD01": "\uE2FD",
+  "\uD865\uDFFD\uDB40\uDD01": "\uE2FE",
+  "\uD866\uDC9D\uDB40\uDD01": "\uE2FF",
+  "\uD866\uDD00\uDB40\uDD01": "\uE300",
+  "\uD866\uDE59\uDB40\uDD01": "\uE301",
+  "\uD866\uDEB7\uDB40\uDD01": "\uE302",
+  "\uD866\uDFBA\uDB40\uDD01": "\uE303",
+  "\uD867\uDC13\uDB40\uDD01": "\uE304",
+  "\uD867\uDC7F\uDB40\uDD01": "\uE305",
+  "\uD867\uDD34\uDB40\uDD01": "\uE306",
+  "\uD867\uDD49\uDB40\uDD01": "\uE307",
+  "\uD867\uDDF8\uDB40\uDD01": "\uE308",
+  "\uD867\uDE7A\uDB40\uDD01": "\uE309",
+  "\uD867\uDEE0\uDB40\uDD01": "\uE30A",
+  "\uD867\uDEE1\uDB40\uDD01": "\uE30B",
+  "\uD868\uDC61\uDB40\uDD01": "\uE30C",
+  "\uD868\uDCC8\uDB40\uDD01": "\uE30D",
+  "\uD868\uDDF4\uDB40\uDD01": "\uE30E",
+  "\uD868\uDE96\uDB40\uDD01": "\uE30F",
+  "\uD868\uDEA8\uDB40\uDD01": "\uE310",
+  "\uD868\uDF01\uDB40\uDD01": "\uE311",
+  "\uD868\uDF08\uDB40\uDD01": "\uE312",
+  "\uD868\uDF33\uDB40\uDD01": "\uE313",
+  "\uD868\uDF47\uDB40\uDD01": "\uE314",
+  "\uD868\uDF52\uDB40\uDD01": "\uE315",
+  "\uD868\uDF6A\uDB40\uDD01": "\uE316",
+  "\uD868\uDF92\uDB40\uDD01": "\uE317",
+  "\uD868\uDFB0\uDB40\uDD01": "\uE318",
+  "\uD869\uDC72\uDB40\uDD01": "\uE319",
+  "\uD869\uDD02\uDB40\uDD01": "\uE31A",
+  "\uD869\uDD04\uDB40\uDD01": "\uE31B",
+  "\uD869\uDD08\uDB40\uDD01": "\uE31C",
+  "\uD869\uDD0D\uDB40\uDD01": "\uE31D",
+  "\uD869\uDD4D\uDB40\uDD01": "\uE31E",
+  "\uD869\uDD64\uDB40\uDD01": "\uE31F",
+  "\uD869\uDD85\uDB40\uDD01": "\uE320",
+  "\uD869\uDDC7\uDB40\uDD01": "\uE321",
+  "\uD869\uDE00\uDB40\uDD01": "\uE322",
+  "\uD869\uDE95\uDB40\uDD01": "\uE323",
+  "\uD869\uDE96\uDB40\uDD01": "\uE324",
+  "\uD869\uDE99\uDB40\uDD01": "\uE325",
+  "\uD86D\uDF42\uDB40\uDD01": "\uE326",
+  "\uD873\uDEDC\uDB40\uDD01": "\uE327",
+  "\uD86D\uDF46\uDB40\uDD01": "\uE328",
+  "\uD874\uDC20\uDB40\uDD01": "\uE329",
+  "\uD86D\uDF4C\uDB40\uDD01": "\uE32A",
+  "\uD874\uDC6B\uDB40\uDD01": "\uE32B",
+  "\uD874\uDC6F\uDB40\uDD01": "\uE32C",
+  "\uD86E\uDD7B\uDB40\uDD01": "\uE32D",
+  "\uD874\uDCDA\uDB40\uDD01": "\uE32E",
+  "\uD86D\uDF62\uDB40\uDD01": "\uE32F",
+  "\uD874\uDD69\uDB40\uDD01": "\uE330",
+  "\uD874\uDD86\uDB40\uDD01": "\uE331",
+  "\uD874\uDD99\uDB40\uDD01": "\uE332",
+  "\uD874\uDDAB\uDB40\uDD01": "\uE333",
+  "\uD874\uDE39\uDB40\uDD01": "\uE334",
+  "\uD86D\uDF5D\uDB40\uDD01": "\uE335",
+  "\uD844\uDE99\uDB40\uDD01": "\uE336",
+  "\uD874\uDFDB\uDB40\uDD01": "\uE337",
+  "\uD875\uDC23\uDB40\uDD01": "\uE338",
+  "\uD86D\uDF63\uDB40\uDD01": "\uE339",
+  "\uD875\uDC33\uDB40\uDD01": "\uE33A",
+  "\uD875\uDC45\uDB40\uDD01": "\uE33B",
+  "\uD875\uDC55\uDB40\uDD01": "\uE33C",
+  "\uD86D\uDF6F\uDB40\uDD01": "\uE33D",
+  "\uD875\uDCE9\uDB40\uDD01": "\uE33E",
+  "\uD875\uDE3E\uDB40\uDD01": "\uE33F",
+  "\uD875\uDE4C\uDB40\uDD01": "\uE340",
+  "\uD861\uDC82\uDB40\uDD01": "\uE341",
+  "\uD875\uDE98\uDB40\uDD01": "\uE342",
+  "\uD875\uDEB6\uDB40\uDD01": "\uE343",
+  "\u3900\uDB40\uDD01": "\uE344",
+  "\uD875\uDF33\uDB40\uDD01": "\uE345",
+  "\uD86B\uDDC2\uDB40\uDD01": "\uE346",
+  "\uD86F\uDEDB\uDB40\uDD01": "\uE347",
+  "\uD876\uDC05\uDB40\uDD01": "\uE348",
+  "\uD876\uDD97\uDB40\uDD01": "\uE349",
+  "\uD876\uDE99\uDB40\uDD01": "\uE34A",
+  "\uD870\uDD55\uDB40\uDD01": "\uE34B",
+  "\uD876\uDF4E\uDB40\uDD01": "\uE34C",
+  "\uD873\uDF18\uDB40\uDD01": "\uE34D",
+  "\uD86D\uDF93\uDB40\uDD01": "\uE34E",
+  "\uD86D\uDF9C\uDB40\uDD01": "\uE34F",
+  "\uD877\uDEBE\uDB40\uDD01": "\uE350",
+  "\uD877\uDF3D\uDB40\uDD01": "\uE351",
+  "\u3E14\uDB40\uDD01": "\uE352",
+  "\uD86B\uDFB2\uDB40\uDD01": "\uE353",
+  "\uD877\uDFF5\uDB40\uDD01": "\uE354",
+  "\uD86C\uDC03\uDB40\uDD01": "\uE355",
+  "\uD878\uDC68\uDB40\uDD01": "\uE356",
+  "\uD86C\uDC48\uDB40\uDD01": "\uE357",
+  "\uD878\uDE84\uDB40\uDD01": "\uE358",
+  "\uD86D\uDFC8\uDB40\uDD01": "\uE359",
+  "\uD878\uDEAB\uDB40\uDD01": "\uE35A",
+  "\uD878\uDF07\uDB40\uDD01": "\uE35B",
+  "\uD874\uDC48\uDB40\uDD01": "\uE35C",
+  "\uD86D\uDFCD\uDB40\uDD01": "\uE35D",
+  "\uD878\uDFB0\uDB40\uDD01": "\uE35E",
+  "\uD878\uDFC0\uDB40\uDD01": "\uE35F",
+  "\uD871\uDF3B\uDB40\uDD01": "\uE360",
+  "\uD879\uDC3C\uDB40\uDD01": "\uE361",
+  "\uD879\uDCD9\uDB40\uDD01": "\uE362",
+  "\uD879\uDCDC\uDB40\uDD01": "\uE363",
+  "\uD840\uDC45\uDB40\uDD01": "\uE364",
+  "\uD879\uDD09\uDB40\uDD01": "\uE365",
+  "\uD879\uDDE8\uDB40\uDD01": "\uE366",
+  "\uD86D\uDF55\uDB40\uDD01": "\uE367",
+  "\uD86D\uDFEA\uDB40\uDD01": "\uE368",
+  "\uD86D\uDCBC\uDB40\uDD01": "\uE369",
+  "\uD87A\uDDD3\uDB40\uDD01": "\uE36A",
+  "\uD87A\uDF79\uDB40\uDD01": "\uE36B",
+  "\uD873\uDECE\uDB40\uDD01": "\uE36C",
+  "\uD874\uDC28\uDB40\uDD01": "\uE36D",
+  "\uD86E\uDD30\uDB40\uDD01": "\uE36E",
+  "\uD874\uDE60\uDB40\uDD01": "\uE36F",
+  "\uD874\uDF80\uDB40\uDD01": "\uE370",
+  "\uD875\uDDD5\uDB40\uDD01": "\uE371",
+  "\uD875\uDEDD\uDB40\uDD01": "\uE372",
+  "\uD875\uDF2E\uDB40\uDD01": "\uE373",
+  "\uD876\uDD18\uDB40\uDD01": "\uE374",
+  "\uD876\uDD16\uDB40\uDD01": "\uE375",
+  "\uD876\uDD67\uDB40\uDD01": "\uE376",
+  "\uD877\uDCD3\uDB40\uDD01": "\uE377",
+  "\uD877\uDCEF\uDB40\uDD01": "\uE378",
+  "\uD842\uDD24\uDB40\uDD01": "\uE379",
+  "\uD878\uDCBA\uDB40\uDD01": "\uE37A",
+  "\uD878\uDD70\uDB40\uDD01": "\uE37B",
+  "\uD879\uDF89\uDB40\uDD01": "\uE37C",
+  "\uD87A\uDDC0\uDB40\uDD01": "\uE37D",
+  "\uD87A\uDDF2\uDB40\uDD01": "\uE37E",
+  "\uD87A\uDE41\uDB40\uDD01": "\uE37F",
+  "\u342C\uDB40\uDD02": "\uDB80\uDC00",
+  "\u342E\uDB40\uDD02": "\uDB80\uDC01",
+  "\u3479\uDB40\uDD02": "\uDB80\uDC02",
+  "\u34BC\uDB40\uDD02": "\uDB80\uDC03",
+  "\u34DE\uDB40\uDD02": "\uDB80\uDC04",
+  "\u351F\uDB40\uDD02": "\uDB80\uDC05",
+  "\u353A\uDB40\uDD02": "\uDB80\uDC06",
+  "\u35F4\uDB40\uDD02": "\uDB80\uDC07",
+  "\u3691\uDB40\uDD02": "\uDB80\uDC08",
+  "\u382F\uDB40\uDD02": "\uDB80\uDC09",
+  "\u3836\uDB40\uDD02": "\uDB80\uDC0A",
+  "\u3917\uDB40\uDD02": "\uDB80\uDC0B",
+  "\u396F\uDB40\uDD02": "\uDB80\uDC0C",
+  "\u39AE\uDB40\uDD02": "\uDB80\uDC0D",
+  "\u39B8\uDB40\uDD02": "\uDB80\uDC0E",
+  "\u3A6E\uDB40\uDD02": "\uDB80\uDC0F",
+  "\u3AC4\uDB40\uDD02": "\uDB80\uDC10",
+  "\u3B27\uDB40\uDD02": "\uDB80\uDC11",
+  "\u3BCD\uDB40\uDD02": "\uDB80\uDC12",
+  "\u3BF3\uDB40\uDD02": "\uDB80\uDC13",
+  "\u3C4E\uDB40\uDD02": "\uDB80\uDC14",
+  "\u3D1E\uDB40\uDD02": "\uDB80\uDC15",
+  "\u3D31\uDB40\uDD02": "\uDB80\uDC16",
+  "\u3DC0\uDB40\uDD02": "\uDB80\uDC17",
+  "\u3DD4\uDB40\uDD02": "\uDB80\uDC18",
+  "\u3E83\uDB40\uDD02": "\uDB80\uDC19",
+  "\u4071\uDB40\uDD02": "\uDB80\uDC1A",
+  "\u4096\uDB40\uDD02": "\uDB80\uDC1B",
+  "\u4107\uDB40\uDD02": "\uDB80\uDC1C",
+  "\u4148\uDB40\uDD02": "\uDB80\uDC1D",
+  "\u4343\uDB40\uDD02": "\uDB80\uDC1E",
+  "\u43F0\uDB40\uDD02": "\uDB80\uDC1F",
+  "\u440C\uDB40\uDD02": "\uDB80\uDC20",
+  "\u44B3\uDB40\uDD02": "\uDB80\uDC21",
+  "\u44B9\uDB40\uDD02": "\uDB80\uDC22",
+  "\u44BE\uDB40\uDD02": "\uDB80\uDC23",
+  "\u44D4\uDB40\uDD02": "\uDB80\uDC24",
+  "\u4508\uDB40\uDD02": "\uDB80\uDC25",
+  "\u4525\uDB40\uDD02": "\uDB80\uDC26",
+  "\u4543\uDB40\uDD02": "\uDB80\uDC27",
+  "\u454C\uDB40\uDD02": "\uDB80\uDC28",
+  "\u455E\uDB40\uDD02": "\uDB80\uDC29",
+  "\u457A\uDB40\uDD02": "\uDB80\uDC2A",
+  "\u4674\uDB40\uDD02": "\uDB80\uDC2B",
+  "\u470C\uDB40\uDD02": "\uDB80\uDC2C",
+  "\u471F\uDB40\uDD02": "\uDB80\uDC2D",
+  "\u47E6\uDB40\uDD02": "\uDB80\uDC2E",
+  "\u493F\uDB40\uDD02": "\uDB80\uDC2F",
+  "\u4DB0\uDB40\uDD02": "\uDB80\uDC30",
+  "\u4E07\uDB40\uDD02": "\uDB80\uDC31",
+  "\u4E11\uDB40\uDD02": "\uDB80\uDC32",
+  "\u4E12\uDB40\uDD02": "\uDB80\uDC33",
+  "\u4E14\uDB40\uDD02": "\uDB80\uDC34",
+  "\u4E35\uDB40\uDD02": "\uDB80\uDC35",
+  "\u4E38\uDB40\uDD02": "\uDB80\uDC36",
+  "\u4E41\uDB40\uDD02": "\uDB80\uDC37",
+  "\u4E42\uDB40\uDD02": "\uDB80\uDC38",
+  "\u4E44\uDB40\uDD02": "\uDB80\uDC39",
+  "\u4E45\uDB40\uDD02": "\uDB80\uDC3A",
+  "\u4E47\uDB40\uDD02": "\uDB80\uDC3B",
+  "\u4E55\uDB40\uDD02": "\uDB80\uDC3C",
+  "\u4E75\uDB40\uDD02": "\uDB80\uDC3D",
+  "\u4E82\uDB40\uDD02": "\uDB80\uDC3E",
+  "\u4E88\uDB40\uDD02": "\uDB80\uDC3F",
+  "\u4E94\uDB40\uDD02": "\uDB80\uDC40",
+  "\u4E9E\uDB40\uDD02": "\uDB80\uDC41",
+  "\u4E9F\uDB40\uDD02": "\uDB80\uDC42",
+  "\u4EA2\uDB40\uDD02": "\uDB80\uDC43",
+  "\u4EA5\uDB40\uDD02": "\uDB80\uDC44",
+  "\u4EA8\uDB40\uDD02": "\uDB80\uDC45",
+  "\u4EAB\uDB40\uDD02": "\uDB80\uDC46",
+  "\u4EAE\uDB40\uDD02": "\uDB80\uDC47",
+  "\u4EB6\uDB40\uDD02": "\uDB80\uDC48",
+  "\u4EB9\uDB40\uDD02": "\uDB80\uDC49",
+  "\u4ED7\uDB40\uDD02": "\uDB80\uDC4A",
+  "\u4EDE\uDB40\uDD02": "\uDB80\uDC4B",
+  "\u4EE2\uDB40\uDD02": "\uDB80\uDC4C",
+  "\u4EE4\uDB40\uDD02": "\uDB80\uDC4D",
+  "\u4EE5\uDB40\uDD02": "\uDB80\uDC4E",
+  "\u4EED\uDB40\uDD02": "\uDB80\uDC4F",
+  "\u4F00\uDB40\uDD02": "\uDB80\uDC50",
+  "\u4F0A\uDB40\uDD02": "\uDB80\uDC51",
+  "\u4F0B\uDB40\uDD02": "\uDB80\uDC52",
+  "\u4F33\uDB40\uDD02": "\uDB80\uDC53",
+  "\u4F36\uDB40\uDD02": "\uDB80\uDC54",
+  "\u4F40\uDB40\uDD02": "\uDB80\uDC55",
+  "\u4F53\uDB40\uDD02": "\uDB80\uDC56",
+  "\u4F69\uDB40\uDD02": "\uDB80\uDC57",
+  "\u4F6A\uDB40\uDD02": "\uDB80\uDC58",
+  "\u4F7A\uDB40\uDD02": "\uDB80\uDC59",
+  "\u4F7C\uDB40\uDD02": "\uDB80\uDC5A",
+  "\u4F7D\uDB40\uDD02": "\uDB80\uDC5B",
+  "\u4F7E\uDB40\uDD02": "\uDB80\uDC5C",
+  "\u4F83\uDB40\uDD02": "\uDB80\uDC5D",
+  "\u4F89\uDB40\uDD02": "\uDB80\uDC5E",
+  "\u4F96\uDB40\uDD02": "\uDB80\uDC5F",
+  "\u4FA1\uDB40\uDD02": "\uDB80\uDC60",
+  "\u4FAB\uDB40\uDD02": "\uDB80\uDC61",
+  "\u4FB9\uDB40\uDD02": "\uDB80\uDC62",
+  "\u4FCA\uDB40\uDD02": "\uDB80\uDC63",
+  "\u4FD8\uDB40\uDD02": "\uDB80\uDC64",
+  "\u4FDE\uDB40\uDD02": "\uDB80\uDC65",
+  "\u5002\uDB40\uDD02": "\uDB80\uDC66",
+  "\u500F\uDB40\uDD02": "\uDB80\uDC67",
+  "\u5010\uDB40\uDD02": "\uDB80\uDC68",
+  "\u5016\uDB40\uDD02": "\uDB80\uDC69",
+  "\u501D\uDB40\uDD02": "\uDB80\uDC6A",
+  "\u5025\uDB40\uDD02": "\uDB80\uDC6B",
+  "\u5026\uDB40\uDD02": "\uDB80\uDC6C",
+  "\u5029\uDB40\uDD02": "\uDB80\uDC6D",
+  "\u5030\uDB40\uDD02": "\uDB80\uDC6E",
+  "\u5036\uDB40\uDD02": "\uDB80\uDC6F",
+  "\u5040\uDB40\uDD02": "\uDB80\uDC70",
+  "\u5042\uDB40\uDD02": "\uDB80\uDC71",
+  "\u5043\uDB40\uDD02": "\uDB80\uDC72",
+  "\u5048\uDB40\uDD02": "\uDB80\uDC73",
+  "\u504C\uDB40\uDD02": "\uDB80\uDC74",
+  "\u5050\uDB40\uDD02": "\uDB80\uDC75",
+  "\u505C\uDB40\uDD02": "\uDB80\uDC76",
+  "\u5060\uDB40\uDD02": "\uDB80\uDC77",
+  "\u5070\uDB40\uDD02": "\uDB80\uDC78",
+  "\u508D\uDB40\uDD02": "\uDB80\uDC79",
+  "\u508E\uDB40\uDD02": "\uDB80\uDC7A",
+  "\u5094\uDB40\uDD02": "\uDB80\uDC7B",
+  "\u5099\uDB40\uDD02": "\uDB80\uDC7C",
+  "\u50A2\uDB40\uDD02": "\uDB80\uDC7D",
+  "\u50AF\uDB40\uDD02": "\uDB80\uDC7E",
+  "\u50B3\uDB40\uDD02": "\uDB80\uDC7F",
+  "\u50B4\uDB40\uDD02": "\uDB80\uDC80",
+  "\u50B9\uDB40\uDD02": "\uDB80\uDC81",
+  "\u50BB\uDB40\uDD02": "\uDB80\uDC82",
+  "\u50BD\uDB40\uDD02": "\uDB80\uDC83",
+  "\u50C3\uDB40\uDD02": "\uDB80\uDC84",
+  "\u50C5\uDB40\uDD02": "\uDB80\uDC85",
+  "\u50C9\uDB40\uDD02": "\uDB80\uDC86",
+  "\u50DE\uDB40\uDD02": "\uDB80\uDC87",
+  "\u50E2\uDB40\uDD02": "\uDB80\uDC88",
+  "\u50E8\uDB40\uDD02": "\uDB80\uDC89",
+  "\u50EE\uDB40\uDD02": "\uDB80\uDC8A",
+  "\u50EF\uDB40\uDD02": "\uDB80\uDC8B",
+  "\u50F2\uDB40\uDD02": "\uDB80\uDC8C",
+  "\u50F6\uDB40\uDD02": "\uDB80\uDC8D",
+  "\u5104\uDB40\uDD02": "\uDB80\uDC8E",
+  "\u5106\uDB40\uDD02": "\uDB80\uDC8F",
+  "\u5108\uDB40\uDD02": "\uDB80\uDC90",
+  "\u510D\uDB40\uDD02": "\uDB80\uDC91",
+  "\u5110\uDB40\uDD02": "\uDB80\uDC92",
+  "\u5114\uDB40\uDD02": "\uDB80\uDC93",
+  "\u511B\uDB40\uDD02": "\uDB80\uDC94",
+  "\u512A\uDB40\uDD02": "\uDB80\uDC95",
+  "\u512C\uDB40\uDD02": "\uDB80\uDC96",
+  "\u5131\uDB40\uDD02": "\uDB80\uDC97",
+  "\u5132\uDB40\uDD02": "\uDB80\uDC98",
+  "\u513A\uDB40\uDD02": "\uDB80\uDC99",
+  "\u513B\uDB40\uDD02": "\uDB80\uDC9A",
+  "\u513C\uDB40\uDD02": "\uDB80\uDC9B",
+  "\u5140\uDB40\uDD02": "\uDB80\uDC9C",
+  "\u5142\uDB40\uDD02": "\uDB80\uDC9D",
+  "\u5145\uDB40\uDD02": "\uDB80\uDC9E",
+  "\u5147\uDB40\uDD02": "\uDB80\uDC9F",
+  "\u514A\uDB40\uDD02": "\uDB80\uDCA0",
+  "\u514C\uDB40\uDD02": "\uDB80\uDCA1",
+  "\u514E\uDB40\uDD02": "\uDB80\uDCA2",
+  "\u5152\uDB40\uDD02": "\uDB80\uDCA3",
+  "\u5153\uDB40\uDD02": "\uDB80\uDCA4",
+  "\u515C\uDB40\uDD02": "\uDB80\uDCA5",
+  "\u5169\uDB40\uDD02": "\uDB80\uDCA6",
+  "\u516A\uDB40\uDD02": "\uDB80\uDCA7",
+  "\u516E\uDB40\uDD02": "\uDB80\uDCA8",
+  "\u5173\uDB40\uDD02": "\uDB80\uDCA9",
+  "\u5178\uDB40\uDD02": "\uDB80\uDCAA",
+  "\u517B\uDB40\uDD02": "\uDB80\uDCAB",
+  "\u5180\uDB40\uDD02": "\uDB80\uDCAC",
+  "\u5185\uDB40\uDD02": "\uDB80\uDCAD",
+  "\u518E\uDB40\uDD02": "\uDB80\uDCAE",
+  "\u5197\uDB40\uDD02": "\uDB80\uDCAF",
+  "\u5198\uDB40\uDD02": "\uDB80\uDCB0",
+  "\u519D\uDB40\uDD02": "\uDB80\uDCB1",
+  "\u51A1\uDB40\uDD02": "\uDB80\uDCB2",
+  "\u51A2\uDB40\uDD02": "\uDB80\uDCB3",
+  "\u51A5\uDB40\uDD02": "\uDB80\uDCB4",
+  "\u51A6\uDB40\uDD02": "\uDB80\uDCB5",
+  "\u51AA\uDB40\uDD02": "\uDB80\uDCB6",
+  "\u51B5\uDB40\uDD02": "\uDB80\uDCB7",
+  "\u51CA\uDB40\uDD02": "\uDB80\uDCB8",
+  "\u51CC\uDB40\uDD02": "\uDB80\uDCB9",
+  "\u51E2\uDB40\uDD02": "\uDB80\uDCBA",
+  "\u51F6\uDB40\uDD02": "\uDB80\uDCBB",
+  "\u51FE\uDB40\uDD02": "\uDB80\uDCBC",
+  "\u5204\uDB40\uDD02": "\uDB80\uDCBD",
+  "\u5207\uDB40\uDD02": "\uDB80\uDCBE",
+  "\u520B\uDB40\uDD02": "\uDB80\uDCBF",
+  "\u5213\uDB40\uDD02": "\uDB80\uDCC0",
+  "\u523B\uDB40\uDD02": "\uDB80\uDCC1",
+  "\u524F\uDB40\uDD02": "\uDB80\uDCC2",
+  "\u526A\uDB40\uDD02": "\uDB80\uDCC3",
+  "\u5273\uDB40\uDD02": "\uDB80\uDCC4",
+  "\u527F\uDB40\uDD02": "\uDB80\uDCC5",
+  "\u5283\uDB40\uDD02": "\uDB80\uDCC6",
+  "\u5289\uDB40\uDD02": "\uDB80\uDCC7",
+  "\u5291\uDB40\uDD02": "\uDB80\uDCC8",
+  "\u5292\uDB40\uDD02": "\uDB80\uDCC9",
+  "\u5298\uDB40\uDD02": "\uDB80\uDCCA",
+  "\u52A9\uDB40\uDD02": "\uDB80\uDCCB",
+  "\u52B5\uDB40\uDD02": "\uDB80\uDCCC",
+  "\u52BE\uDB40\uDD02": "\uDB80\uDCCD",
+  "\u52C3\uDB40\uDD02": "\uDB80\uDCCE",
+  "\u52C6\uDB40\uDD02": "\uDB80\uDCCF",
+  "\u52CC\uDB40\uDD02": "\uDB80\uDCD0",
+  "\u52D2\uDB40\uDD02": "\uDB80\uDCD1",
+  "\u52D6\uDB40\uDD02": "\uDB80\uDCD2",
+  "\u52D8\uDB40\uDD02": "\uDB80\uDCD3",
+  "\u52DF\uDB40\uDD02": "\uDB80\uDCD4",
+  "\u52E0\uDB40\uDD02": "\uDB80\uDCD5",
+  "\u52E6\uDB40\uDD02": "\uDB80\uDCD6",
+  "\u52E8\uDB40\uDD02": "\uDB80\uDCD7",
+  "\u52EC\uDB40\uDD02": "\uDB80\uDCD8",
+  "\u52F1\uDB40\uDD02": "\uDB80\uDCD9",
+  "\u52F2\uDB40\uDD02": "\uDB80\uDCDA",
+  "\u52F3\uDB40\uDD02": "\uDB80\uDCDB",
+  "\u52F5\uDB40\uDD02": "\uDB80\uDCDC",
+  "\u52F8\uDB40\uDD02": "\uDB80\uDCDD",
+  "\u52F9\uDB40\uDD02": "\uDB80\uDCDE",
+  "\u5306\uDB40\uDD02": "\uDB80\uDCDF",
+  "\u5307\uDB40\uDD02": "\uDB80\uDCE0",
+  "\u530B\uDB40\uDD02": "\uDB80\uDCE1",
+  "\u530F\uDB40\uDD02": "\uDB80\uDCE2",
+  "\u5317\uDB40\uDD02": "\uDB80\uDCE3",
+  "\u532C\uDB40\uDD02": "\uDB80\uDCE4",
+  "\u5335\uDB40\uDD02": "\uDB80\uDCE5",
+  "\u533B\uDB40\uDD02": "\uDB80\uDCE6",
+  "\u533C\uDB40\uDD02": "\uDB80\uDCE7",
+  "\u533D\uDB40\uDD02": "\uDB80\uDCE8",
+  "\u533E\uDB40\uDD02": "\uDB80\uDCE9",
+  "\u5345\uDB40\uDD02": "\uDB80\uDCEA",
+  "\u5352\uDB40\uDD02": "\uDB80\uDCEB",
+  "\u535E\uDB40\uDD02": "\uDB80\uDCEC",
+  "\u536F\uDB40\uDD02": "\uDB80\uDCED",
+  "\u5373\uDB40\uDD02": "\uDB80\uDCEE",
+  "\u537D\uDB40\uDD02": "\uDB80\uDCEF",
+  "\u5377\uDB40\uDD02": "\uDB80\uDCF0",
+  "\u5378\uDB40\uDD02": "\uDB80\uDCF1",
+  "\u537B\uDB40\uDD02": "\uDB80\uDCF2",
+  "\u5396\uDB40\uDD02": "\uDB80\uDCF3",
+  "\u53A5\uDB40\uDD02": "\uDB80\uDCF4",
+  "\u53B0\uDB40\uDD02": "\uDB80\uDCF5",
+  "\u53B2\uDB40\uDD02": "\uDB80\uDCF6",
+  "\u53C8\uDB40\uDD02": "\uDB80\uDCF7",
+  "\u53C9\uDB40\uDD02": "\uDB80\uDCF8",
+  "\u53CE\uDB40\uDD02": "\uDB80\uDCF9",
+  "\u53D0\uDB40\uDD02": "\uDB80\uDCFA",
+  "\u53D4\uDB40\uDD02": "\uDB80\uDCFB",
+  "\u53DD\uDB40\uDD02": "\uDB80\uDCFC",
+  "\u53EB\uDB40\uDD02": "\uDB80\uDCFD",
+  "\u53ED\uDB40\uDD02": "\uDB80\uDCFE",
+  "\u53F7\uDB40\uDD02": "\uDB80\uDCFF",
+  "\u541B\uDB40\uDD02": "\uDB80\uDD00",
+  "\u541D\uDB40\uDD02": "\uDB80\uDD01",
+  "\u541F\uDB40\uDD02": "\uDB80\uDD02",
+  "\u5429\uDB40\uDD02": "\uDB80\uDD03",
+  "\u542B\uDB40\uDD02": "\uDB80\uDD04",
+  "\u5455\uDB40\uDD02": "\uDB80\uDD05",
+  "\u5471\uDB40\uDD02": "\uDB80\uDD06",
+  "\u5485\uDB40\uDD02": "\uDB80\uDD07",
+  "\u5486\uDB40\uDD02": "\uDB80\uDD08",
+  "\u548E\uDB40\uDD02": "\uDB80\uDD09",
+  "\u54A2\uDB40\uDD02": "\uDB80\uDD0A",
+  "\u54BC\uDB40\uDD02": "\uDB80\uDD0B",
+  "\u54C9\uDB40\uDD02": "\uDB80\uDD0C",
+  "\u54CE\uDB40\uDD02": "\uDB80\uDD0D",
+  "\u54E0\uDB40\uDD02": "\uDB80\uDD0E",
+  "\u54E8\uDB40\uDD02": "\uDB80\uDD0F",
+  "\u54F2\uDB40\uDD02": "\uDB80\uDD10",
+  "\u54FD\uDB40\uDD02": "\uDB80\uDD11",
+  "\u5506\uDB40\uDD02": "\uDB80\uDD12",
+  "\u550C\uDB40\uDD02": "\uDB80\uDD13",
+  "\u5547\uDB40\uDD02": "\uDB80\uDD14",
+  "\u554C\uDB40\uDD02": "\uDB80\uDD15",
+  "\u555A\uDB40\uDD02": "\uDB80\uDD16",
+  "\u555D\uDB40\uDD02": "\uDB80\uDD17",
+  "\u557C\uDB40\uDD02": "\uDB80\uDD18",
+  "\u5586\uDB40\uDD02": "\uDB80\uDD19",
+  "\u558F\uDB40\uDD02": "\uDB80\uDD1A",
+  "\u5591\uDB40\uDD02": "\uDB80\uDD1B",
+  "\u5593\uDB40\uDD02": "\uDB80\uDD1C",
+  "\u5599\uDB40\uDD02": "\uDB80\uDD1D",
+  "\u559E\uDB40\uDD02": "\uDB80\uDD1E",
+  "\u55A8\uDB40\uDD02": "\uDB80\uDD1F",
+  "\u55AA\uDB40\uDD02": "\uDB80\uDD20",
+  "\u55AE\uDB40\uDD02": "\uDB80\uDD21",
+  "\u55B0\uDB40\uDD02": "\uDB80\uDD22",
+  "\u55C5\uDB40\uDD02": "\uDB80\uDD23",
+  "\u55D2\uDB40\uDD02": "\uDB80\uDD24",
+  "\u55D4\uDB40\uDD02": "\uDB80\uDD25",
+  "\u55DD\uDB40\uDD02": "\uDB80\uDD26",
+  "\u55DE\uDB40\uDD02": "\uDB80\uDD27",
+  "\u55E2\uDB40\uDD02": "\uDB80\uDD28",
+  "\u55F9\uDB40\uDD02": "\uDB80\uDD29",
+  "\u5614\uDB40\uDD02": "\uDB80\uDD2A",
+  "\u561B\uDB40\uDD02": "\uDB80\uDD2B",
+  "\u5629\uDB40\uDD02": "\uDB80\uDD2C",
+  "\u562C\uDB40\uDD02": "\uDB80\uDD2D",
+  "\u5630\uDB40\uDD02": "\uDB80\uDD2E",
+  "\u5632\uDB40\uDD02": "\uDB80\uDD2F",
+  "\u563C\uDB40\uDD02": "\uDB80\uDD30",
+  "\u5642\uDB40\uDD02": "\uDB80\uDD31",
+  "\u5644\uDB40\uDD02": "\uDB80\uDD32",
+  "\u5646\uDB40\uDD02": "\uDB80\uDD33",
+  "\u5647\uDB40\uDD02": "\uDB80\uDD34",
+  "\u564C\uDB40\uDD02": "\uDB80\uDD35",
+  "\u5660\uDB40\uDD02": "\uDB80\uDD36",
+  "\u566B\uDB40\uDD02": "\uDB80\uDD37",
+  "\u5671\uDB40\uDD02": "\uDB80\uDD38",
+  "\u5676\uDB40\uDD02": "\uDB80\uDD39",
+  "\u5680\uDB40\uDD02": "\uDB80\uDD3A",
+  "\u5684\uDB40\uDD02": "\uDB80\uDD3B",
+  "\u5686\uDB40\uDD02": "\uDB80\uDD3C",
+  "\u568A\uDB40\uDD02": "\uDB80\uDD3D",
+  "\u5694\uDB40\uDD02": "\uDB80\uDD3E",
+  "\u569D\uDB40\uDD02": "\uDB80\uDD3F",
+  "\u56A0\uDB40\uDD02": "\uDB80\uDD40",
+  "\u56A8\uDB40\uDD02": "\uDB80\uDD41",
+  "\u56BC\uDB40\uDD02": "\uDB80\uDD42",
+  "\u56C8\uDB40\uDD02": "\uDB80\uDD43",
+  "\u56CC\uDB40\uDD02": "\uDB80\uDD44",
+  "\u56D3\uDB40\uDD02": "\uDB80\uDD45",
+  "\u56DB\uDB40\uDD02": "\uDB80\uDD46",
+  "\u56F6\uDB40\uDD02": "\uDB80\uDD47",
+  "\u5702\uDB40\uDD02": "\uDB80\uDD48",
+  "\u5708\uDB40\uDD02": "\uDB80\uDD49",
+  "\u570A\uDB40\uDD02": "\uDB80\uDD4A",
+  "\u5711\uDB40\uDD02": "\uDB80\uDD4B",
+  "\u5716\uDB40\uDD02": "\uDB80\uDD4C",
+  "\u571B\uDB40\uDD02": "\uDB80\uDD4D",
+  "\u5723\uDB40\uDD02": "\uDB80\uDD4E",
+  "\u572C\uDB40\uDD02": "\uDB80\uDD4F",
+  "\u572D\uDB40\uDD02": "\uDB80\uDD50",
+  "\u5734\uDB40\uDD02": "\uDB80\uDD51",
+  "\u5789\uDB40\uDD02": "\uDB80\uDD52",
+  "\u578B\uDB40\uDD02": "\uDB80\uDD53",
+  "\u5793\uDB40\uDD02": "\uDB80\uDD54",
+  "\u5794\uDB40\uDD02": "\uDB80\uDD55",
+  "\u579D\uDB40\uDD02": "\uDB80\uDD56",
+  "\u57AA\uDB40\uDD02": "\uDB80\uDD57",
+  "\u57C8\uDB40\uDD02": "\uDB80\uDD58",
+  "\u57D2\uDB40\uDD02": "\uDB80\uDD59",
+  "\u57D3\uDB40\uDD02": "\uDB80\uDD5A",
+  "\u57D5\uDB40\uDD02": "\uDB80\uDD5B",
+  "\u57E7\uDB40\uDD02": "\uDB80\uDD5C",
+  "\u57F6\uDB40\uDD02": "\uDB80\uDD5D",
+  "\u57F8\uDB40\uDD02": "\uDB80\uDD5E",
+  "\u5805\uDB40\uDD02": "\uDB80\uDD5F",
+  "\u581F\uDB40\uDD02": "\uDB80\uDD60",
+  "\u5831\uDB40\uDD02": "\uDB80\uDD61",
+  "\u5832\uDB40\uDD02": "\uDB80\uDD62",
+  "\u5834\uDB40\uDD02": "\uDB80\uDD63",
+  "\u5835\uDB40\uDD02": "\uDB80\uDD64",
+  "\u584A\uDB40\uDD02": "\uDB80\uDD65",
+  "\u584C\uDB40\uDD02": "\uDB80\uDD66",
+  "\u5851\uDB40\uDD02": "\uDB80\uDD67",
+  "\u5854\uDB40\uDD02": "\uDB80\uDD68",
+  "\u585F\uDB40\uDD02": "\uDB80\uDD69",
+  "\u5870\uDB40\uDD02": "\uDB80\uDD6A",
+  "\u5880\uDB40\uDD02": "\uDB80\uDD6B",
+  "\u5881\uDB40\uDD02": "\uDB80\uDD6C",
+  "\u5883\uDB40\uDD02": "\uDB80\uDD6D",
+  "\u588D\uDB40\uDD02": "\uDB80\uDD6E",
+  "\u5893\uDB40\uDD02": "\uDB80\uDD6F",
+  "\u589E\uDB40\uDD02": "\uDB80\uDD70",
+  "\u589F\uDB40\uDD02": "\uDB80\uDD71",
+  "\u58B3\uDB40\uDD02": "\uDB80\uDD72",
+  "\u58B8\uDB40\uDD02": "\uDB80\uDD73",
+  "\u58BA\uDB40\uDD02": "\uDB80\uDD74",
+  "\u58C4\uDB40\uDD02": "\uDB80\uDD75",
+  "\u58C7\uDB40\uDD02": "\uDB80\uDD76",
+  "\u58CE\uDB40\uDD02": "\uDB80\uDD77",
+  "\u58D0\uDB40\uDD02": "\uDB80\uDD78",
+  "\u58D2\uDB40\uDD02": "\uDB80\uDD79",
+  "\u58D3\uDB40\uDD02": "\uDB80\uDD7A",
+  "\u58D5\uDB40\uDD02": "\uDB80\uDD7B",
+  "\u58D9\uDB40\uDD02": "\uDB80\uDD7C",
+  "\u58DD\uDB40\uDD02": "\uDB80\uDD7D",
+  "\u58DF\uDB40\uDD02": "\uDB80\uDD7E",
+  "\u58E0\uDB40\uDD02": "\uDB80\uDD7F",
+  "\u58E1\uDB40\uDD02": "\uDB80\uDD80",
+  "\u58E5\uDB40\uDD02": "\uDB80\uDD81",
+  "\u58F3\uDB40\uDD02": "\uDB80\uDD82",
+  "\u58F4\uDB40\uDD02": "\uDB80\uDD83",
+  "\u58F7\uDB40\uDD02": "\uDB80\uDD84",
+  "\u58FD\uDB40\uDD02": "\uDB80\uDD85",
+  "\u5905\uDB40\uDD02": "\uDB80\uDD86",
+  "\u590A\uDB40\uDD02": "\uDB80\uDD87",
+  "\u590C\uDB40\uDD02": "\uDB80\uDD88",
+  "\u590F\uDB40\uDD02": "\uDB80\uDD89",
+  "\u5912\uDB40\uDD02": "\uDB80\uDD8A",
+  "\u5913\uDB40\uDD02": "\uDB80\uDD8B",
+  "\u5914\uDB40\uDD02": "\uDB80\uDD8C",
+  "\u5916\uDB40\uDD02": "\uDB80\uDD8D",
+  "\u5922\uDB40\uDD02": "\uDB80\uDD8E",
+  "\u5938\uDB40\uDD02": "\uDB80\uDD8F",
+  "\u5946\uDB40\uDD02": "\uDB80\uDD90",
+  "\u5954\uDB40\uDD02": "\uDB80\uDD91",
+  "\u5958\uDB40\uDD02": "\uDB80\uDD92",
+  "\u595F\uDB40\uDD02": "\uDB80\uDD93",
+  "\u5963\uDB40\uDD02": "\uDB80\uDD94",
+  "\u5965\uDB40\uDD02": "\uDB80\uDD95",
+  "\u5969\uDB40\uDD02": "\uDB80\uDD96",
+  "\u5972\uDB40\uDD02": "\uDB80\uDD97",
+  "\u5981\uDB40\uDD02": "\uDB80\uDD98",
+  "\u5983\uDB40\uDD02": "\uDB80\uDD99",
+  "\u599B\uDB40\uDD02": "\uDB80\uDD9A",
+  "\u59CD\uDB40\uDD02": "\uDB80\uDD9B",
+  "\u59E3\uDB40\uDD02": "\uDB80\uDD9C",
+  "\u5A01\uDB40\uDD02": "\uDB80\uDD9D",
+  "\u5A29\uDB40\uDD02": "\uDB80\uDD9E",
+  "\u5A41\uDB40\uDD02": "\uDB80\uDD9F",
+  "\u5A48\uDB40\uDD02": "\uDB80\uDDA0",
+  "\u5A4C\uDB40\uDD02": "\uDB80\uDDA1",
+  "\u5A67\uDB40\uDD02": "\uDB80\uDDA2",
+  "\u5A6C\uDB40\uDD02": "\uDB80\uDDA3",
+  "\u5A7E\uDB40\uDD02": "\uDB80\uDDA4",
+  "\u5A96\uDB40\uDD02": "\uDB80\uDDA5",
+  "\u5AA2\uDB40\uDD02": "\uDB80\uDDA6",
+  "\u5AB5\uDB40\uDD02": "\uDB80\uDDA7",
+  "\u5ABA\uDB40\uDD02": "\uDB80\uDDA8",
+  "\u5ABF\uDB40\uDD02": "\uDB80\uDDA9",
+  "\u5AC1\uDB40\uDD02": "\uDB80\uDDAA",
+  "\u5ACB\uDB40\uDD02": "\uDB80\uDDAB",
+  "\u5AD7\uDB40\uDD02": "\uDB80\uDDAC",
+  "\u5ADA\uDB40\uDD02": "\uDB80\uDDAD",
+  "\u5ADC\uDB40\uDD02": "\uDB80\uDDAE",
+  "\u5AE1\uDB40\uDD02": "\uDB80\uDDAF",
+  "\u5B2A\uDB40\uDD02": "\uDB80\uDDB0",
+  "\u5B34\uDB40\uDD02": "\uDB80\uDDB1",
+  "\u5B36\uDB40\uDD02": "\uDB80\uDDB2",
+  "\u5B3E\uDB40\uDD02": "\uDB80\uDDB3",
+  "\u5B64\uDB40\uDD02": "\uDB80\uDDB4",
+  "\u5B69\uDB40\uDD02": "\uDB80\uDDB5",
+  "\u5B70\uDB40\uDD02": "\uDB80\uDDB6",
+  "\u5B75\uDB40\uDD02": "\uDB80\uDDB7",
+  "\u5B7D\uDB40\uDD02": "\uDB80\uDDB8",
+  "\u5B85\uDB40\uDD02": "\uDB80\uDDB9",
+  "\u5B90\uDB40\uDD02": "\uDB80\uDDBA",
+  "\u5BA3\uDB40\uDD02": "\uDB80\uDDBB",
+  "\u5BB2\uDB40\uDD02": "\uDB80\uDDBC",
+  "\u5BB6\uDB40\uDD02": "\uDB80\uDDBD",
+  "\u5BC0\uDB40\uDD02": "\uDB80\uDDBE",
+  "\u5BC7\uDB40\uDD02": "\uDB80\uDDBF",
+  "\u5BD0\uDB40\uDD02": "\uDB80\uDDC0",
+  "\u5BD7\uDB40\uDD02": "\uDB80\uDDC1",
+  "\u5BD9\uDB40\uDD02": "\uDB80\uDDC2",
+  "\u5BDE\uDB40\uDD02": "\uDB80\uDDC3",
+  "\u5BE2\uDB40\uDD02": "\uDB80\uDDC4",
+  "\u5BE4\uDB40\uDD02": "\uDB80\uDDC5",
+  "\u5BE5\uDB40\uDD02": "\uDB80\uDDC6",
+  "\u5BEC\uDB40\uDD02": "\uDB80\uDDC7",
+  "\u5BF5\uDB40\uDD02": "\uDB80\uDDC8",
+  "\u5BF6\uDB40\uDD02": "\uDB80\uDDC9",
+  "\u5BFD\uDB40\uDD02": "\uDB80\uDDCA",
+  "\u5BFF\uDB40\uDD02": "\uDB80\uDDCB",
+  "\u5C04\uDB40\uDD02": "\uDB80\uDDCC",
+  "\u5C07\uDB40\uDD02": "\uDB80\uDDCD",
+  "\u5C08\uDB40\uDD02": "\uDB80\uDDCE",
+  "\u5C09\uDB40\uDD02": "\uDB80\uDDCF",
+  "\u5C19\uDB40\uDD02": "\uDB80\uDDD0",
+  "\u5C23\uDB40\uDD02": "\uDB80\uDDD1",
+  "\u5C2D\uDB40\uDD02": "\uDB80\uDDD2",
+  "\u5C39\uDB40\uDD02": "\uDB80\uDDD3",
+  "\u5C46\uDB40\uDD02": "\uDB80\uDDD4",
+  "\u5C4F\uDB40\uDD02": "\uDB80\uDDD5",
+  "\u5C51\uDB40\uDD02": "\uDB80\uDDD6",
+  "\u5C53\uDB40\uDD02": "\uDB80\uDDD7",
+  "\u5C55\uDB40\uDD02": "\uDB80\uDDD8",
+  "\u5C65\uDB40\uDD02": "\uDB80\uDDD9",
+  "\u5C88\uDB40\uDD02": "\uDB80\uDDDA",
+  "\u5C8C\uDB40\uDD02": "\uDB80\uDDDB",
+  "\u5C91\uDB40\uDD02": "\uDB80\uDDDC",
+  "\u5C94\uDB40\uDD02": "\uDB80\uDDDD",
+  "\u5CBC\uDB40\uDD02": "\uDB80\uDDDE",
+  "\u5CED\uDB40\uDD02": "\uDB80\uDDDF",
+  "\u5CFA\uDB40\uDD02": "\uDB80\uDDE0",
+  "\u5CFB\uDB40\uDD02": "\uDB80\uDDE1",
+  "\u5D06\uDB40\uDD02": "\uDB80\uDDE2",
+  "\u5D0B\uDB40\uDD02": "\uDB80\uDDE3",
+  "\u5D1A\uDB40\uDD02": "\uDB80\uDDE4",
+  "\u5D1D\uDB40\uDD02": "\uDB80\uDDE5",
+  "\u5D22\uDB40\uDD02": "\uDB80\uDDE6",
+  "\u5D27\uDB40\uDD02": "\uDB80\uDDE7",
+  "\u5D3F\uDB40\uDD02": "\uDB80\uDDE8",
+  "\u5D46\uDB40\uDD02": "\uDB80\uDDE9",
+  "\u5D69\uDB40\uDD02": "\uDB80\uDDEA",
+  "\u5D76\uDB40\uDD02": "\uDB80\uDDEB",
+  "\u5D82\uDB40\uDD02": "\uDB80\uDDEC",
+  "\u5D90\uDB40\uDD02": "\uDB80\uDDED",
+  "\u5D92\uDB40\uDD02": "\uDB80\uDDEE",
+  "\u5D99\uDB40\uDD02": "\uDB80\uDDEF",
+  "\u5DB2\uDB40\uDD02": "\uDB80\uDDF0",
+  "\u5DC3\uDB40\uDD02": "\uDB80\uDDF1",
+  "\u5DCD\uDB40\uDD02": "\uDB80\uDDF2",
+  "\u5DCE\uDB40\uDD02": "\uDB80\uDDF3",
+  "\u5DD6\uDB40\uDD02": "\uDB80\uDDF4",
+  "\u5DD9\uDB40\uDD02": "\uDB80\uDDF5",
+  "\u5DE2\uDB40\uDD02": "\uDB80\uDDF6",
+  "\u5DE4\uDB40\uDD02": "\uDB80\uDDF7",
+  "\u5DE6\uDB40\uDD02": "\uDB80\uDDF8",
+  "\u5DE9\uDB40\uDD02": "\uDB80\uDDF9",
+  "\u5DEE\uDB40\uDD02": "\uDB80\uDDFA",
+  "\u5DF7\uDB40\uDD02": "\uDB80\uDDFB",
+  "\u5DF8\uDB40\uDD02": "\uDB80\uDDFC",
+  "\u5DFB\uDB40\uDD02": "\uDB80\uDDFD",
+  "\u5E0C\uDB40\uDD02": "\uDB80\uDDFE",
+  "\u5E1A\uDB40\uDD02": "\uDB80\uDDFF",
+  "\u5E28\uDB40\uDD02": "\uDB80\uDE00",
+  "\u5E2B\uDB40\uDD02": "\uDB80\uDE01",
+  "\u5E2E\uDB40\uDD02": "\uDB80\uDE02",
+  "\u5E2F\uDB40\uDD02": "\uDB80\uDE03",
+  "\u5E3E\uDB40\uDD02": "\uDB80\uDE04",
+  "\u5E55\uDB40\uDD02": "\uDB80\uDE05",
+  "\u5E5B\uDB40\uDD02": "\uDB80\uDE06",
+  "\u5E5F\uDB40\uDD02": "\uDB80\uDE07",
+  "\u5E62\uDB40\uDD02": "\uDB80\uDE08",
+  "\u5E6A\uDB40\uDD02": "\uDB80\uDE09",
+  "\u5E6D\uDB40\uDD02": "\uDB80\uDE0A",
+  "\u5E70\uDB40\uDD02": "\uDB80\uDE0B",
+  "\u5E74\uDB40\uDD02": "\uDB80\uDE0C",
+  "\u5E75\uDB40\uDD02": "\uDB80\uDE0D",
+  "\u5E78\uDB40\uDD02": "\uDB80\uDE0E",
+  "\u5E95\uDB40\uDD02": "\uDB80\uDE0F",
+  "\u5EA6\uDB40\uDD02": "\uDB80\uDE10",
+  "\u5EAC\uDB40\uDD02": "\uDB80\uDE11",
+  "\u5EB3\uDB40\uDD02": "\uDB80\uDE12",
+  "\u5EB6\uDB40\uDD02": "\uDB80\uDE13",
+  "\u5EB7\uDB40\uDD02": "\uDB80\uDE14",
+  "\u5EB8\uDB40\uDD02": "\uDB80\uDE15",
+  "\u5EB9\uDB40\uDD02": "\uDB80\uDE16",
+  "\u5EBE\uDB40\uDD02": "\uDB80\uDE17",
+  "\u5EBF\uDB40\uDD02": "\uDB80\uDE18",
+  "\u5ECB\uDB40\uDD02": "\uDB80\uDE19",
+  "\u5ED6\uDB40\uDD02": "\uDB80\uDE1A",
+  "\u5ED9\uDB40\uDD02": "\uDB80\uDE1B",
+  "\u5EDF\uDB40\uDD02": "\uDB80\uDE1C",
+  "\u5EF4\uDB40\uDD02": "\uDB80\uDE1D",
+  "\u5EF8\uDB40\uDD02": "\uDB80\uDE1E",
+  "\u5EF9\uDB40\uDD02": "\uDB80\uDE1F",
+  "\u5EFB\uDB40\uDD02": "\uDB80\uDE20",
+  "\u5EFC\uDB40\uDD02": "\uDB80\uDE21",
+  "\u5EFD\uDB40\uDD02": "\uDB80\uDE22",
+  "\u5EFE\uDB40\uDD02": "\uDB80\uDE23",
+  "\u5F02\uDB40\uDD02": "\uDB80\uDE24",
+  "\u5F09\uDB40\uDD02": "\uDB80\uDE25",
+  "\u5F0D\uDB40\uDD02": "\uDB80\uDE26",
+  "\u5F0E\uDB40\uDD02": "\uDB80\uDE27",
+  "\u5F13\uDB40\uDD02": "\uDB80\uDE28",
+  "\u5F14\uDB40\uDD02": "\uDB80\uDE29",
+  "\u5F16\uDB40\uDD02": "\uDB80\uDE2A",
+  "\u5F17\uDB40\uDD02": "\uDB80\uDE2B",
+  "\u5F21\uDB40\uDD02": "\uDB80\uDE2C",
+  "\u5F22\uDB40\uDD02": "\uDB80\uDE2D",
+  "\u5F27\uDB40\uDD02": "\uDB80\uDE2E",
+  "\u5F29\uDB40\uDD02": "\uDB80\uDE2F",
+  "\u5F44\uDB40\uDD02": "\uDB80\uDE30",
+  "\u5F4C\uDB40\uDD02": "\uDB80\uDE31",
+  "\u5F56\uDB40\uDD02": "\uDB80\uDE32",
+  "\u5F57\uDB40\uDD02": "\uDB80\uDE33",
+  "\u5F5A\uDB40\uDD02": "\uDB80\uDE34",
+  "\u5F5C\uDB40\uDD02": "\uDB80\uDE35",
+  "\u5F60\uDB40\uDD02": "\uDB80\uDE36",
+  "\u5F6A\uDB40\uDD02": "\uDB80\uDE37",
+  "\u5F70\uDB40\uDD02": "\uDB80\uDE38",
+  "\u5F74\uDB40\uDD02": "\uDB80\uDE39",
+  "\u5F8C\uDB40\uDD02": "\uDB80\uDE3A",
+  "\u5F8F\uDB40\uDD02": "\uDB80\uDE3B",
+  "\u5F93\uDB40\uDD02": "\uDB80\uDE3C",
+  "\u5F9E\uDB40\uDD02": "\uDB80\uDE3D",
+  "\u5FA4\uDB40\uDD02": "\uDB80\uDE3E",
+  "\u5FAB\uDB40\uDD02": "\uDB80\uDE3F",
+  "\u5FAC\uDB40\uDD02": "\uDB80\uDE40",
+  "\u5FB3\uDB40\uDD02": "\uDB80\uDE41",
+  "\u5FB7\uDB40\uDD02": "\uDB80\uDE42",
+  "\u5FBD\uDB40\uDD02": "\uDB80\uDE43",
+  "\u5FDE\uDB40\uDD02": "\uDB80\uDE44",
+  "\u5FED\uDB40\uDD02": "\uDB80\uDE45",
+  "\u5FF0\uDB40\uDD02": "\uDB80\uDE46",
+  "\u5FFF\uDB40\uDD02": "\uDB80\uDE47",
+  "\u6026\uDB40\uDD02": "\uDB80\uDE48",
+  "\u604A\uDB40\uDD02": "\uDB80\uDE49",
+  "\u6054\uDB40\uDD02": "\uDB80\uDE4A",
+  "\u605D\uDB40\uDD02": "\uDB80\uDE4B",
+  "\u6071\uDB40\uDD02": "\uDB80\uDE4C",
+  "\u607E\uDB40\uDD02": "\uDB80\uDE4D",
+  "\u6081\uDB40\uDD02": "\uDB80\uDE4E",
+  "\u6084\uDB40\uDD02": "\uDB80\uDE4F",
+  "\u608B\uDB40\uDD02": "\uDB80\uDE50",
+  "\u609F\uDB40\uDD02": "\uDB80\uDE51",
+  "\u60A8\uDB40\uDD02": "\uDB80\uDE52",
+  "\u60BE\uDB40\uDD02": "\uDB80\uDE53",
+  "\u60C6\uDB40\uDD02": "\uDB80\uDE54",
+  "\u60C7\uDB40\uDD02": "\uDB80\uDE55",
+  "\u60D3\uDB40\uDD02": "\uDB80\uDE56",
+  "\u60DD\uDB40\uDD02": "\uDB80\uDE57",
+  "\u60E0\uDB40\uDD02": "\uDB80\uDE58",
+  "\u60E5\uDB40\uDD02": "\uDB80\uDE59",
+  "\u60E7\uDB40\uDD02": "\uDB80\uDE5A",
+  "\u60F9\uDB40\uDD02": "\uDB80\uDE5B",
+  "\u6107\uDB40\uDD02": "\uDB80\uDE5C",
+  "\u6111\uDB40\uDD02": "\uDB80\uDE5D",
+  "\u6112\uDB40\uDD02": "\uDB80\uDE5E",
+  "\u6114\uDB40\uDD02": "\uDB80\uDE5F",
+  "\u6115\uDB40\uDD02": "\uDB80\uDE60",
+  "\u6116\uDB40\uDD02": "\uDB80\uDE61",
+  "\u611B\uDB40\uDD02": "\uDB80\uDE62",
+  "\u613A\uDB40\uDD02": "\uDB80\uDE63",
+  "\u613C\uDB40\uDD02": "\uDB80\uDE64",
+  "\u614A\uDB40\uDD02": "\uDB80\uDE65",
+  "\u6155\uDB40\uDD02": "\uDB80\uDE66",
+  "\u615D\uDB40\uDD02": "\uDB80\uDE67",
+  "\u615E\uDB40\uDD02": "\uDB80\uDE68",
+  "\u6165\uDB40\uDD02": "\uDB80\uDE69",
+  "\u6174\uDB40\uDD02": "\uDB80\uDE6A",
+  "\u6176\uDB40\uDD02": "\uDB80\uDE6B",
+  "\u617F\uDB40\uDD02": "\uDB80\uDE6C",
+  "\u6181\uDB40\uDD02": "\uDB80\uDE6D",
+  "\u6182\uDB40\uDD02": "\uDB80\uDE6E",
+  "\u618A\uDB40\uDD02": "\uDB80\uDE6F",
+  "\u6193\uDB40\uDD02": "\uDB80\uDE70",
+  "\u61A7\uDB40\uDD02": "\uDB80\uDE71",
+  "\u61B6\uDB40\uDD02": "\uDB80\uDE72",
+  "\u61BC\uDB40\uDD02": "\uDB80\uDE73",
+  "\u61C2\uDB40\uDD02": "\uDB80\uDE74",
+  "\u61CA\uDB40\uDD02": "\uDB80\uDE75",
+  "\u61CB\uDB40\uDD02": "\uDB80\uDE76",
+  "\u61CC\uDB40\uDD02": "\uDB80\uDE77",
+  "\u61D0\uDB40\uDD02": "\uDB80\uDE78",
+  "\u61D5\uDB40\uDD02": "\uDB80\uDE79",
+  "\u61DE\uDB40\uDD02": "\uDB80\uDE7A",
+  "\u61E5\uDB40\uDD02": "\uDB80\uDE7B",
+  "\u61E9\uDB40\uDD02": "\uDB80\uDE7C",
+  "\u61EC\uDB40\uDD02": "\uDB80\uDE7D",
+  "\u61F5\uDB40\uDD02": "\uDB80\uDE7E",
+  "\u61F6\uDB40\uDD02": "\uDB80\uDE7F",
+  "\u61FD\uDB40\uDD02": "\uDB80\uDE80",
+  "\u61FF\uDB40\uDD02": "\uDB80\uDE81",
+  "\u6207\uDB40\uDD02": "\uDB80\uDE82",
+  "\u620E\uDB40\uDD02": "\uDB80\uDE83",
+  "\u6214\uDB40\uDD02": "\uDB80\uDE84",
+  "\u621A\uDB40\uDD02": "\uDB80\uDE85",
+  "\u621B\uDB40\uDD02": "\uDB80\uDE86",
+  "\u6220\uDB40\uDD02": "\uDB80\uDE87",
+  "\u6222\uDB40\uDD02": "\uDB80\uDE88",
+  "\u622E\uDB40\uDD02": "\uDB80\uDE89",
+  "\u6233\uDB40\uDD02": "\uDB80\uDE8A",
+  "\u6234\uDB40\uDD02": "\uDB80\uDE8B",
+  "\u624D\uDB40\uDD02": "\uDB80\uDE8C",
+  "\u625A\uDB40\uDD02": "\uDB80\uDE8D",
+  "\u6260\uDB40\uDD02": "\uDB80\uDE8E",
+  "\u626E\uDB40\uDD02": "\uDB80\uDE8F",
+  "\u6280\uDB40\uDD02": "\uDB80\uDE90",
+  "\u6283\uDB40\uDD02": "\uDB80\uDE91",
+  "\u6295\uDB40\uDD02": "\uDB80\uDE92",
+  "\u62F4\uDB40\uDD02": "\uDB80\uDE93",
+  "\u62FC\uDB40\uDD02": "\uDB80\uDE94",
+  "\u6308\uDB40\uDD02": "\uDB80\uDE95",
+  "\u6327\uDB40\uDD02": "\uDB80\uDE96",
+  "\u633A\uDB40\uDD02": "\uDB80\uDE97",
+  "\u633C\uDB40\uDD02": "\uDB80\uDE98",
+  "\u633D\uDB40\uDD02": "\uDB80\uDE99",
+  "\u6344\uDB40\uDD02": "\uDB80\uDE9A",
+  "\u634B\uDB40\uDD02": "\uDB80\uDE9B",
+  "\u634D\uDB40\uDD02": "\uDB80\uDE9C",
+  "\u63D1\uDB40\uDD02": "\uDB80\uDE9D",
+  "\u6350\uDB40\uDD02": "\uDB80\uDE9E",
+  "\u6353\uDB40\uDD02": "\uDB80\uDE9F",
+  "\u6354\uDB40\uDD02": "\uDB80\uDEA0",
+  "\u6357\uDB40\uDD02": "\uDB80\uDEA1",
+  "\u6372\uDB40\uDD02": "\uDB80\uDEA2",
+  "\u6395\uDB40\uDD02": "\uDB80\uDEA3",
+  "\u63A9\uDB40\uDD02": "\uDB80\uDEA4",
+  "\u63BE\uDB40\uDD02": "\uDB80\uDEA5",
+  "\u63C3\uDB40\uDD02": "\uDB80\uDEA6",
+  "\u63C4\uDB40\uDD02": "\uDB80\uDEA7",
+  "\u63C5\uDB40\uDD02": "\uDB80\uDEA8",
+  "\u63CF\uDB40\uDD02": "\uDB80\uDEA9",
+  "\u63D6\uDB40\uDD02": "\uDB80\uDEAA",
+  "\u63E0\uDB40\uDD02": "\uDB80\uDEAB",
+  "\u63E5\uDB40\uDD02": "\uDB80\uDEAC",
+  "\u63F3\uDB40\uDD02": "\uDB80\uDEAD",
+  "\u63F5\uDB40\uDD02": "\uDB80\uDEAE",
+  "\u640D\uDB40\uDD02": "\uDB80\uDEAF",
+  "\u6412\uDB40\uDD02": "\uDB80\uDEB0",
+  "\u6422\uDB40\uDD02": "\uDB80\uDEB1",
+  "\u6424\uDB40\uDD02": "\uDB80\uDEB2",
+  "\u6425\uDB40\uDD02": "\uDB80\uDEB3",
+  "\u6426\uDB40\uDD02": "\uDB80\uDEB4",
+  "\u6429\uDB40\uDD02": "\uDB80\uDEB5",
+  "\u642D\uDB40\uDD02": "\uDB80\uDEB6",
+  "\u643D\uDB40\uDD02": "\uDB80\uDEB7",
+  "\u644E\uDB40\uDD02": "\uDB80\uDEB8",
+  "\u6452\uDB40\uDD02": "\uDB80\uDEB9",
+  "\u6453\uDB40\uDD02": "\uDB80\uDEBA",
+  "\u6458\uDB40\uDD02": "\uDB80\uDEBB",
+  "\u645B\uDB40\uDD02": "\uDB80\uDEBC",
+  "\u6460\uDB40\uDD02": "\uDB80\uDEBD",
+  "\u6461\uDB40\uDD02": "\uDB80\uDEBE",
+  "\u646D\uDB40\uDD02": "\uDB80\uDEBF",
+  "\u6473\uDB40\uDD02": "\uDB80\uDEC0",
+  "\u6478\uDB40\uDD02": "\uDB80\uDEC1",
+  "\u6479\uDB40\uDD02": "\uDB80\uDEC2",
+  "\u647A\uDB40\uDD02": "\uDB80\uDEC3",
+  "\u6490\uDB40\uDD02": "\uDB80\uDEC4",
+  "\u649B\uDB40\uDD02": "\uDB80\uDEC5",
+  "\u649E\uDB40\uDD02": "\uDB80\uDEC6",
+  "\u64B0\uDB40\uDD02": "\uDB80\uDEC7",
+  "\u64B9\uDB40\uDD02": "\uDB80\uDEC8",
+  "\u64BB\uDB40\uDD02": "\uDB80\uDEC9",
+  "\u64BE\uDB40\uDD02": "\uDB80\uDECA",
+  "\u64C4\uDB40\uDD02": "\uDB80\uDECB",
+  "\u64CD\uDB40\uDD02": "\uDB80\uDECC",
+  "\u64CE\uDB40\uDD02": "\uDB80\uDECD",
+  "\u64D2\uDB40\uDD02": "\uDB80\uDECE",
+  "\u64DA\uDB40\uDD02": "\uDB80\uDECF",
+  "\u64E2\uDB40\uDD02": "\uDB80\uDED0",
+  "\u64E4\uDB40\uDD02": "\uDB80\uDED1",
+  "\u64EA\uDB40\uDD02": "\uDB80\uDED2",
+  "\u64ED\uDB40\uDD02": "\uDB80\uDED3",
+  "\u64EF\uDB40\uDD02": "\uDB80\uDED4",
+  "\u64F4\uDB40\uDD02": "\uDB80\uDED5",
+  "\u64FF\uDB40\uDD02": "\uDB80\uDED6",
+  "\u650F\uDB40\uDD02": "\uDB80\uDED7",
+  "\u6514\uDB40\uDD02": "\uDB80\uDED8",
+  "\u651D\uDB40\uDD02": "\uDB80\uDED9",
+  "\u6524\uDB40\uDD02": "\uDB80\uDEDA",
+  "\u652C\uDB40\uDD02": "\uDB80\uDEDB",
+  "\u652F\uDB40\uDD02": "\uDB80\uDEDC",
+  "\u6534\uDB40\uDD02": "\uDB80\uDEDD",
+  "\u6538\uDB40\uDD02": "\uDB80\uDEDE",
+  "\u653F\uDB40\uDD02": "\uDB80\uDEDF",
+  "\u6556\uDB40\uDD02": "\uDB80\uDEE0",
+  "\u6566\uDB40\uDD02": "\uDB80\uDEE1",
+  "\u656C\uDB40\uDD02": "\uDB80\uDEE2",
+  "\u6572\uDB40\uDD02": "\uDB80\uDEE3",
+  "\u6575\uDB40\uDD02": "\uDB80\uDEE4",
+  "\u6578\uDB40\uDD02": "\uDB80\uDEE5",
+  "\u657A\uDB40\uDD02": "\uDB80\uDEE6",
+  "\u6581\uDB40\uDD02": "\uDB80\uDEE7",
+  "\u6588\uDB40\uDD02": "\uDB80\uDEE8",
+  "\u658E\uDB40\uDD02": "\uDB80\uDEE9",
+  "\u659F\uDB40\uDD02": "\uDB80\uDEEA",
+  "\u65A5\uDB40\uDD02": "\uDB80\uDEEB",
+  "\u65A7\uDB40\uDD02": "\uDB80\uDEEC",
+  "\u65B2\uDB40\uDD02": "\uDB80\uDEED",
+  "\u65B4\uDB40\uDD02": "\uDB80\uDEEE",
+  "\u65B5\uDB40\uDD02": "\uDB80\uDEEF",
+  "\u65B7\uDB40\uDD02": "\uDB80\uDEF0",
+  "\u65C1\uDB40\uDD02": "\uDB80\uDEF1",
+  "\u65C9\uDB40\uDD02": "\uDB80\uDEF2",
+  "\u65D8\uDB40\uDD02": "\uDB80\uDEF3",
+  "\u65DE\uDB40\uDD02": "\uDB80\uDEF4",
+  "\u65E5\uDB40\uDD02": "\uDB80\uDEF5",
+  "\u65FB\uDB40\uDD02": "\uDB80\uDEF6",
+  "\u6600\uDB40\uDD02": "\uDB80\uDEF7",
+  "\u6602\uDB40\uDD02": "\uDB80\uDEF8",
+  "\u6607\uDB40\uDD02": "\uDB80\uDEF9",
+  "\u6608\uDB40\uDD02": "\uDB80\uDEFA",
+  "\u660F\uDB40\uDD02": "\uDB80\uDEFB",
+  "\u661E\uDB40\uDD02": "\uDB80\uDEFC",
+  "\u6624\uDB40\uDD02": "\uDB80\uDEFD",
+  "\u662C\uDB40\uDD02": "\uDB80\uDEFE",
+  "\u6636\uDB40\uDD02": "\uDB80\uDEFF",
+  "\u663C\uDB40\uDD02": "\uDB80\uDF00",
+  "\u6648\uDB40\uDD02": "\uDB80\uDF01",
+  "\u6659\uDB40\uDD02": "\uDB80\uDF02",
+  "\u6666\uDB40\uDD02": "\uDB80\uDF03",
+  "\u666B\uDB40\uDD02": "\uDB80\uDF04",
+  "\u6676\uDB40\uDD02": "\uDB80\uDF05",
+  "\u6677\uDB40\uDD02": "\uDB80\uDF06",
+  "\u668E\uDB40\uDD02": "\uDB80\uDF07",
+  "\u6690\uDB40\uDD02": "\uDB80\uDF08",
+  "\u669C\uDB40\uDD02": "\uDB80\uDF09",
+  "\u66A0\uDB40\uDD02": "\uDB80\uDF0A",
+  "\u66AE\uDB40\uDD02": "\uDB80\uDF0B",
+  "\u66B1\uDB40\uDD02": "\uDB80\uDF0C",
+  "\u66B9\uDB40\uDD02": "\uDB80\uDF0D",
+  "\u66BC\uDB40\uDD02": "\uDB80\uDF0E",
+  "\u66C3\uDB40\uDD02": "\uDB80\uDF0F",
+  "\u66C4\uDB40\uDD02": "\uDB80\uDF10",
+  "\u66C8\uDB40\uDD02": "\uDB80\uDF11",
+  "\u66C9\uDB40\uDD02": "\uDB80\uDF12",
+  "\u66CF\uDB40\uDD02": "\uDB80\uDF13",
+  "\u66D6\uDB40\uDD02": "\uDB80\uDF14",
+  "\u66DA\uDB40\uDD02": "\uDB80\uDF15",
+  "\u66E0\uDB40\uDD02": "\uDB80\uDF16",
+  "\u66E8\uDB40\uDD02": "\uDB80\uDF17",
+  "\u66F7\uDB40\uDD02": "\uDB80\uDF18",
+  "\u66F8\uDB40\uDD02": "\uDB80\uDF19",
+  "\u66FE\uDB40\uDD02": "\uDB80\uDF1A",
+  "\u66FF\uDB40\uDD02": "\uDB80\uDF1B",
+  "\u6701\uDB40\uDD02": "\uDB80\uDF1C",
+  "\u6703\uDB40\uDD02": "\uDB80\uDF1D",
+  "\u670E\uDB40\uDD02": "\uDB80\uDF1E",
+  "\u6713\uDB40\uDD02": "\uDB80\uDF1F",
+  "\u6714\uDB40\uDD02": "\uDB80\uDF20",
+  "\u6719\uDB40\uDD02": "\uDB80\uDF21",
+  "\u671E\uDB40\uDD02": "\uDB80\uDF22",
+  "\u6720\uDB40\uDD02": "\uDB80\uDF23",
+  "\u6722\uDB40\uDD02": "\uDB80\uDF24",
+  "\u6726\uDB40\uDD02": "\uDB80\uDF25",
+  "\u6727\uDB40\uDD02": "\uDB80\uDF26",
+  "\u6748\uDB40\uDD02": "\uDB80\uDF27",
+  "\u675C\uDB40\uDD02": "\uDB80\uDF28",
+  "\u6781\uDB40\uDD02": "\uDB80\uDF29",
+  "\u6785\uDB40\uDD02": "\uDB80\uDF2A",
+  "\u678C\uDB40\uDD02": "\uDB80\uDF2B",
+  "\u6792\uDB40\uDD02": "\uDB80\uDF2C",
+  "\u6795\uDB40\uDD02": "\uDB80\uDF2D",
+  "\u67B9\uDB40\uDD02": "\uDB80\uDF2E",
+  "\u67D7\uDB40\uDD02": "\uDB80\uDF2F",
+  "\u67DC\uDB40\uDD02": "\uDB80\uDF30",
+  "\u67F3\uDB40\uDD02": "\uDB80\uDF31",
+  "\u67FB\uDB40\uDD02": "\uDB80\uDF32",
+  "\u6803\uDB40\uDD02": "\uDB80\uDF33",
+  "\u6814\uDB40\uDD02": "\uDB80\uDF34",
+  "\u6816\uDB40\uDD02": "\uDB80\uDF35",
+  "\u681D\uDB40\uDD02": "\uDB80\uDF36",
+  "\u6829\uDB40\uDD02": "\uDB80\uDF37",
+  "\u6832\uDB40\uDD02": "\uDB80\uDF38",
+  "\u6834\uDB40\uDD02": "\uDB80\uDF39",
+  "\u6838\uDB40\uDD02": "\uDB80\uDF3A",
+  "\u6840\uDB40\uDD02": "\uDB80\uDF3B",
+  "\u6845\uDB40\uDD02": "\uDB80\uDF3C",
+  "\u6874\uDB40\uDD02": "\uDB80\uDF3D",
+  "\u6875\uDB40\uDD02": "\uDB80\uDF3E",
+  "\u6883\uDB40\uDD02": "\uDB80\uDF3F",
+  "\u6886\uDB40\uDD02": "\uDB80\uDF40",
+  "\u688F\uDB40\uDD02": "\uDB80\uDF41",
+  "\u689F\uDB40\uDD02": "\uDB80\uDF42",
+  "\u68A5\uDB40\uDD02": "\uDB80\uDF43",
+  "\u68AD\uDB40\uDD02": "\uDB80\uDF44",
+  "\u68B5\uDB40\uDD02": "\uDB80\uDF45",
+  "\u68C4\uDB40\uDD02": "\uDB80\uDF46",
+  "\u68CF\uDB40\uDD02": "\uDB80\uDF47",
+  "\u68FB\uDB40\uDD02": "\uDB80\uDF48",
+  "\u6907\uDB40\uDD02": "\uDB80\uDF49",
+  "\u690C\uDB40\uDD02": "\uDB80\uDF4A",
+  "\u6911\uDB40\uDD02": "\uDB80\uDF4B",
+  "\u691B\uDB40\uDD02": "\uDB80\uDF4C",
+  "\u6926\uDB40\uDD02": "\uDB80\uDF4D",
+  "\u6939\uDB40\uDD02": "\uDB80\uDF4E",
+  "\u6946\uDB40\uDD02": "\uDB80\uDF4F",
+  "\u6949\uDB40\uDD02": "\uDB80\uDF50",
+  "\u6954\uDB40\uDD02": "\uDB80\uDF51",
+  "\u6957\uDB40\uDD02": "\uDB80\uDF52",
+  "\u695B\uDB40\uDD02": "\uDB80\uDF53",
+  "\u6962\uDB40\uDD02": "\uDB80\uDF54",
+  "\u696E\uDB40\uDD02": "\uDB80\uDF55",
+  "\u698A\uDB40\uDD02": "\uDB80\uDF56",
+  "\u6991\uDB40\uDD02": "\uDB80\uDF57",
+  "\u6992\uDB40\uDD02": "\uDB80\uDF58",
+  "\u6998\uDB40\uDD02": "\uDB80\uDF59",
+  "\u699C\uDB40\uDD02": "\uDB80\uDF5A",
+  "\u69BA\uDB40\uDD02": "\uDB80\uDF5B",
+  "\u69C7\uDB40\uDD02": "\uDB80\uDF5C",
+  "\u69CC\uDB40\uDD02": "\uDB80\uDF5D",
+  "\u69CF\uDB40\uDD02": "\uDB80\uDF5E",
+  "\u69E2\uDB40\uDD02": "\uDB80\uDF5F",
+  "\u69E9\uDB40\uDD02": "\uDB80\uDF60",
+  "\u69EB\uDB40\uDD02": "\uDB80\uDF61",
+  "\u69F1\uDB40\uDD02": "\uDB80\uDF62",
+  "\u69FE\uDB40\uDD02": "\uDB80\uDF63",
+  "\u69FF\uDB40\uDD02": "\uDB80\uDF64",
+  "\u6A0B\uDB40\uDD02": "\uDB80\uDF65",
+  "\u6A13\uDB40\uDD02": "\uDB80\uDF66",
+  "\u6A14\uDB40\uDD02": "\uDB80\uDF67",
+  "\u6A1B\uDB40\uDD02": "\uDB80\uDF68",
+  "\u6A1E\uDB40\uDD02": "\uDB80\uDF69",
+  "\u6A1F\uDB40\uDD02": "\uDB80\uDF6A",
+  "\u6A21\uDB40\uDD02": "\uDB80\uDF6B",
+  "\u6A23\uDB40\uDD02": "\uDB80\uDF6C",
+  "\u6A2A\uDB40\uDD02": "\uDB80\uDF6D",
+  "\u6A2E\uDB40\uDD02": "\uDB80\uDF6E",
+  "\u6A34\uDB40\uDD02": "\uDB80\uDF6F",
+  "\u6A36\uDB40\uDD02": "\uDB80\uDF70",
+  "\u6A39\uDB40\uDD02": "\uDB80\uDF71",
+  "\u6A3A\uDB40\uDD02": "\uDB80\uDF72",
+  "\u6A3D\uDB40\uDD02": "\uDB80\uDF73",
+  "\u6A49\uDB40\uDD02": "\uDB80\uDF74",
+  "\u6A61\uDB40\uDD02": "\uDB80\uDF75",
+  "\u6A66\uDB40\uDD02": "\uDB80\uDF76",
+  "\u6A67\uDB40\uDD02": "\uDB80\uDF77",
+  "\u6A80\uDB40\uDD02": "\uDB80\uDF78",
+  "\u6A89\uDB40\uDD02": "\uDB80\uDF79",
+  "\u6A8D\uDB40\uDD02": "\uDB80\uDF7A",
+  "\u6A9B\uDB40\uDD02": "\uDB80\uDF7B",
+  "\u6AA0\uDB40\uDD02": "\uDB80\uDF7C",
+  "\u6AAC\uDB40\uDD02": "\uDB80\uDF7D",
+  "\u6AB3\uDB40\uDD02": "\uDB80\uDF7E",
+  "\u6AB4\uDB40\uDD02": "\uDB80\uDF7F",
+  "\u6AB8\uDB40\uDD02": "\uDB80\uDF80",
+  "\u6AC2\uDB40\uDD02": "\uDB80\uDF81",
+  "\u6AD4\uDB40\uDD02": "\uDB80\uDF82",
+  "\u6ADC\uDB40\uDD02": "\uDB80\uDF83",
+  "\u6ADD\uDB40\uDD02": "\uDB80\uDF84",
+  "\u6ADE\uDB40\uDD02": "\uDB80\uDF85",
+  "\u6AE4\uDB40\uDD02": "\uDB80\uDF86",
+  "\u6AF3\uDB40\uDD02": "\uDB80\uDF87",
+  "\u6B02\uDB40\uDD02": "\uDB80\uDF88",
+  "\u6B0A\uDB40\uDD02": "\uDB80\uDF89",
+  "\u6B17\uDB40\uDD02": "\uDB80\uDF8A",
+  "\u6B1F\uDB40\uDD02": "\uDB80\uDF8B",
+  "\u6B2C\uDB40\uDD02": "\uDB80\uDF8C",
+  "\u6B3F\uDB40\uDD02": "\uDB80\uDF8D",
+  "\u6B46\uDB40\uDD02": "\uDB80\uDF8E",
+  "\u6B47\uDB40\uDD02": "\uDB80\uDF8F",
+  "\u6B49\uDB40\uDD02": "\uDB80\uDF90",
+  "\u6B4E\uDB40\uDD02": "\uDB80\uDF91",
+  "\u6B50\uDB40\uDD02": "\uDB80\uDF92",
+  "\u6B54\uDB40\uDD02": "\uDB80\uDF93",
+  "\u6B59\uDB40\uDD02": "\uDB80\uDF94",
+  "\u6B61\uDB40\uDD02": "\uDB80\uDF95",
+  "\u6B62\uDB40\uDD02": "\uDB80\uDF96",
+  "\u6B6F\uDB40\uDD02": "\uDB80\uDF97",
+  "\u6B70\uDB40\uDD02": "\uDB80\uDF98",
+  "\u6B72\uDB40\uDD02": "\uDB80\uDF99",
+  "\u6B78\uDB40\uDD02": "\uDB80\uDF9A",
+  "\u6B8D\uDB40\uDD02": "\uDB80\uDF9B",
+  "\u6B9F\uDB40\uDD02": "\uDB80\uDF9C",
+  "\u6BAF\uDB40\uDD02": "\uDB80\uDF9D",
+  "\u6BB0\uDB40\uDD02": "\uDB80\uDF9E",
+  "\u6BB3\uDB40\uDD02": "\uDB80\uDF9F",
+  "\u6BB8\uDB40\uDD02": "\uDB80\uDFA0",
+  "\u6BBC\uDB40\uDD02": "\uDB80\uDFA1",
+  "\u6BC5\uDB40\uDD02": "\uDB80\uDFA2",
+  "\u6BC6\uDB40\uDD02": "\uDB80\uDFA3",
+  "\u6BD2\uDB40\uDD02": "\uDB80\uDFA4",
+  "\u6BD3\uDB40\uDD02": "\uDB80\uDFA5",
+  "\u6C0E\uDB40\uDD02": "\uDB80\uDFA6",
+  "\u6C10\uDB40\uDD02": "\uDB80\uDFA7",
+  "\u6C14\uDB40\uDD02": "\uDB80\uDFA8",
+  "\u6C1B\uDB40\uDD02": "\uDB80\uDFA9",
+  "\u6C42\uDB40\uDD02": "\uDB80\uDFAA",
+  "\u6C4D\uDB40\uDD02": "\uDB80\uDFAB",
+  "\u6C4E\uDB40\uDD02": "\uDB80\uDFAC",
+  "\u6C52\uDB40\uDD02": "\uDB80\uDFAD",
+  "\u6C5B\uDB40\uDD02": "\uDB80\uDFAE",
+  "\u6C67\uDB40\uDD02": "\uDB80\uDFAF",
+  "\u6C6D\uDB40\uDD02": "\uDB80\uDFB0",
+  "\u6C72\uDB40\uDD02": "\uDB80\uDFB1",
+  "\u6C76\uDB40\uDD02": "\uDB80\uDFB2",
+  "\u6C7E\uDB40\uDD02": "\uDB80\uDFB3",
+  "\u6C88\uDB40\uDD02": "\uDB80\uDFB4",
+  "\u6C97\uDB40\uDD02": "\uDB80\uDFB5",
+  "\u6CA1\uDB40\uDD02": "\uDB80\uDFB6",
+  "\u6CD2\uDB40\uDD02": "\uDB80\uDFB7",
+  "\u6CD9\uDB40\uDD02": "\uDB80\uDFB8",
+  "\u6CF0\uDB40\uDD02": "\uDB80\uDFB9",
+  "\u6CFB\uDB40\uDD02": "\uDB80\uDFBA",
+  "\u6D25\uDB40\uDD02": "\uDB80\uDFBB",
+  "\u6D29\uDB40\uDD02": "\uDB80\uDFBC",
+  "\u6D2F\uDB40\uDD02": "\uDB80\uDFBD",
+  "\u6D34\uDB40\uDD02": "\uDB80\uDFBE",
+  "\u6D41\uDB40\uDD02": "\uDB80\uDFBF",
+  "\u6D8E\uDB40\uDD02": "\uDB80\uDFC0",
+  "\u6DAC\uDB40\uDD02": "\uDB80\uDFC1",
+  "\u6DB5\uDB40\uDD02": "\uDB80\uDFC2",
+  "\u6DBF\uDB40\uDD02": "\uDB80\uDFC3",
+  "\u6DC3\uDB40\uDD02": "\uDB80\uDFC4",
+  "\u6DCA\uDB40\uDD02": "\uDB80\uDFC5",
+  "\u6DCC\uDB40\uDD02": "\uDB80\uDFC6",
+  "\u6DCF\uDB40\uDD02": "\uDB80\uDFC7",
+  "\u6DDE\uDB40\uDD02": "\uDB80\uDFC8",
+  "\u6DE8\uDB40\uDD02": "\uDB80\uDFC9",
+  "\u6DEB\uDB40\uDD02": "\uDB80\uDFCA",
+  "\u6DF5\uDB40\uDD02": "\uDB80\uDFCB",
+  "\u6E1D\uDB40\uDD02": "\uDB80\uDFCC",
+  "\u6E20\uDB40\uDD02": "\uDB80\uDFCD",
+  "\u6E27\uDB40\uDD02": "\uDB80\uDFCE",
+  "\u6E2E\uDB40\uDD02": "\uDB80\uDFCF",
+  "\u6E36\uDB40\uDD02": "\uDB80\uDFD0",
+  "\u6E4E\uDB40\uDD02": "\uDB80\uDFD1",
+  "\u6E52\uDB40\uDD02": "\uDB80\uDFD2",
+  "\u6E5B\uDB40\uDD02": "\uDB80\uDFD3",
+  "\u6E67\uDB40\uDD02": "\uDB80\uDFD4",
+  "\u6E80\uDB40\uDD02": "\uDB80\uDFD5",
+  "\u6E8F\uDB40\uDD02": "\uDB80\uDFD6",
+  "\u6E90\uDB40\uDD02": "\uDB80\uDFD7",
+  "\u6E93\uDB40\uDD02": "\uDB80\uDFD8",
+  "\u6EA5\uDB40\uDD02": "\uDB80\uDFD9",
+  "\u6EAA\uDB40\uDD02": "\uDB80\uDFDA",
+  "\u6EB2\uDB40\uDD02": "\uDB80\uDFDB",
+  "\u6EBA\uDB40\uDD02": "\uDB80\uDFDC",
+  "\u6EBF\uDB40\uDD02": "\uDB80\uDFDD",
+  "\u6EC2\uDB40\uDD02": "\uDB80\uDFDE",
+  "\u6EC7\uDB40\uDD02": "\uDB80\uDFDF",
+  "\u6ED4\uDB40\uDD02": "\uDB80\uDFE0",
+  "\u6EDB\uDB40\uDD02": "\uDB80\uDFE1",
+  "\u6EF4\uDB40\uDD02": "\uDB80\uDFE2",
+  "\u6EFF\uDB40\uDD02": "\uDB80\uDFE3",
+  "\u6F01\uDB40\uDD02": "\uDB80\uDFE4",
+  "\u6F13\uDB40\uDD02": "\uDB80\uDFE5",
+  "\u6F1A\uDB40\uDD02": "\uDB80\uDFE6",
+  "\u6F20\uDB40\uDD02": "\uDB80\uDFE7",
+  "\u6F23\uDB40\uDD02": "\uDB80\uDFE8",
+  "\u6F2B\uDB40\uDD02": "\uDB80\uDFE9",
+  "\u6F2D\uDB40\uDD02": "\uDB80\uDFEA",
+  "\u6F33\uDB40\uDD02": "\uDB80\uDFEB",
+  "\u6F3B\uDB40\uDD02": "\uDB80\uDFEC",
+  "\u6F6D\uDB40\uDD02": "\uDB80\uDFED",
+  "\u6F6F\uDB40\uDD02": "\uDB80\uDFEE",
+  "\u6F78\uDB40\uDD02": "\uDB80\uDFEF",
+  "\u6F7C\uDB40\uDD02": "\uDB80\uDFF0",
+  "\u6F7E\uDB40\uDD02": "\uDB80\uDFF1",
+  "\u6F80\uDB40\uDD02": "\uDB80\uDFF2",
+  "\u6F82\uDB40\uDD02": "\uDB80\uDFF3",
+  "\u6F9A\uDB40\uDD02": "\uDB80\uDFF4",
+  "\u6FA0\uDB40\uDD02": "\uDB80\uDFF5",
+  "\u6FA4\uDB40\uDD02": "\uDB80\uDFF6",
+  "\u6FAB\uDB40\uDD02": "\uDB80\uDFF7",
+  "\u6FAF\uDB40\uDD02": "\uDB80\uDFF8",
+  "\u6FB3\uDB40\uDD02": "\uDB80\uDFF9",
+  "\u6FB7\uDB40\uDD02": "\uDB80\uDFFA",
+  "\u6FBE\uDB40\uDD02": "\uDB80\uDFFB",
+  "\u6FC2\uDB40\uDD02": "\uDB80\uDFFC",
+  "\u6FC6\uDB40\uDD02": "\uDB80\uDFFD",
+  "\u6FC8\uDB40\uDD02": "\uDB80\uDFFE",
+  "\u6FD8\uDB40\uDD02": "\uDB80\uDFFF",
+  "\u6FDB\uDB40\uDD02": "\uDB81\uDC00",
+  "\u6FE0\uDB40\uDD02": "\uDB81\uDC01",
+  "\u6FE8\uDB40\uDD02": "\uDB81\uDC02",
+  "\u6FE9\uDB40\uDD02": "\uDB81\uDC03",
+  "\u6FF1\uDB40\uDD02": "\uDB81\uDC04",
+  "\u6FF5\uDB40\uDD02": "\uDB81\uDC05",
+  "\u6FF9\uDB40\uDD02": "\uDB81\uDC06",
+  "\u7001\uDB40\uDD02": "\uDB81\uDC07",
+  "\u7007\uDB40\uDD02": "\uDB81\uDC08",
+  "\u7015\uDB40\uDD02": "\uDB81\uDC09",
+  "\u701A\uDB40\uDD02": "\uDB81\uDC0A",
+  "\u701F\uDB40\uDD02": "\uDB81\uDC0B",
+  "\u7037\uDB40\uDD02": "\uDB81\uDC0C",
+  "\u703E\uDB40\uDD02": "\uDB81\uDC0D",
+  "\u7044\uDB40\uDD02": "\uDB81\uDC0E",
+  "\u7047\uDB40\uDD02": "\uDB81\uDC0F",
+  "\u704C\uDB40\uDD02": "\uDB81\uDC10",
+  "\u7055\uDB40\uDD02": "\uDB81\uDC11",
+  "\u7058\uDB40\uDD02": "\uDB81\uDC12",
+  "\u706E\uDB40\uDD02": "\uDB81\uDC13",
+  "\u7078\uDB40\uDD02": "\uDB81\uDC14",
+  "\u707C\uDB40\uDD02": "\uDB81\uDC15",
+  "\u707D\uDB40\uDD02": "\uDB81\uDC16",
+  "\u7081\uDB40\uDD02": "\uDB81\uDC17",
+  "\u7089\uDB40\uDD02": "\uDB81\uDC18",
+  "\u70AC\uDB40\uDD02": "\uDB81\uDC19",
+  "\u70AE\uDB40\uDD02": "\uDB81\uDC1A",
+  "\u70B3\uDB40\uDD02": "\uDB81\uDC1B",
+  "\u70B7\uDB40\uDD02": "\uDB81\uDC1C",
+  "\u70E4\uDB40\uDD02": "\uDB81\uDC1D",
+  "\u7108\uDB40\uDD02": "\uDB81\uDC1E",
+  "\u710F\uDB40\uDD02": "\uDB81\uDC1F",
+  "\u712B\uDB40\uDD02": "\uDB81\uDC20",
+  "\u7136\uDB40\uDD02": "\uDB81\uDC21",
+  "\u7141\uDB40\uDD02": "\uDB81\uDC22",
+  "\u7149\uDB40\uDD02": "\uDB81\uDC23",
+  "\u714E\uDB40\uDD02": "\uDB81\uDC24",
+  "\u7156\uDB40\uDD02": "\uDB81\uDC25",
+  "\u7188\uDB40\uDD02": "\uDB81\uDC26",
+  "\u7196\uDB40\uDD02": "\uDB81\uDC27",
+  "\u71A2\uDB40\uDD02": "\uDB81\uDC28",
+  "\u71B3\uDB40\uDD02": "\uDB81\uDC29",
+  "\u71BE\uDB40\uDD02": "\uDB81\uDC2A",
+  "\u71BF\uDB40\uDD02": "\uDB81\uDC2B",
+  "\u71C1\uDB40\uDD02": "\uDB81\uDC2C",
+  "\u71CC\uDB40\uDD02": "\uDB81\uDC2D",
+  "\u71D3\uDB40\uDD02": "\uDB81\uDC2E",
+  "\u71D5\uDB40\uDD02": "\uDB81\uDC2F",
+  "\u71E0\uDB40\uDD02": "\uDB81\uDC30",
+  "\u71E7\uDB40\uDD02": "\uDB81\uDC31",
+  "\u71F5\uDB40\uDD02": "\uDB81\uDC32",
+  "\u71FB\uDB40\uDD02": "\uDB81\uDC33",
+  "\u7207\uDB40\uDD02": "\uDB81\uDC34",
+  "\u7209\uDB40\uDD02": "\uDB81\uDC35",
+  "\u7217\uDB40\uDD02": "\uDB81\uDC36",
+  "\u721B\uDB40\uDD02": "\uDB81\uDC37",
+  "\u721F\uDB40\uDD02": "\uDB81\uDC38",
+  "\u7224\uDB40\uDD02": "\uDB81\uDC39",
+  "\u722F\uDB40\uDD02": "\uDB81\uDC3A",
+  "\u7230\uDB40\uDD02": "\uDB81\uDC3B",
+  "\u7232\uDB40\uDD02": "\uDB81\uDC3C",
+  "\u7238\uDB40\uDD02": "\uDB81\uDC3D",
+  "\u7239\uDB40\uDD02": "\uDB81\uDC3E",
+  "\u7240\uDB40\uDD02": "\uDB81\uDC3F",
+  "\u7246\uDB40\uDD02": "\uDB81\uDC40",
+  "\u7247\uDB40\uDD02": "\uDB81\uDC41",
+  "\u7250\uDB40\uDD02": "\uDB81\uDC42",
+  "\u7253\uDB40\uDD02": "\uDB81\uDC43",
+  "\u7255\uDB40\uDD02": "\uDB81\uDC44",
+  "\u7259\uDB40\uDD02": "\uDB81\uDC45",
+  "\u725A\uDB40\uDD02": "\uDB81\uDC46",
+  "\u7280\uDB40\uDD02": "\uDB81\uDC47",
+  "\u7282\uDB40\uDD02": "\uDB81\uDC48",
+  "\u72AE\uDB40\uDD02": "\uDB81\uDC49",
+  "\u72AF\uDB40\uDD02": "\uDB81\uDC4A",
+  "\u72D0\uDB40\uDD02": "\uDB81\uDC4B",
+  "\u72F7\uDB40\uDD02": "\uDB81\uDC4C",
+  "\u732B\uDB40\uDD02": "\uDB81\uDC4D",
+  "\u734D\uDB40\uDD02": "\uDB81\uDC4E",
+  "\u734F\uDB40\uDD02": "\uDB81\uDC4F",
+  "\u7350\uDB40\uDD02": "\uDB81\uDC50",
+  "\u7352\uDB40\uDD02": "\uDB81\uDC51",
+  "\u735E\uDB40\uDD02": "\uDB81\uDC52",
+  "\u7363\uDB40\uDD02": "\uDB81\uDC53",
+  "\u7366\uDB40\uDD02": "\uDB81\uDC54",
+  "\u7370\uDB40\uDD02": "\uDB81\uDC55",
+  "\u7372\uDB40\uDD02": "\uDB81\uDC56",
+  "\u7378\uDB40\uDD02": "\uDB81\uDC57",
+  "\u737A\uDB40\uDD02": "\uDB81\uDC58",
+  "\u7381\uDB40\uDD02": "\uDB81\uDC59",
+  "\u7389\uDB40\uDD02": "\uDB81\uDC5A",
+  "\u7393\uDB40\uDD02": "\uDB81\uDC5B",
+  "\u739F\uDB40\uDD02": "\uDB81\uDC5C",
+  "\u73AA\uDB40\uDD02": "\uDB81\uDC5D",
+  "\u73BA\uDB40\uDD02": "\uDB81\uDC5E",
+  "\u73F5\uDB40\uDD02": "\uDB81\uDC5F",
+  "\u73F9\uDB40\uDD02": "\uDB81\uDC60",
+  "\u73FD\uDB40\uDD02": "\uDB81\uDC61",
+  "\u740A\uDB40\uDD02": "\uDB81\uDC62",
+  "\u742A\uDB40\uDD02": "\uDB81\uDC63",
+  "\u7434\uDB40\uDD02": "\uDB81\uDC64",
+  "\u7441\uDB40\uDD02": "\uDB81\uDC65",
+  "\u7447\uDB40\uDD02": "\uDB81\uDC66",
+  "\u744B\uDB40\uDD02": "\uDB81\uDC67",
+  "\u7451\uDB40\uDD02": "\uDB81\uDC68",
+  "\u7459\uDB40\uDD02": "\uDB81\uDC69",
+  "\u745B\uDB40\uDD02": "\uDB81\uDC6A",
+  "\u745C\uDB40\uDD02": "\uDB81\uDC6B",
+  "\u7462\uDB40\uDD02": "\uDB81\uDC6C",
+  "\u7463\uDB40\uDD02": "\uDB81\uDC6D",
+  "\u746E\uDB40\uDD02": "\uDB81\uDC6E",
+  "\u746F\uDB40\uDD02": "\uDB81\uDC6F",
+  "\u7471\uDB40\uDD02": "\uDB81\uDC70",
+  "\u747E\uDB40\uDD02": "\uDB81\uDC71",
+  "\u7481\uDB40\uDD02": "\uDB81\uDC72",
+  "\u7483\uDB40\uDD02": "\uDB81\uDC73",
+  "\u7485\uDB40\uDD02": "\uDB81\uDC74",
+  "\u7489\uDB40\uDD02": "\uDB81\uDC75",
+  "\u748B\uDB40\uDD02": "\uDB81\uDC76",
+  "\u7498\uDB40\uDD02": "\uDB81\uDC77",
+  "\u74A1\uDB40\uDD02": "\uDB81\uDC78",
+  "\u74A3\uDB40\uDD02": "\uDB81\uDC79",
+  "\u74A5\uDB40\uDD02": "\uDB81\uDC7A",
+  "\u74A6\uDB40\uDD02": "\uDB81\uDC7B",
+  "\u74A9\uDB40\uDD02": "\uDB81\uDC7C",
+  "\u74B2\uDB40\uDD02": "\uDB81\uDC7D",
+  "\u74CB\uDB40\uDD02": "\uDB81\uDC7E",
+  "\u74CF\uDB40\uDD02": "\uDB81\uDC7F",
+  "\u74D8\uDB40\uDD02": "\uDB81\uDC80",
+  "\u74DA\uDB40\uDD02": "\uDB81\uDC81",
+  "\u74DE\uDB40\uDD02": "\uDB81\uDC82",
+  "\u74DF\uDB40\uDD02": "\uDB81\uDC83",
+  "\u74E2\uDB40\uDD02": "\uDB81\uDC84",
+  "\u74E3\uDB40\uDD02": "\uDB81\uDC85",
+  "\u74E4\uDB40\uDD02": "\uDB81\uDC86",
+  "\u74EE\uDB40\uDD02": "\uDB81\uDC87",
+  "\u74EF\uDB40\uDD02": "\uDB81\uDC88",
+  "\u74F0\uDB40\uDD02": "\uDB81\uDC89",
+  "\u74F4\uDB40\uDD02": "\uDB81\uDC8A",
+  "\u7501\uDB40\uDD02": "\uDB81\uDC8B",
+  "\u7506\uDB40\uDD02": "\uDB81\uDC8C",
+  "\u750E\uDB40\uDD02": "\uDB81\uDC8D",
+  "\u751A\uDB40\uDD02": "\uDB81\uDC8E",
+  "\u7527\uDB40\uDD02": "\uDB81\uDC8F",
+  "\u752C\uDB40\uDD02": "\uDB81\uDC90",
+  "\u7537\uDB40\uDD02": "\uDB81\uDC91",
+  "\u7539\uDB40\uDD02": "\uDB81\uDC92",
+  "\u753B\uDB40\uDD02": "\uDB81\uDC93",
+  "\u753E\uDB40\uDD02": "\uDB81\uDC94",
+  "\u7543\uDB40\uDD02": "\uDB81\uDC95",
+  "\u7547\uDB40\uDD02": "\uDB81\uDC96",
+  "\u7559\uDB40\uDD02": "\uDB81\uDC97",
+  "\u7561\uDB40\uDD02": "\uDB81\uDC98",
+  "\u7570\uDB40\uDD02": "\uDB81\uDC99",
+  "\u75B1\uDB40\uDD02": "\uDB81\uDC9A",
+  "\u75CA\uDB40\uDD02": "\uDB81\uDC9B",
+  "\u75CE\uDB40\uDD02": "\uDB81\uDC9C",
+  "\u75DC\uDB40\uDD02": "\uDB81\uDC9D",
+  "\u7600\uDB40\uDD02": "\uDB81\uDC9E",
+  "\u7603\uDB40\uDD02": "\uDB81\uDC9F",
+  "\u7608\uDB40\uDD02": "\uDB81\uDCA0",
+  "\u7609\uDB40\uDD02": "\uDB81\uDCA1",
+  "\u7616\uDB40\uDD02": "\uDB81\uDCA2",
+  "\u761B\uDB40\uDD02": "\uDB81\uDCA3",
+  "\u761F\uDB40\uDD02": "\uDB81\uDCA4",
+  "\u7622\uDB40\uDD02": "\uDB81\uDCA5",
+  "\u7626\uDB40\uDD02": "\uDB81\uDCA6",
+  "\u7627\uDB40\uDD02": "\uDB81\uDCA7",
+  "\u7629\uDB40\uDD02": "\uDB81\uDCA8",
+  "\u7634\uDB40\uDD02": "\uDB81\uDCA9",
+  "\u763C\uDB40\uDD02": "\uDB81\uDCAA",
+  "\u7641\uDB40\uDD02": "\uDB81\uDCAB",
+  "\u7647\uDB40\uDD02": "\uDB81\uDCAC",
+  "\u7658\uDB40\uDD02": "\uDB81\uDCAD",
+  "\u7662\uDB40\uDD02": "\uDB81\uDCAE",
+  "\u7665\uDB40\uDD02": "\uDB81\uDCAF",
+  "\u7671\uDB40\uDD02": "\uDB81\uDCB0",
+  "\u7680\uDB40\uDD02": "\uDB81\uDCB1",
+  "\u7682\uDB40\uDD02": "\uDB81\uDCB2",
+  "\u768D\uDB40\uDD02": "\uDB81\uDCB3",
+  "\u768E\uDB40\uDD02": "\uDB81\uDCB4",
+  "\u769E\uDB40\uDD02": "\uDB81\uDCB5",
+  "\u76A3\uDB40\uDD02": "\uDB81\uDCB6",
+  "\u76A7\uDB40\uDD02": "\uDB81\uDCB7",
+  "\u76B0\uDB40\uDD02": "\uDB81\uDCB8",
+  "\u76B4\uDB40\uDD02": "\uDB81\uDCB9",
+  "\u76B6\uDB40\uDD02": "\uDB81\uDCBA",
+  "\u76B7\uDB40\uDD02": "\uDB81\uDCBB",
+  "\u76C8\uDB40\uDD02": "\uDB81\uDCBC",
+  "\u76D4\uDB40\uDD02": "\uDB81\uDCBD",
+  "\u76E1\uDB40\uDD02": "\uDB81\uDCBE",
+  "\u76E3\uDB40\uDD02": "\uDB81\uDCBF",
+  "\u76FB\uDB40\uDD02": "\uDB81\uDCC0",
+  "\u7704\uDB40\uDD02": "\uDB81\uDCC1",
+  "\u7714\uDB40\uDD02": "\uDB81\uDCC2",
+  "\u773E\uDB40\uDD02": "\uDB81\uDCC3",
+  "\u7740\uDB40\uDD02": "\uDB81\uDCC4",
+  "\u774A\uDB40\uDD02": "\uDB81\uDCC5",
+  "\u775B\uDB40\uDD02": "\uDB81\uDCC6",
+  "\u776A\uDB40\uDD02": "\uDB81\uDCC7",
+  "\u7770\uDB40\uDD02": "\uDB81\uDCC8",
+  "\u7779\uDB40\uDD02": "\uDB81\uDCC9",
+  "\u7784\uDB40\uDD02": "\uDB81\uDCCA",
+  "\u778B\uDB40\uDD02": "\uDB81\uDCCB",
+  "\u778E\uDB40\uDD02": "\uDB81\uDCCC",
+  "\u7795\uDB40\uDD02": "\uDB81\uDCCD",
+  "\u77A2\uDB40\uDD02": "\uDB81\uDCCE",
+  "\u77A5\uDB40\uDD02": "\uDB81\uDCCF",
+  "\u77B1\uDB40\uDD02": "\uDB81\uDCD0",
+  "\u77B3\uDB40\uDD02": "\uDB81\uDCD1",
+  "\u77B5\uDB40\uDD02": "\uDB81\uDCD2",
+  "\u77C7\uDB40\uDD02": "\uDB81\uDCD3",
+  "\u77D2\uDB40\uDD02": "\uDB81\uDCD4",
+  "\u77D7\uDB40\uDD02": "\uDB81\uDCD5",
+  "\u77F1\uDB40\uDD02": "\uDB81\uDCD6",
+  "\u7809\uDB40\uDD02": "\uDB81\uDCD7",
+  "\u7811\uDB40\uDD02": "\uDB81\uDCD8",
+  "\u784E\uDB40\uDD02": "\uDB81\uDCD9",
+  "\u784F\uDB40\uDD02": "\uDB81\uDCDA",
+  "\u786B\uDB40\uDD02": "\uDB81\uDCDB",
+  "\u786E\uDB40\uDD02": "\uDB81\uDCDC",
+  "\u7874\uDB40\uDD02": "\uDB81\uDCDD",
+  "\u787A\uDB40\uDD02": "\uDB81\uDCDE",
+  "\u788C\uDB40\uDD02": "\uDB81\uDCDF",
+  "\u78A3\uDB40\uDD02": "\uDB81\uDCE0",
+  "\u78A4\uDB40\uDD02": "\uDB81\uDCE1",
+  "\u78B0\uDB40\uDD02": "\uDB81\uDCE2",
+  "\u78BA\uDB40\uDD02": "\uDB81\uDCE3",
+  "\u78C1\uDB40\uDD02": "\uDB81\uDCE4",
+  "\u78C5\uDB40\uDD02": "\uDB81\uDCE5",
+  "\u78CC\uDB40\uDD02": "\uDB81\uDCE6",
+  "\u78D3\uDB40\uDD02": "\uDB81\uDCE7",
+  "\u78F7\uDB40\uDD02": "\uDB81\uDCE8",
+  "\u78F9\uDB40\uDD02": "\uDB81\uDCE9",
+  "\u7907\uDB40\uDD02": "\uDB81\uDCEA",
+  "\u791A\uDB40\uDD02": "\uDB81\uDCEB",
+  "\u791E\uDB40\uDD02": "\uDB81\uDCEC",
+  "\u7920\uDB40\uDD02": "\uDB81\uDCED",
+  "\u7926\uDB40\uDD02": "\uDB81\uDCEE",
+  "\u792E\uDB40\uDD02": "\uDB81\uDCEF",
+  "\u7931\uDB40\uDD02": "\uDB81\uDCF0",
+  "\u7934\uDB40\uDD02": "\uDB81\uDCF1",
+  "\u793D\uDB40\uDD02": "\uDB81\uDCF2",
+  "\u793F\uDB40\uDD02": "\uDB81\uDCF3",
+  "\u7941\uDB40\uDD02": "\uDB81\uDCF4",
+  "\u7945\uDB40\uDD02": "\uDB81\uDCF5",
+  "\u7946\uDB40\uDD02": "\uDB81\uDCF6",
+  "\u7947\uDB40\uDD02": "\uDB81\uDCF7",
+  "\u794A\uDB40\uDD02": "\uDB81\uDCF8",
+  "\u794B\uDB40\uDD02": "\uDB81\uDCF9",
+  "\u794F\uDB40\uDD02": "\uDB81\uDCFA",
+  "\u7954\uDB40\uDD02": "\uDB81\uDCFB",
+  "\u7955\uDB40\uDD02": "\uDB81\uDCFC",
+  "\u7957\uDB40\uDD02": "\uDB81\uDCFD",
+  "\u7958\uDB40\uDD02": "\uDB81\uDCFE",
+  "\u795A\uDB40\uDD02": "\uDB81\uDCFF",
+  "\u795B\uDB40\uDD02": "\uDB81\uDD00",
+  "\u795C\uDB40\uDD02": "\uDB81\uDD01",
+  "\u7960\uDB40\uDD02": "\uDB81\uDD02",
+  "\u7967\uDB40\uDD02": "\uDB81\uDD03",
+  "\u796B\uDB40\uDD02": "\uDB81\uDD04",
+  "\u7971\uDB40\uDD02": "\uDB81\uDD05",
+  "\u7972\uDB40\uDD02": "\uDB81\uDD06",
+  "\u797A\uDB40\uDD02": "\uDB81\uDD07",
+  "\u797B\uDB40\uDD02": "\uDB81\uDD08",
+  "\u797C\uDB40\uDD02": "\uDB81\uDD09",
+  "\u797E\uDB40\uDD02": "\uDB81\uDD0A",
+  "\u797F\uDB40\uDD02": "\uDB81\uDD0B",
+  "\u7980\uDB40\uDD02": "\uDB81\uDD0C",
+  "\u7984\uDB40\uDD02": "\uDB81\uDD0D",
+  "\u7985\uDB40\uDD02": "\uDB81\uDD0E",
+  "\u798A\uDB40\uDD02": "\uDB81\uDD0F",
+  "\u798B\uDB40\uDD02": "\uDB81\uDD10",
+  "\u7991\uDB40\uDD02": "\uDB81\uDD11",
+  "\u7993\uDB40\uDD02": "\uDB81\uDD12",
+  "\u7994\uDB40\uDD02": "\uDB81\uDD13",
+  "\u7995\uDB40\uDD02": "\uDB81\uDD14",
+  "\u7996\uDB40\uDD02": "\uDB81\uDD15",
+  "\u7998\uDB40\uDD02": "\uDB81\uDD16",
+  "\u799D\uDB40\uDD02": "\uDB81\uDD17",
+  "\u79A1\uDB40\uDD02": "\uDB81\uDD18",
+  "\u79A6\uDB40\uDD02": "\uDB81\uDD19",
+  "\u79A8\uDB40\uDD02": "\uDB81\uDD1A",
+  "\u79A9\uDB40\uDD02": "\uDB81\uDD1B",
+  "\u79AA\uDB40\uDD02": "\uDB81\uDD1C",
+  "\u79AB\uDB40\uDD02": "\uDB81\uDD1D",
+  "\u79AD\uDB40\uDD02": "\uDB81\uDD1E",
+  "\u79B0\uDB40\uDD02": "\uDB81\uDD1F",
+  "\u79B3\uDB40\uDD02": "\uDB81\uDD20",
+  "\u79B4\uDB40\uDD02": "\uDB81\uDD21",
+  "\u79B8\uDB40\uDD02": "\uDB81\uDD22",
+  "\u79BB\uDB40\uDD02": "\uDB81\uDD23",
+  "\u79BD\uDB40\uDD02": "\uDB81\uDD24",
+  "\u79E4\uDB40\uDD02": "\uDB81\uDD25",
+  "\u79F0\uDB40\uDD02": "\uDB81\uDD26",
+  "\u7A05\uDB40\uDD02": "\uDB81\uDD27",
+  "\u7A09\uDB40\uDD02": "\uDB81\uDD28",
+  "\u7A0D\uDB40\uDD02": "\uDB81\uDD29",
+  "\u7A1C\uDB40\uDD02": "\uDB81\uDD2A",
+  "\u7A20\uDB40\uDD02": "\uDB81\uDD2B",
+  "\u7A27\uDB40\uDD02": "\uDB81\uDD2C",
+  "\u7A35\uDB40\uDD02": "\uDB81\uDD2D",
+  "\u7A3B\uDB40\uDD02": "\uDB81\uDD2E",
+  "\u7A3C\uDB40\uDD02": "\uDB81\uDD2F",
+  "\u7A3D\uDB40\uDD02": "\uDB81\uDD30",
+  "\u7A3F\uDB40\uDD02": "\uDB81\uDD31",
+  "\u7A42\uDB40\uDD02": "\uDB81\uDD32",
+  "\u7A49\uDB40\uDD02": "\uDB81\uDD33",
+  "\u7A4F\uDB40\uDD02": "\uDB81\uDD34",
+  "\u7A50\uDB40\uDD02": "\uDB81\uDD35",
+  "\u7A57\uDB40\uDD02": "\uDB81\uDD36",
+  "\u7A5C\uDB40\uDD02": "\uDB81\uDD37",
+  "\u7A5F\uDB40\uDD02": "\uDB81\uDD38",
+  "\u7A61\uDB40\uDD02": "\uDB81\uDD39",
+  "\u7A62\uDB40\uDD02": "\uDB81\uDD3A",
+  "\u7A69\uDB40\uDD02": "\uDB81\uDD3B",
+  "\u7A6B\uDB40\uDD02": "\uDB81\uDD3C",
+  "\u7A70\uDB40\uDD02": "\uDB81\uDD3D",
+  "\u7A7F\uDB40\uDD02": "\uDB81\uDD3E",
+  "\u7A8A\uDB40\uDD02": "\uDB81\uDD3F",
+  "\u7A96\uDB40\uDD02": "\uDB81\uDD40",
+  "\u7AAC\uDB40\uDD02": "\uDB81\uDD41",
+  "\u7AB3\uDB40\uDD02": "\uDB81\uDD42",
+  "\u7ABB\uDB40\uDD02": "\uDB81\uDD43",
+  "\u7ABF\uDB40\uDD02": "\uDB81\uDD44",
+  "\u7AC4\uDB40\uDD02": "\uDB81\uDD45",
+  "\u7AD5\uDB40\uDD02": "\uDB81\uDD46",
+  "\u7ADF\uDB40\uDD02": "\uDB81\uDD47",
+  "\u7AE0\uDB40\uDD02": "\uDB81\uDD48",
+  "\u7AE3\uDB40\uDD02": "\uDB81\uDD49",
+  "\u7AE5\uDB40\uDD02": "\uDB81\uDD4A",
+  "\u7AEB\uDB40\uDD02": "\uDB81\uDD4B",
+  "\u7AED\uDB40\uDD02": "\uDB81\uDD4C",
+  "\u7AF1\uDB40\uDD02": "\uDB81\uDD4D",
+  "\u7B11\uDB40\uDD02": "\uDB81\uDD4E",
+  "\u7B4C\uDB40\uDD02": "\uDB81\uDD4F",
+  "\u7B6C\uDB40\uDD02": "\uDB81\uDD50",
+  "\u7B6D\uDB40\uDD02": "\uDB81\uDD51",
+  "\u7B72\uDB40\uDD02": "\uDB81\uDD52",
+  "\u7B75\uDB40\uDD02": "\uDB81\uDD53",
+  "\u7B8F\uDB40\uDD02": "\uDB81\uDD54",
+  "\u7B90\uDB40\uDD02": "\uDB81\uDD55",
+  "\u7B92\uDB40\uDD02": "\uDB81\uDD56",
+  "\u7B9B\uDB40\uDD02": "\uDB81\uDD57",
+  "\u7B9C\uDB40\uDD02": "\uDB81\uDD58",
+  "\u7B9E\uDB40\uDD02": "\uDB81\uDD59",
+  "\u7BA0\uDB40\uDD02": "\uDB81\uDD5A",
+  "\u7BAC\uDB40\uDD02": "\uDB81\uDD5B",
+  "\u7BB8\uDB40\uDD02": "\uDB81\uDD5C",
+  "\u7BC4\uDB40\uDD02": "\uDB81\uDD5D",
+  "\u7BC6\uDB40\uDD02": "\uDB81\uDD5E",
+  "\u7BC7\uDB40\uDD02": "\uDB81\uDD5F",
+  "\u7BE6\uDB40\uDD02": "\uDB81\uDD60",
+  "\u7BF3\uDB40\uDD02": "\uDB81\uDD61",
+  "\u7BF4\uDB40\uDD02": "\uDB81\uDD62",
+  "\u7BF7\uDB40\uDD02": "\uDB81\uDD63",
+  "\u7BFE\uDB40\uDD02": "\uDB81\uDD64",
+  "\u7C09\uDB40\uDD02": "\uDB81\uDD65",
+  "\u7C13\uDB40\uDD02": "\uDB81\uDD66",
+  "\u7C1F\uDB40\uDD02": "\uDB81\uDD67",
+  "\u7C27\uDB40\uDD02": "\uDB81\uDD68",
+  "\u7C2A\uDB40\uDD02": "\uDB81\uDD69",
+  "\u7C34\uDB40\uDD02": "\uDB81\uDD6A",
+  "\u7C36\uDB40\uDD02": "\uDB81\uDD6B",
+  "\u7C46\uDB40\uDD02": "\uDB81\uDD6C",
+  "\u7C4F\uDB40\uDD02": "\uDB81\uDD6D",
+  "\u7C51\uDB40\uDD02": "\uDB81\uDD6E",
+  "\u7C5C\uDB40\uDD02": "\uDB81\uDD6F",
+  "\u7C5F\uDB40\uDD02": "\uDB81\uDD70",
+  "\u7C60\uDB40\uDD02": "\uDB81\uDD71",
+  "\u7C67\uDB40\uDD02": "\uDB81\uDD72",
+  "\u7C69\uDB40\uDD02": "\uDB81\uDD73",
+  "\u7C6C\uDB40\uDD02": "\uDB81\uDD74",
+  "\u7C6F\uDB40\uDD02": "\uDB81\uDD75",
+  "\u7C7B\uDB40\uDD02": "\uDB81\uDD76",
+  "\u7C94\uDB40\uDD02": "\uDB81\uDD77",
+  "\u7CA4\uDB40\uDD02": "\uDB81\uDD78",
+  "\u7CA6\uDB40\uDD02": "\uDB81\uDD79",
+  "\u7CB3\uDB40\uDD02": "\uDB81\uDD7A",
+  "\u7CC0\uDB40\uDD02": "\uDB81\uDD7B",
+  "\u7CC2\uDB40\uDD02": "\uDB81\uDD7C",
+  "\u7CD8\uDB40\uDD02": "\uDB81\uDD7D",
+  "\u7CD9\uDB40\uDD02": "\uDB81\uDD7E",
+  "\u7CDA\uDB40\uDD02": "\uDB81\uDD7F",
+  "\u7CDC\uDB40\uDD02": "\uDB81\uDD80",
+  "\u7CE2\uDB40\uDD02": "\uDB81\uDD81",
+  "\u7CF4\uDB40\uDD02": "\uDB81\uDD82",
+  "\u7CF5\uDB40\uDD02": "\uDB81\uDD83",
+  "\u7CF6\uDB40\uDD02": "\uDB81\uDD84",
+  "\u7CFE\uDB40\uDD02": "\uDB81\uDD85",
+  "\u7D00\uDB40\uDD02": "\uDB81\uDD86",
+  "\u7D08\uDB40\uDD02": "\uDB81\uDD87",
+  "\u7D0A\uDB40\uDD02": "\uDB81\uDD88",
+  "\u7D14\uDB40\uDD02": "\uDB81\uDD89",
+  "\u7D5A\uDB40\uDD02": "\uDB81\uDD8A",
+  "\u7D5C\uDB40\uDD02": "\uDB81\uDD8B",
+  "\u7D5D\uDB40\uDD02": "\uDB81\uDD8C",
+  "\u7D71\uDB40\uDD02": "\uDB81\uDD8D",
+  "\u7D79\uDB40\uDD02": "\uDB81\uDD8E",
+  "\u7D81\uDB40\uDD02": "\uDB81\uDD8F",
+  "\u7D86\uDB40\uDD02": "\uDB81\uDD90",
+  "\u7D8F\uDB40\uDD02": "\uDB81\uDD91",
+  "\u7D93\uDB40\uDD02": "\uDB81\uDD92",
+  "\u7D9E\uDB40\uDD02": "\uDB81\uDD93",
+  "\u7DA0\uDB40\uDD02": "\uDB81\uDD94",
+  "\u7DA2\uDB40\uDD02": "\uDB81\uDD95",
+  "\u7DA3\uDB40\uDD02": "\uDB81\uDD96",
+  "\u7DAA\uDB40\uDD02": "\uDB81\uDD97",
+  "\u7DAF\uDB40\uDD02": "\uDB81\uDD98",
+  "\u7DB1\uDB40\uDD02": "\uDB81\uDD99",
+  "\u7DB5\uDB40\uDD02": "\uDB81\uDD9A",
+  "\u7DB9\uDB40\uDD02": "\uDB81\uDD9B",
+  "\u7DBE\uDB40\uDD02": "\uDB81\uDD9C",
+  "\u7DC7\uDB40\uDD02": "\uDB81\uDD9D",
+  "\u7DE0\uDB40\uDD02": "\uDB81\uDD9E",
+  "\u7DE2\uDB40\uDD02": "\uDB81\uDD9F",
+  "\u7DE3\uDB40\uDD02": "\uDB81\uDDA0",
+  "\u7E01\uDB40\uDD02": "\uDB81\uDDA1",
+  "\u7E0A\uDB40\uDD02": "\uDB81\uDDA2",
+  "\u7E0B\uDB40\uDD02": "\uDB81\uDDA3",
+  "\u7E1D\uDB40\uDD02": "\uDB81\uDDA4",
+  "\u7E1F\uDB40\uDD02": "\uDB81\uDDA5",
+  "\u7E27\uDB40\uDD02": "\uDB81\uDDA6",
+  "\u7E2C\uDB40\uDD02": "\uDB81\uDDA7",
+  "\u7E2D\uDB40\uDD02": "\uDB81\uDDA8",
+  "\u7E36\uDB40\uDD02": "\uDB81\uDDA9",
+  "\u7E37\uDB40\uDD02": "\uDB81\uDDAA",
+  "\u7E3A\uDB40\uDD02": "\uDB81\uDDAB",
+  "\u7E3B\uDB40\uDD02": "\uDB81\uDDAC",
+  "\u7E3D\uDB40\uDD02": "\uDB81\uDDAD",
+  "\u7E44\uDB40\uDD02": "\uDB81\uDDAE",
+  "\u7E45\uDB40\uDD02": "\uDB81\uDDAF",
+  "\u7E46\uDB40\uDD02": "\uDB81\uDDB0",
+  "\u7E52\uDB40\uDD02": "\uDB81\uDDB1",
+  "\u7E54\uDB40\uDD02": "\uDB81\uDDB2",
+  "\u7E69\uDB40\uDD02": "\uDB81\uDDB3",
+  "\u7E6A\uDB40\uDD02": "\uDB81\uDDB4",
+  "\u7E6B\uDB40\uDD02": "\uDB81\uDDB5",
+  "\u7E78\uDB40\uDD02": "\uDB81\uDDB6",
+  "\u7E79\uDB40\uDD02": "\uDB81\uDDB7",
+  "\u7E7C\uDB40\uDD02": "\uDB81\uDDB8",
+  "\u7E7D\uDB40\uDD02": "\uDB81\uDDB9",
+  "\u7E7E\uDB40\uDD02": "\uDB81\uDDBA",
+  "\u7E7F\uDB40\uDD02": "\uDB81\uDDBB",
+  "\u7E8A\uDB40\uDD02": "\uDB81\uDDBC",
+  "\u7E92\uDB40\uDD02": "\uDB81\uDDBD",
+  "\u7F3A\uDB40\uDD02": "\uDB81\uDDBE",
+  "\u7F54\uDB40\uDD02": "\uDB81\uDDBF",
+  "\u7F5B\uDB40\uDD02": "\uDB81\uDDC0",
+  "\u7F7F\uDB40\uDD02": "\uDB81\uDDC1",
+  "\u7F83\uDB40\uDD02": "\uDB81\uDDC2",
+  "\u7F8F\uDB40\uDD02": "\uDB81\uDDC3",
+  "\u7F95\uDB40\uDD02": "\uDB81\uDDC4",
+  "\u7F9E\uDB40\uDD02": "\uDB81\uDDC5",
+  "\u7FAD\uDB40\uDD02": "\uDB81\uDDC6",
+  "\u7FAF\uDB40\uDD02": "\uDB81\uDDC7",
+  "\u7FB8\uDB40\uDD02": "\uDB81\uDDC8",
+  "\u7FCA\uDB40\uDD02": "\uDB81\uDDC9",
+  "\u7FCF\uDB40\uDD02": "\uDB81\uDDCA",
+  "\u7FD5\uDB40\uDD02": "\uDB81\uDDCB",
+  "\u7FDF\uDB40\uDD02": "\uDB81\uDDCC",
+  "\u7FE6\uDB40\uDD02": "\uDB81\uDDCD",
+  "\u7FF3\uDB40\uDD02": "\uDB81\uDDCE",
+  "\u7FF9\uDB40\uDD02": "\uDB81\uDDCF",
+  "\u7FFE\uDB40\uDD02": "\uDB81\uDDD0",
+  "\u8018\uDB40\uDD02": "\uDB81\uDDD1",
+  "\u8019\uDB40\uDD02": "\uDB81\uDDD2",
+  "\u801C\uDB40\uDD02": "\uDB81\uDDD3",
+  "\u8021\uDB40\uDD02": "\uDB81\uDDD4",
+  "\u8028\uDB40\uDD02": "\uDB81\uDDD5",
+  "\u8037\uDB40\uDD02": "\uDB81\uDDD6",
+  "\u803D\uDB40\uDD02": "\uDB81\uDDD7",
+  "\u8060\uDB40\uDD02": "\uDB81\uDDD8",
+  "\u8072\uDB40\uDD02": "\uDB81\uDDD9",
+  "\u8079\uDB40\uDD02": "\uDB81\uDDDA",
+  "\u807D\uDB40\uDD02": "\uDB81\uDDDB",
+  "\u8085\uDB40\uDD02": "\uDB81\uDDDC",
+  "\u808E\uDB40\uDD02": "\uDB81\uDDDD",
+  "\u8093\uDB40\uDD02": "\uDB81\uDDDE",
+  "\u80AD\uDB40\uDD02": "\uDB81\uDDDF",
+  "\u80B2\uDB40\uDD02": "\uDB81\uDDE0",
+  "\u80B4\uDB40\uDD02": "\uDB81\uDDE1",
+  "\u80CD\uDB40\uDD02": "\uDB81\uDDE2",
+  "\u80EE\uDB40\uDD02": "\uDB81\uDDE3",
+  "\u80F2\uDB40\uDD02": "\uDB81\uDDE4",
+  "\u812B\uDB40\uDD02": "\uDB81\uDDE5",
+  "\u8160\uDB40\uDD02": "\uDB81\uDDE6",
+  "\u8166\uDB40\uDD02": "\uDB81\uDDE7",
+  "\u8174\uDB40\uDD02": "\uDB81\uDDE8",
+  "\u8179\uDB40\uDD02": "\uDB81\uDDE9",
+  "\u8180\uDB40\uDD02": "\uDB81\uDDEA",
+  "\u8184\uDB40\uDD02": "\uDB81\uDDEB",
+  "\u8188\uDB40\uDD02": "\uDB81\uDDEC",
+  "\u818B\uDB40\uDD02": "\uDB81\uDDED",
+  "\u819C\uDB40\uDD02": "\uDB81\uDDEE",
+  "\u819E\uDB40\uDD02": "\uDB81\uDDEF",
+  "\u81A0\uDB40\uDD02": "\uDB81\uDDF0",
+  "\u81A4\uDB40\uDD02": "\uDB81\uDDF1",
+  "\u81B8\uDB40\uDD02": "\uDB81\uDDF2",
+  "\u81C6\uDB40\uDD02": "\uDB81\uDDF3",
+  "\u81C8\uDB40\uDD02": "\uDB81\uDDF4",
+  "\u81D7\uDB40\uDD02": "\uDB81\uDDF5",
+  "\u81DF\uDB40\uDD02": "\uDB81\uDDF6",
+  "\u81E7\uDB40\uDD02": "\uDB81\uDDF7",
+  "\u81E8\uDB40\uDD02": "\uDB81\uDDF8",
+  "\u81F1\uDB40\uDD02": "\uDB81\uDDF9",
+  "\u81F4\uDB40\uDD02": "\uDB81\uDDFA",
+  "\u81F9\uDB40\uDD02": "\uDB81\uDDFB",
+  "\u81FD\uDB40\uDD02": "\uDB81\uDDFC",
+  "\u81FE\uDB40\uDD02": "\uDB81\uDDFD",
+  "\u81FF\uDB40\uDD02": "\uDB81\uDDFE",
+  "\u8201\uDB40\uDD02": "\uDB81\uDDFF",
+  "\u8202\uDB40\uDD02": "\uDB81\uDE00",
+  "\u8204\uDB40\uDD02": "\uDB81\uDE01",
+  "\u8208\uDB40\uDD02": "\uDB81\uDE02",
+  "\u820A\uDB40\uDD02": "\uDB81\uDE03",
+  "\u820B\uDB40\uDD02": "\uDB81\uDE04",
+  "\u8212\uDB40\uDD02": "\uDB81\uDE05",
+  "\u821D\uDB40\uDD02": "\uDB81\uDE06",
+  "\u821E\uDB40\uDD02": "\uDB81\uDE07",
+  "\u8229\uDB40\uDD02": "\uDB81\uDE08",
+  "\u8238\uDB40\uDD02": "\uDB81\uDE09",
+  "\u8257\uDB40\uDD02": "\uDB81\uDE0A",
+  "\u825D\uDB40\uDD02": "\uDB81\uDE0B",
+  "\u825F\uDB40\uDD02": "\uDB81\uDE0C",
+  "\u8267\uDB40\uDD02": "\uDB81\uDE0D",
+  "\u8268\uDB40\uDD02": "\uDB81\uDE0E",
+  "\u826D\uDB40\uDD02": "\uDB81\uDE0F",
+  "\u826E\uDB40\uDD02": "\uDB81\uDE10",
+  "\u8271\uDB40\uDD02": "\uDB81\uDE11",
+  "\u827B\uDB40\uDD02": "\uDB81\uDE12",
+  "\u827D\uDB40\uDD02": "\uDB81\uDE13",
+  "\u827E\uDB40\uDD02": "\uDB81\uDE14",
+  "\u827F\uDB40\uDD02": "\uDB81\uDE15",
+  "\u8280\uDB40\uDD02": "\uDB81\uDE16",
+  "\u8281\uDB40\uDD02": "\uDB81\uDE17",
+  "\u8283\uDB40\uDD02": "\uDB81\uDE18",
+  "\u8284\uDB40\uDD02": "\uDB81\uDE19",
+  "\u8287\uDB40\uDD02": "\uDB81\uDE1A",
+  "\u8289\uDB40\uDD02": "\uDB81\uDE1B",
+  "\u828A\uDB40\uDD02": "\uDB81\uDE1C",
+  "\u828B\uDB40\uDD02": "\uDB81\uDE1D",
+  "\u828E\uDB40\uDD02": "\uDB81\uDE1E",
+  "\u8291\uDB40\uDD02": "\uDB81\uDE1F",
+  "\u8293\uDB40\uDD02": "\uDB81\uDE20",
+  "\u8294\uDB40\uDD02": "\uDB81\uDE21",
+  "\u8296\uDB40\uDD02": "\uDB81\uDE22",
+  "\u8298\uDB40\uDD02": "\uDB81\uDE23",
+  "\u8299\uDB40\uDD02": "\uDB81\uDE24",
+  "\u829A\uDB40\uDD02": "\uDB81\uDE25",
+  "\u829B\uDB40\uDD02": "\uDB81\uDE26",
+  "\u829D\uDB40\uDD02": "\uDB81\uDE27",
+  "\u829F\uDB40\uDD02": "\uDB81\uDE28",
+  "\u82A0\uDB40\uDD02": "\uDB81\uDE29",
+  "\u82A1\uDB40\uDD02": "\uDB81\uDE2A",
+  "\u82A3\uDB40\uDD02": "\uDB81\uDE2B",
+  "\u82A4\uDB40\uDD02": "\uDB81\uDE2C",
+  "\u82A5\uDB40\uDD02": "\uDB81\uDE2D",
+  "\u82A6\uDB40\uDD02": "\uDB81\uDE2E",
+  "\u82A7\uDB40\uDD02": "\uDB81\uDE2F",
+  "\u82A8\uDB40\uDD02": "\uDB81\uDE30",
+  "\u82A9\uDB40\uDD02": "\uDB81\uDE31",
+  "\u82AA\uDB40\uDD02": "\uDB81\uDE32",
+  "\u82AB\uDB40\uDD02": "\uDB81\uDE33",
+  "\u82AC\uDB40\uDD02": "\uDB81\uDE34",
+  "\u82AD\uDB40\uDD02": "\uDB81\uDE35",
+  "\u82AE\uDB40\uDD02": "\uDB81\uDE36",
+  "\u82AF\uDB40\uDD02": "\uDB81\uDE37",
+  "\u82B0\uDB40\uDD02": "\uDB81\uDE38",
+  "\u82B2\uDB40\uDD02": "\uDB81\uDE39",
+  "\u82B3\uDB40\uDD02": "\uDB81\uDE3A",
+  "\u82B4\uDB40\uDD02": "\uDB81\uDE3B",
+  "\u82B7\uDB40\uDD02": "\uDB81\uDE3C",
+  "\u82B8\uDB40\uDD02": "\uDB81\uDE3D",
+  "\u82B9\uDB40\uDD02": "\uDB81\uDE3E",
+  "\u82BA\uDB40\uDD02": "\uDB81\uDE3F",
+  "\u82BC\uDB40\uDD02": "\uDB81\uDE40",
+  "\u82BE\uDB40\uDD02": "\uDB81\uDE41",
+  "\u82BF\uDB40\uDD02": "\uDB81\uDE42",
+  "\u82C6\uDB40\uDD02": "\uDB81\uDE43",
+  "\u82D0\uDB40\uDD02": "\uDB81\uDE44",
+  "\u82D1\uDB40\uDD02": "\uDB81\uDE45",
+  "\u82D3\uDB40\uDD02": "\uDB81\uDE46",
+  "\u82D4\uDB40\uDD02": "\uDB81\uDE47",
+  "\u82D5\uDB40\uDD02": "\uDB81\uDE48",
+  "\u82D7\uDB40\uDD02": "\uDB81\uDE49",
+  "\u82D9\uDB40\uDD02": "\uDB81\uDE4A",
+  "\u82DA\uDB40\uDD02": "\uDB81\uDE4B",
+  "\u82DB\uDB40\uDD02": "\uDB81\uDE4C",
+  "\u82DC\uDB40\uDD02": "\uDB81\uDE4D",
+  "\u82DE\uDB40\uDD02": "\uDB81\uDE4E",
+  "\u82DF\uDB40\uDD02": "\uDB81\uDE4F",
+  "\u82E0\uDB40\uDD02": "\uDB81\uDE50",
+  "\u82E1\uDB40\uDD02": "\uDB81\uDE51",
+  "\u82E2\uDB40\uDD02": "\uDB81\uDE52",
+  "\u82E4\uDB40\uDD02": "\uDB81\uDE53",
+  "\u82E5\uDB40\uDD02": "\uDB81\uDE54",
+  "\u82E6\uDB40\uDD02": "\uDB81\uDE55",
+  "\u82E7\uDB40\uDD02": "\uDB81\uDE56",
+  "\u82E8\uDB40\uDD02": "\uDB81\uDE57",
+  "\u82EA\uDB40\uDD02": "\uDB81\uDE58",
+  "\u82EB\uDB40\uDD02": "\uDB81\uDE59",
+  "\u82ED\uDB40\uDD02": "\uDB81\uDE5A",
+  "\u82EF\uDB40\uDD02": "\uDB81\uDE5B",
+  "\u82F1\uDB40\uDD02": "\uDB81\uDE5C",
+  "\u82F3\uDB40\uDD02": "\uDB81\uDE5D",
+  "\u82F4\uDB40\uDD02": "\uDB81\uDE5E",
+  "\u82F6\uDB40\uDD02": "\uDB81\uDE5F",
+  "\u82F7\uDB40\uDD02": "\uDB81\uDE60",
+  "\u82F9\uDB40\uDD02": "\uDB81\uDE61",
+  "\u82FA\uDB40\uDD02": "\uDB81\uDE62",
+  "\u82FB\uDB40\uDD02": "\uDB81\uDE63",
+  "\u82FD\uDB40\uDD02": "\uDB81\uDE64",
+  "\u82FE\uDB40\uDD02": "\uDB81\uDE65",
+  "\u8300\uDB40\uDD02": "\uDB81\uDE66",
+  "\u8301\uDB40\uDD02": "\uDB81\uDE67",
+  "\u8302\uDB40\uDD02": "\uDB81\uDE68",
+  "\u8303\uDB40\uDD02": "\uDB81\uDE69",
+  "\u8304\uDB40\uDD02": "\uDB81\uDE6A",
+  "\u8305\uDB40\uDD02": "\uDB81\uDE6B",
+  "\u8306\uDB40\uDD02": "\uDB81\uDE6C",
+  "\u8307\uDB40\uDD02": "\uDB81\uDE6D",
+  "\u8308\uDB40\uDD02": "\uDB81\uDE6E",
+  "\u8309\uDB40\uDD02": "\uDB81\uDE6F",
+  "\u830A\uDB40\uDD02": "\uDB81\uDE70",
+  "\u830B\uDB40\uDD02": "\uDB81\uDE71",
+  "\u830C\uDB40\uDD02": "\uDB81\uDE72",
+  "\u8316\uDB40\uDD02": "\uDB81\uDE73",
+  "\u8317\uDB40\uDD02": "\uDB81\uDE74",
+  "\u8318\uDB40\uDD02": "\uDB81\uDE75",
+  "\u831B\uDB40\uDD02": "\uDB81\uDE76",
+  "\u831C\uDB40\uDD02": "\uDB81\uDE77",
+  "\u831D\uDB40\uDD02": "\uDB81\uDE78",
+  "\u831E\uDB40\uDD02": "\uDB81\uDE79",
+  "\u831F\uDB40\uDD02": "\uDB81\uDE7A",
+  "\u8321\uDB40\uDD02": "\uDB81\uDE7B",
+  "\u8322\uDB40\uDD02": "\uDB81\uDE7C",
+  "\u8328\uDB40\uDD02": "\uDB81\uDE7D",
+  "\u832B\uDB40\uDD02": "\uDB81\uDE7E",
+  "\u832C\uDB40\uDD02": "\uDB81\uDE7F",
+  "\u832D\uDB40\uDD02": "\uDB81\uDE80",
+  "\u832E\uDB40\uDD02": "\uDB81\uDE81",
+  "\u832F\uDB40\uDD02": "\uDB81\uDE82",
+  "\u8330\uDB40\uDD02": "\uDB81\uDE83",
+  "\u8331\uDB40\uDD02": "\uDB81\uDE84",
+  "\u8332\uDB40\uDD02": "\uDB81\uDE85",
+  "\u8333\uDB40\uDD02": "\uDB81\uDE86",
+  "\u8334\uDB40\uDD02": "\uDB81\uDE87",
+  "\u8335\uDB40\uDD02": "\uDB81\uDE88",
+  "\u8336\uDB40\uDD02": "\uDB81\uDE89",
+  "\u8337\uDB40\uDD02": "\uDB81\uDE8A",
+  "\u8338\uDB40\uDD02": "\uDB81\uDE8B",
+  "\u8339\uDB40\uDD02": "\uDB81\uDE8C",
+  "\u833A\uDB40\uDD02": "\uDB81\uDE8D",
+  "\u833C\uDB40\uDD02": "\uDB81\uDE8E",
+  "\u833D\uDB40\uDD02": "\uDB81\uDE8F",
+  "\u8340\uDB40\uDD02": "\uDB81\uDE90",
+  "\u8342\uDB40\uDD02": "\uDB81\uDE91",
+  "\u8343\uDB40\uDD02": "\uDB81\uDE92",
+  "\u8344\uDB40\uDD02": "\uDB81\uDE93",
+  "\u8345\uDB40\uDD02": "\uDB81\uDE94",
+  "\u8346\uDB40\uDD02": "\uDB81\uDE95",
+  "\u8347\uDB40\uDD02": "\uDB81\uDE96",
+  "\u8349\uDB40\uDD02": "\uDB81\uDE97",
+  "\u834A\uDB40\uDD02": "\uDB81\uDE98",
+  "\u834D\uDB40\uDD02": "\uDB81\uDE99",
+  "\u834E\uDB40\uDD02": "\uDB81\uDE9A",
+  "\u834F\uDB40\uDD02": "\uDB81\uDE9B",
+  "\u8350\uDB40\uDD02": "\uDB81\uDE9C",
+  "\u8351\uDB40\uDD02": "\uDB81\uDE9D",
+  "\u8353\uDB40\uDD02": "\uDB81\uDE9E",
+  "\u8354\uDB40\uDD02": "\uDB81\uDE9F",
+  "\u8355\uDB40\uDD02": "\uDB81\uDEA0",
+  "\u8356\uDB40\uDD02": "\uDB81\uDEA1",
+  "\u8357\uDB40\uDD02": "\uDB81\uDEA2",
+  "\u8362\uDB40\uDD02": "\uDB81\uDEA3",
+  "\u8370\uDB40\uDD02": "\uDB81\uDEA4",
+  "\u8373\uDB40\uDD02": "\uDB81\uDEA5",
+  "\u8377\uDB40\uDD02": "\uDB81\uDEA6",
+  "\u8378\uDB40\uDD02": "\uDB81\uDEA7",
+  "\u837B\uDB40\uDD02": "\uDB81\uDEA8",
+  "\u837C\uDB40\uDD02": "\uDB81\uDEA9",
+  "\u837D\uDB40\uDD02": "\uDB81\uDEAA",
+  "\u837F\uDB40\uDD02": "\uDB81\uDEAB",
+  "\u8380\uDB40\uDD02": "\uDB81\uDEAC",
+  "\u8382\uDB40\uDD02": "\uDB81\uDEAD",
+  "\u8384\uDB40\uDD02": "\uDB81\uDEAE",
+  "\u8385\uDB40\uDD02": "\uDB81\uDEAF",
+  "\u8386\uDB40\uDD02": "\uDB81\uDEB0",
+  "\u8387\uDB40\uDD02": "\uDB81\uDEB1",
+  "\u8389\uDB40\uDD02": "\uDB81\uDEB2",
+  "\u838A\uDB40\uDD02": "\uDB81\uDEB3",
+  "\u838D\uDB40\uDD02": "\uDB81\uDEB4",
+  "\u838E\uDB40\uDD02": "\uDB81\uDEB5",
+  "\u8392\uDB40\uDD02": "\uDB81\uDEB6",
+  "\u8393\uDB40\uDD02": "\uDB81\uDEB7",
+  "\u8394\uDB40\uDD02": "\uDB81\uDEB8",
+  "\u8395\uDB40\uDD02": "\uDB81\uDEB9",
+  "\u8396\uDB40\uDD02": "\uDB81\uDEBA",
+  "\u8398\uDB40\uDD02": "\uDB81\uDEBB",
+  "\u8399\uDB40\uDD02": "\uDB81\uDEBC",
+  "\u839A\uDB40\uDD02": "\uDB81\uDEBD",
+  "\u839B\uDB40\uDD02": "\uDB81\uDEBE",
+  "\u839C\uDB40\uDD02": "\uDB81\uDEBF",
+  "\u839D\uDB40\uDD02": "\uDB81\uDEC0",
+  "\u839E\uDB40\uDD02": "\uDB81\uDEC1",
+  "\u839F\uDB40\uDD02": "\uDB81\uDEC2",
+  "\u83A0\uDB40\uDD02": "\uDB81\uDEC3",
+  "\u83A2\uDB40\uDD02": "\uDB81\uDEC4",
+  "\u83A6\uDB40\uDD02": "\uDB81\uDEC5",
+  "\u83A7\uDB40\uDD02": "\uDB81\uDEC6",
+  "\u83A8\uDB40\uDD02": "\uDB81\uDEC7",
+  "\u83A9\uDB40\uDD02": "\uDB81\uDEC8",
+  "\u83AA\uDB40\uDD02": "\uDB81\uDEC9",
+  "\u83AB\uDB40\uDD02": "\uDB81\uDECA",
+  "\u83AC\uDB40\uDD02": "\uDB81\uDECB",
+  "\u83AD\uDB40\uDD02": "\uDB81\uDECC",
+  "\u83B5\uDB40\uDD02": "\uDB81\uDECD",
+  "\u83BE\uDB40\uDD02": "\uDB81\uDECE",
+  "\u83BF\uDB40\uDD02": "\uDB81\uDECF",
+  "\u83C0\uDB40\uDD02": "\uDB81\uDED0",
+  "\u83C1\uDB40\uDD02": "\uDB81\uDED1",
+  "\u83C5\uDB40\uDD02": "\uDB81\uDED2",
+  "\u83C6\uDB40\uDD02": "\uDB81\uDED3",
+  "\u83C7\uDB40\uDD02": "\uDB81\uDED4",
+  "\u83C9\uDB40\uDD02": "\uDB81\uDED5",
+  "\u83CA\uDB40\uDD02": "\uDB81\uDED6",
+  "\u83CC\uDB40\uDD02": "\uDB81\uDED7",
+  "\u83CE\uDB40\uDD02": "\uDB81\uDED8",
+  "\u83CF\uDB40\uDD02": "\uDB81\uDED9",
+  "\u83D1\uDB40\uDD02": "\uDB81\uDEDA",
+  "\u83D6\uDB40\uDD02": "\uDB81\uDEDB",
+  "\u83D8\uDB40\uDD02": "\uDB81\uDEDC",
+  "\u83DD\uDB40\uDD02": "\uDB81\uDEDD",
+  "\uD86D\uDFCF\uDB40\uDD02": "\uDB81\uDEDE",
+  "\u83E0\uDB40\uDD02": "\uDB81\uDEDF",
+  "\u83E1\uDB40\uDD02": "\uDB81\uDEE0",
+  "\u83E5\uDB40\uDD02": "\uDB81\uDEE1",
+  "\u83E8\uDB40\uDD02": "\uDB81\uDEE2",
+  "\u83E9\uDB40\uDD02": "\uDB81\uDEE3",
+  "\u83EA\uDB40\uDD02": "\uDB81\uDEE4",
+  "\u83EB\uDB40\uDD02": "\uDB81\uDEE5",
+  "\u83EF\uDB40\uDD02": "\uDB81\uDEE6",
+  "\u83F0\uDB40\uDD02": "\uDB81\uDEE7",
+  "\u83F1\uDB40\uDD02": "\uDB81\uDEE8",
+  "\u83F4\uDB40\uDD02": "\uDB81\uDEE9",
+  "\u83F6\uDB40\uDD02": "\uDB81\uDEEA",
+  "\u83F7\uDB40\uDD02": "\uDB81\uDEEB",
+  "\u83F8\uDB40\uDD02": "\uDB81\uDEEC",
+  "\u83F9\uDB40\uDD02": "\uDB81\uDEED",
+  "\u83FB\uDB40\uDD02": "\uDB81\uDEEE",
+  "\u83FC\uDB40\uDD02": "\uDB81\uDEEF",
+  "\u83FD\uDB40\uDD02": "\uDB81\uDEF0",
+  "\u8401\uDB40\uDD02": "\uDB81\uDEF1",
+  "\u8403\uDB40\uDD02": "\uDB81\uDEF2",
+  "\u8404\uDB40\uDD02": "\uDB81\uDEF3",
+  "\u8406\uDB40\uDD02": "\uDB81\uDEF4",
+  "\u8407\uDB40\uDD02": "\uDB81\uDEF5",
+  "\u840A\uDB40\uDD02": "\uDB81\uDEF6",
+  "\u840B\uDB40\uDD02": "\uDB81\uDEF7",
+  "\u840D\uDB40\uDD02": "\uDB81\uDEF8",
+  "\u840E\uDB40\uDD02": "\uDB81\uDEF9",
+  "\u8411\uDB40\uDD02": "\uDB81\uDEFA",
+  "\u8413\uDB40\uDD02": "\uDB81\uDEFB",
+  "\u8415\uDB40\uDD02": "\uDB81\uDEFC",
+  "\u8419\uDB40\uDD02": "\uDB81\uDEFD",
+  "\u8429\uDB40\uDD02": "\uDB81\uDEFE",
+  "\u842A\uDB40\uDD02": "\uDB81\uDEFF",
+  "\u842C\uDB40\uDD02": "\uDB81\uDF00",
+  "\u842F\uDB40\uDD02": "\uDB81\uDF01",
+  "\u8431\uDB40\uDD02": "\uDB81\uDF02",
+  "\u8435\uDB40\uDD02": "\uDB81\uDF03",
+  "\u8438\uDB40\uDD02": "\uDB81\uDF04",
+  "\u8439\uDB40\uDD02": "\uDB81\uDF05",
+  "\u843C\uDB40\uDD02": "\uDB81\uDF06",
+  "\u843D\uDB40\uDD02": "\uDB81\uDF07",
+  "\u8445\uDB40\uDD02": "\uDB81\uDF08",
+  "\u8446\uDB40\uDD02": "\uDB81\uDF09",
+  "\u8447\uDB40\uDD02": "\uDB81\uDF0A",
+  "\u8448\uDB40\uDD02": "\uDB81\uDF0B",
+  "\u8449\uDB40\uDD02": "\uDB81\uDF0C",
+  "\u844A\uDB40\uDD02": "\uDB81\uDF0D",
+  "\u844D\uDB40\uDD02": "\uDB81\uDF0E",
+  "\u844E\uDB40\uDD02": "\uDB81\uDF0F",
+  "\u844F\uDB40\uDD02": "\uDB81\uDF10",
+  "\u8451\uDB40\uDD02": "\uDB81\uDF11",
+  "\u8452\uDB40\uDD02": "\uDB81\uDF12",
+  "\u8456\uDB40\uDD02": "\uDB81\uDF13",
+  "\u8458\uDB40\uDD02": "\uDB81\uDF14",
+  "\u8459\uDB40\uDD02": "\uDB81\uDF15",
+  "\u845A\uDB40\uDD02": "\uDB81\uDF16",
+  "\u845B\uDB40\uDD02": "\uDB81\uDF17",
+  "\u845C\uDB40\uDD02": "\uDB81\uDF18",
+  "\u845F\uDB40\uDD02": "\uDB81\uDF19",
+  "\u8460\uDB40\uDD02": "\uDB81\uDF1A",
+  "\u8461\uDB40\uDD02": "\uDB81\uDF1B",
+  "\u8462\uDB40\uDD02": "\uDB81\uDF1C",
+  "\u8463\uDB40\uDD02": "\uDB81\uDF1D",
+  "\u8464\uDB40\uDD02": "\uDB81\uDF1E",
+  "\u8465\uDB40\uDD02": "\uDB81\uDF1F",
+  "\u8466\uDB40\uDD02": "\uDB81\uDF20",
+  "\u8467\uDB40\uDD02": "\uDB81\uDF21",
+  "\u8469\uDB40\uDD02": "\uDB81\uDF22",
+  "\u846A\uDB40\uDD02": "\uDB81\uDF23",
+  "\u846B\uDB40\uDD02": "\uDB81\uDF24",
+  "\u846C\uDB40\uDD02": "\uDB81\uDF25",
+  "\u846D\uDB40\uDD02": "\uDB81\uDF26",
+  "\u846E\uDB40\uDD02": "\uDB81\uDF27",
+  "\u846F\uDB40\uDD02": "\uDB81\uDF28",
+  "\u8470\uDB40\uDD02": "\uDB81\uDF29",
+  "\u8471\uDB40\uDD02": "\uDB81\uDF2A",
+  "\u8473\uDB40\uDD02": "\uDB81\uDF2B",
+  "\u8474\uDB40\uDD02": "\uDB81\uDF2C",
+  "\u8475\uDB40\uDD02": "\uDB81\uDF2D",
+  "\u8476\uDB40\uDD02": "\uDB81\uDF2E",
+  "\u8477\uDB40\uDD02": "\uDB81\uDF2F",
+  "\u8478\uDB40\uDD02": "\uDB81\uDF30",
+  "\u8479\uDB40\uDD02": "\uDB81\uDF31",
+  "\u847C\uDB40\uDD02": "\uDB81\uDF32",
+  "\u847D\uDB40\uDD02": "\uDB81\uDF33",
+  "\u8481\uDB40\uDD02": "\uDB81\uDF34",
+  "\u8482\uDB40\uDD02": "\uDB81\uDF35",
+  "\u8484\uDB40\uDD02": "\uDB81\uDF36",
+  "\u8485\uDB40\uDD02": "\uDB81\uDF37",
+  "\u848B\uDB40\uDD02": "\uDB81\uDF38",
+  "\u8490\uDB40\uDD02": "\uDB81\uDF39",
+  "\u8492\uDB40\uDD02": "\uDB81\uDF3A",
+  "\u8493\uDB40\uDD02": "\uDB81\uDF3B",
+  "\u8494\uDB40\uDD02": "\uDB81\uDF3C",
+  "\u8495\uDB40\uDD02": "\uDB81\uDF3D",
+  "\u8497\uDB40\uDD02": "\uDB81\uDF3E",
+  "\u8499\uDB40\uDD02": "\uDB81\uDF3F",
+  "\u849C\uDB40\uDD02": "\uDB81\uDF40",
+  "\u849E\uDB40\uDD02": "\uDB81\uDF41",
+  "\u849F\uDB40\uDD02": "\uDB81\uDF42",
+  "\u84A1\uDB40\uDD02": "\uDB81\uDF43",
+  "\u84A6\uDB40\uDD02": "\uDB81\uDF44",
+  "\u84A8\uDB40\uDD02": "\uDB81\uDF45",
+  "\u84A9\uDB40\uDD02": "\uDB81\uDF46",
+  "\u84AA\uDB40\uDD02": "\uDB81\uDF47",
+  "\u84AD\uDB40\uDD02": "\uDB81\uDF48",
+  "\u84AF\uDB40\uDD02": "\uDB81\uDF49",
+  "\u84B1\uDB40\uDD02": "\uDB81\uDF4A",
+  "\u84B2\uDB40\uDD02": "\uDB81\uDF4B",
+  "\u84B4\uDB40\uDD02": "\uDB81\uDF4C",
+  "\u84B8\uDB40\uDD02": "\uDB81\uDF4D",
+  "\u84B9\uDB40\uDD02": "\uDB81\uDF4E",
+  "\u84BA\uDB40\uDD02": "\uDB81\uDF4F",
+  "\u84BB\uDB40\uDD02": "\uDB81\uDF50",
+  "\u84BC\uDB40\uDD02": "\uDB81\uDF51",
+  "\u84BD\uDB40\uDD02": "\uDB81\uDF52",
+  "\u84BE\uDB40\uDD02": "\uDB81\uDF53",
+  "\u84BF\uDB40\uDD02": "\uDB81\uDF54",
+  "\u84C0\uDB40\uDD02": "\uDB81\uDF55",
+  "\u84C1\uDB40\uDD02": "\uDB81\uDF56",
+  "\u84C2\uDB40\uDD02": "\uDB81\uDF57",
+  "\u84C4\uDB40\uDD02": "\uDB81\uDF58",
+  "\u84C6\uDB40\uDD02": "\uDB81\uDF59",
+  "\u84C7\uDB40\uDD02": "\uDB81\uDF5A",
+  "\u84C8\uDB40\uDD02": "\uDB81\uDF5B",
+  "\u84C9\uDB40\uDD02": "\uDB81\uDF5C",
+  "\u84CA\uDB40\uDD02": "\uDB81\uDF5D",
+  "\u84CB\uDB40\uDD02": "\uDB81\uDF5E",
+  "\u84CC\uDB40\uDD02": "\uDB81\uDF5F",
+  "\u84CD\uDB40\uDD02": "\uDB81\uDF60",
+  "\u84CE\uDB40\uDD02": "\uDB81\uDF61",
+  "\u84CF\uDB40\uDD02": "\uDB81\uDF62",
+  "\u84D0\uDB40\uDD02": "\uDB81\uDF63",
+  "\u84D1\uDB40\uDD02": "\uDB81\uDF64",
+  "\u84D3\uDB40\uDD02": "\uDB81\uDF65",
+  "\u84D6\uDB40\uDD02": "\uDB81\uDF66",
+  "\u84D9\uDB40\uDD02": "\uDB81\uDF67",
+  "\u84DA\uDB40\uDD02": "\uDB81\uDF68",
+  "\u84DC\uDB40\uDD02": "\uDB81\uDF69",
+  "\u84E7\uDB40\uDD02": "\uDB81\uDF6A",
+  "\u84EC\uDB40\uDD02": "\uDB81\uDF6B",
+  "\u84EF\uDB40\uDD02": "\uDB81\uDF6C",
+  "\u84F0\uDB40\uDD02": "\uDB81\uDF6D",
+  "\u84F1\uDB40\uDD02": "\uDB81\uDF6E",
+  "\u84F2\uDB40\uDD02": "\uDB81\uDF6F",
+  "\u84F7\uDB40\uDD02": "\uDB81\uDF70",
+  "\u84FB\uDB40\uDD02": "\uDB81\uDF71",
+  "\u84FC\uDB40\uDD02": "\uDB81\uDF72",
+  "\u84FD\uDB40\uDD02": "\uDB81\uDF73",
+  "\u84FF\uDB40\uDD02": "\uDB81\uDF74",
+  "\u8500\uDB40\uDD02": "\uDB81\uDF75",
+  "\u8502\uDB40\uDD02": "\uDB81\uDF76",
+  "\u8503\uDB40\uDD02": "\uDB81\uDF77",
+  "\u8506\uDB40\uDD02": "\uDB81\uDF78",
+  "\u8507\uDB40\uDD02": "\uDB81\uDF79",
+  "\u850C\uDB40\uDD02": "\uDB81\uDF7A",
+  "\u850E\uDB40\uDD02": "\uDB81\uDF7B",
+  "\u8510\uDB40\uDD02": "\uDB81\uDF7C",
+  "\u8511\uDB40\uDD02": "\uDB81\uDF7D",
+  "\u8513\uDB40\uDD02": "\uDB81\uDF7E",
+  "\u8514\uDB40\uDD02": "\uDB81\uDF7F",
+  "\u8515\uDB40\uDD02": "\uDB81\uDF80",
+  "\u8518\uDB40\uDD02": "\uDB81\uDF81",
+  "\u851A\uDB40\uDD02": "\uDB81\uDF82",
+  "\u851B\uDB40\uDD02": "\uDB81\uDF83",
+  "\u851C\uDB40\uDD02": "\uDB81\uDF84",
+  "\u851E\uDB40\uDD02": "\uDB81\uDF85",
+  "\u851F\uDB40\uDD02": "\uDB81\uDF86",
+  "\u8521\uDB40\uDD02": "\uDB81\uDF87",
+  "\u8522\uDB40\uDD02": "\uDB81\uDF88",
+  "\u8523\uDB40\uDD02": "\uDB81\uDF89",
+  "\u8524\uDB40\uDD02": "\uDB81\uDF8A",
+  "\u8525\uDB40\uDD02": "\uDB81\uDF8B",
+  "\u8526\uDB40\uDD02": "\uDB81\uDF8C",
+  "\u8527\uDB40\uDD02": "\uDB81\uDF8D",
+  "\u852A\uDB40\uDD02": "\uDB81\uDF8E",
+  "\u852B\uDB40\uDD02": "\uDB81\uDF8F",
+  "\u852C\uDB40\uDD02": "\uDB81\uDF90",
+  "\u852D\uDB40\uDD02": "\uDB81\uDF91",
+  "\u852F\uDB40\uDD02": "\uDB81\uDF92",
+  "\u8532\uDB40\uDD02": "\uDB81\uDF93",
+  "\u8533\uDB40\uDD02": "\uDB81\uDF94",
+  "\u8534\uDB40\uDD02": "\uDB81\uDF95",
+  "\u8536\uDB40\uDD02": "\uDB81\uDF96",
+  "\u853E\uDB40\uDD02": "\uDB81\uDF97",
+  "\u853F\uDB40\uDD02": "\uDB81\uDF98",
+  "\u8540\uDB40\uDD02": "\uDB81\uDF99",
+  "\u8541\uDB40\uDD02": "\uDB81\uDF9A",
+  "\u8546\uDB40\uDD02": "\uDB81\uDF9B",
+  "\u8548\uDB40\uDD02": "\uDB81\uDF9C",
+  "\u8549\uDB40\uDD02": "\uDB81\uDF9D",
+  "\u854A\uDB40\uDD02": "\uDB81\uDF9E",
+  "\u854B\uDB40\uDD02": "\uDB81\uDF9F",
+  "\u854E\uDB40\uDD02": "\uDB81\uDFA0",
+  "\u854F\uDB40\uDD02": "\uDB81\uDFA1",
+  "\u8550\uDB40\uDD02": "\uDB81\uDFA2",
+  "\u8552\uDB40\uDD02": "\uDB81\uDFA3",
+  "\u8553\uDB40\uDD02": "\uDB81\uDFA4",
+  "\u8556\uDB40\uDD02": "\uDB81\uDFA5",
+  "\u8557\uDB40\uDD02": "\uDB81\uDFA6",
+  "\u8558\uDB40\uDD02": "\uDB81\uDFA7",
+  "\u8559\uDB40\uDD02": "\uDB81\uDFA8",
+  "\u855A\uDB40\uDD02": "\uDB81\uDFA9",
+  "\u855C\uDB40\uDD02": "\uDB81\uDFAA",
+  "\u855E\uDB40\uDD02": "\uDB81\uDFAB",
+  "\u855F\uDB40\uDD02": "\uDB81\uDFAC",
+  "\u8560\uDB40\uDD02": "\uDB81\uDFAD",
+  "\u8561\uDB40\uDD02": "\uDB81\uDFAE",
+  "\u8562\uDB40\uDD02": "\uDB81\uDFAF",
+  "\u8564\uDB40\uDD02": "\uDB81\uDFB0",
+  "\u8568\uDB40\uDD02": "\uDB81\uDFB1",
+  "\u8569\uDB40\uDD02": "\uDB81\uDFB2",
+  "\u856A\uDB40\uDD02": "\uDB81\uDFB3",
+  "\u856B\uDB40\uDD02": "\uDB81\uDFB4",
+  "\u856D\uDB40\uDD02": "\uDB81\uDFB5",
+  "\u856F\uDB40\uDD02": "\uDB81\uDFB6",
+  "\u8577\uDB40\uDD02": "\uDB81\uDFB7",
+  "\u8578\uDB40\uDD02": "\uDB81\uDFB8",
+  "\u8579\uDB40\uDD02": "\uDB81\uDFB9",
+  "\u857A\uDB40\uDD02": "\uDB81\uDFBA",
+  "\u857B\uDB40\uDD02": "\uDB81\uDFBB",
+  "\u857D\uDB40\uDD02": "\uDB81\uDFBC",
+  "\u857E\uDB40\uDD02": "\uDB81\uDFBD",
+  "\u857F\uDB40\uDD02": "\uDB81\uDFBE",
+  "\u8580\uDB40\uDD02": "\uDB81\uDFBF",
+  "\u8581\uDB40\uDD02": "\uDB81\uDFC0",
+  "\u8585\uDB40\uDD02": "\uDB81\uDFC1",
+  "\u8586\uDB40\uDD02": "\uDB81\uDFC2",
+  "\u8588\uDB40\uDD02": "\uDB81\uDFC3",
+  "\u8589\uDB40\uDD02": "\uDB81\uDFC4",
+  "\u858A\uDB40\uDD02": "\uDB81\uDFC5",
+  "\u858B\uDB40\uDD02": "\uDB81\uDFC6",
+  "\u858C\uDB40\uDD02": "\uDB81\uDFC7",
+  "\u858F\uDB40\uDD02": "\uDB81\uDFC8",
+  "\u8590\uDB40\uDD02": "\uDB81\uDFC9",
+  "\u8591\uDB40\uDD02": "\uDB81\uDFCA",
+  "\u8593\uDB40\uDD02": "\uDB81\uDFCB",
+  "\u8594\uDB40\uDD02": "\uDB81\uDFCC",
+  "\u8597\uDB40\uDD02": "\uDB81\uDFCD",
+  "\u8598\uDB40\uDD02": "\uDB81\uDFCE",
+  "\u8599\uDB40\uDD02": "\uDB81\uDFCF",
+  "\u859B\uDB40\uDD02": "\uDB81\uDFD0",
+  "\u859C\uDB40\uDD02": "\uDB81\uDFD1",
+  "\u859D\uDB40\uDD02": "\uDB81\uDFD2",
+  "\u859F\uDB40\uDD02": "\uDB81\uDFD3",
+  "\u85A0\uDB40\uDD02": "\uDB81\uDFD4",
+  "\u85A2\uDB40\uDD02": "\uDB81\uDFD5",
+  "\u85A4\uDB40\uDD02": "\uDB81\uDFD6",
+  "\u85A5\uDB40\uDD02": "\uDB81\uDFD7",
+  "\u85A6\uDB40\uDD02": "\uDB81\uDFD8",
+  "\u85A7\uDB40\uDD02": "\uDB81\uDFD9",
+  "\u85A8\uDB40\uDD02": "\uDB81\uDFDA",
+  "\u85A9\uDB40\uDD02": "\uDB81\uDFDB",
+  "\u85AA\uDB40\uDD02": "\uDB81\uDFDC",
+  "\u85AB\uDB40\uDD02": "\uDB81\uDFDD",
+  "\u85AD\uDB40\uDD02": "\uDB81\uDFDE",
+  "\u85B0\uDB40\uDD02": "\uDB81\uDFDF",
+  "\u85B4\uDB40\uDD02": "\uDB81\uDFE0",
+  "\u85B6\uDB40\uDD02": "\uDB81\uDFE1",
+  "\u85B7\uDB40\uDD02": "\uDB81\uDFE2",
+  "\u85B8\uDB40\uDD02": "\uDB81\uDFE3",
+  "\u85B9\uDB40\uDD02": "\uDB81\uDFE4",
+  "\u85BA\uDB40\uDD02": "\uDB81\uDFE5",
+  "\u85BC\uDB40\uDD02": "\uDB81\uDFE6",
+  "\u85BD\uDB40\uDD02": "\uDB81\uDFE7",
+  "\u85BE\uDB40\uDD02": "\uDB81\uDFE8",
+  "\u85BF\uDB40\uDD02": "\uDB81\uDFE9",
+  "\u85C1\uDB40\uDD02": "\uDB81\uDFEA",
+  "\u85C2\uDB40\uDD02": "\uDB81\uDFEB",
+  "\u85C7\uDB40\uDD02": "\uDB81\uDFEC",
+  "\u85C9\uDB40\uDD02": "\uDB81\uDFED",
+  "\u85CA\uDB40\uDD02": "\uDB81\uDFEE",
+  "\u85CB\uDB40\uDD02": "\uDB81\uDFEF",
+  "\u85CD\uDB40\uDD02": "\uDB81\uDFF0",
+  "\u85CE\uDB40\uDD02": "\uDB81\uDFF1",
+  "\u85D0\uDB40\uDD02": "\uDB81\uDFF2",
+  "\u85D8\uDB40\uDD02": "\uDB81\uDFF3",
+  "\u85D9\uDB40\uDD02": "\uDB81\uDFF4",
+  "\u85DA\uDB40\uDD02": "\uDB81\uDFF5",
+  "\u85DC\uDB40\uDD02": "\uDB81\uDFF6",
+  "\u85DD\uDB40\uDD02": "\uDB81\uDFF7",
+  "\u85DF\uDB40\uDD02": "\uDB81\uDFF8",
+  "\u85E0\uDB40\uDD02": "\uDB81\uDFF9",
+  "\u85E1\uDB40\uDD02": "\uDB81\uDFFA",
+  "\u85E5\uDB40\uDD02": "\uDB81\uDFFB",
+  "\u85E6\uDB40\uDD02": "\uDB81\uDFFC",
+  "\u85E8\uDB40\uDD02": "\uDB81\uDFFD",
+  "\u85E9\uDB40\uDD02": "\uDB81\uDFFE",
+  "\u85EA\uDB40\uDD02": "\uDB81\uDFFF",
+  "\u85ED\uDB40\uDD02": "\uDB82\uDC00",
+  "\u85F3\uDB40\uDD02": "\uDB82\uDC01",
+  "\u85F4\uDB40\uDD02": "\uDB82\uDC02",
+  "\u85F6\uDB40\uDD02": "\uDB82\uDC03",
+  "\u85F9\uDB40\uDD02": "\uDB82\uDC04",
+  "\u85FA\uDB40\uDD02": "\uDB82\uDC05",
+  "\u85FB\uDB40\uDD02": "\uDB82\uDC06",
+  "\u85FC\uDB40\uDD02": "\uDB82\uDC07",
+  "\u85FE\uDB40\uDD02": "\uDB82\uDC08",
+  "\u85FF\uDB40\uDD02": "\uDB82\uDC09",
+  "\u8600\uDB40\uDD02": "\uDB82\uDC0A",
+  "\u8602\uDB40\uDD02": "\uDB82\uDC0B",
+  "\u8604\uDB40\uDD02": "\uDB82\uDC0C",
+  "\u8605\uDB40\uDD02": "\uDB82\uDC0D",
+  "\u8606\uDB40\uDD02": "\uDB82\uDC0E",
+  "\u8607\uDB40\uDD02": "\uDB82\uDC0F",
+  "\u860A\uDB40\uDD02": "\uDB82\uDC10",
+  "\u860B\uDB40\uDD02": "\uDB82\uDC11",
+  "\u860D\uDB40\uDD02": "\uDB82\uDC12",
+  "\u860E\uDB40\uDD02": "\uDB82\uDC13",
+  "\u8610\uDB40\uDD02": "\uDB82\uDC14",
+  "\u8611\uDB40\uDD02": "\uDB82\uDC15",
+  "\u8613\uDB40\uDD02": "\uDB82\uDC16",
+  "\u8616\uDB40\uDD02": "\uDB82\uDC17",
+  "\u8617\uDB40\uDD02": "\uDB82\uDC18",
+  "\u8618\uDB40\uDD02": "\uDB82\uDC19",
+  "\u8619\uDB40\uDD02": "\uDB82\uDC1A",
+  "\u861A\uDB40\uDD02": "\uDB82\uDC1B",
+  "\u861B\uDB40\uDD02": "\uDB82\uDC1C",
+  "\u861E\uDB40\uDD02": "\uDB82\uDC1D",
+  "\u8621\uDB40\uDD02": "\uDB82\uDC1E",
+  "\u8622\uDB40\uDD02": "\uDB82\uDC1F",
+  "\u8624\uDB40\uDD02": "\uDB82\uDC20",
+  "\u8627\uDB40\uDD02": "\uDB82\uDC21",
+  "\u8629\uDB40\uDD02": "\uDB82\uDC22",
+  "\u862F\uDB40\uDD02": "\uDB82\uDC23",
+  "\u8630\uDB40\uDD02": "\uDB82\uDC24",
+  "\u8636\uDB40\uDD02": "\uDB82\uDC25",
+  "\u8638\uDB40\uDD02": "\uDB82\uDC26",
+  "\u8639\uDB40\uDD02": "\uDB82\uDC27",
+  "\u863A\uDB40\uDD02": "\uDB82\uDC28",
+  "\u863C\uDB40\uDD02": "\uDB82\uDC29",
+  "\u863D\uDB40\uDD02": "\uDB82\uDC2A",
+  "\u863F\uDB40\uDD02": "\uDB82\uDC2B",
+  "\u8640\uDB40\uDD02": "\uDB82\uDC2C",
+  "\u8641\uDB40\uDD02": "\uDB82\uDC2D",
+  "\u8642\uDB40\uDD02": "\uDB82\uDC2E",
+  "\u8646\uDB40\uDD02": "\uDB82\uDC2F",
+  "\u8653\uDB40\uDD02": "\uDB82\uDC30",
+  "\u8667\uDB40\uDD02": "\uDB82\uDC31",
+  "\u867B\uDB40\uDD02": "\uDB82\uDC32",
+  "\u8688\uDB40\uDD02": "\uDB82\uDC33",
+  "\u8689\uDB40\uDD02": "\uDB82\uDC34",
+  "\u868B\uDB40\uDD02": "\uDB82\uDC35",
+  "\u868C\uDB40\uDD02": "\uDB82\uDC36",
+  "\u869C\uDB40\uDD02": "\uDB82\uDC37",
+  "\u86A3\uDB40\uDD02": "\uDB82\uDC38",
+  "\u86A4\uDB40\uDD02": "\uDB82\uDC39",
+  "\u86A9\uDB40\uDD02": "\uDB82\uDC3A",
+  "\u86AB\uDB40\uDD02": "\uDB82\uDC3B",
+  "\u86DF\uDB40\uDD02": "\uDB82\uDC3C",
+  "\u86E7\uDB40\uDD02": "\uDB82\uDC3D",
+  "\u86E9\uDB40\uDD02": "\uDB82\uDC3E",
+  "\u86FB\uDB40\uDD02": "\uDB82\uDC3F",
+  "\u8708\uDB40\uDD02": "\uDB82\uDC40",
+  "\u8709\uDB40\uDD02": "\uDB82\uDC41",
+  "\u870E\uDB40\uDD02": "\uDB82\uDC42",
+  "\u8711\uDB40\uDD02": "\uDB82\uDC43",
+  "\u8712\uDB40\uDD02": "\uDB82\uDC44",
+  "\u8729\uDB40\uDD02": "\uDB82\uDC45",
+  "\u8739\uDB40\uDD02": "\uDB82\uDC46",
+  "\u874D\uDB40\uDD02": "\uDB82\uDC47",
+  "\u874E\uDB40\uDD02": "\uDB82\uDC48",
+  "\u8753\uDB40\uDD02": "\uDB82\uDC49",
+  "\u8758\uDB40\uDD02": "\uDB82\uDC4A",
+  "\u875D\uDB40\uDD02": "\uDB82\uDC4B",
+  "\u8771\uDB40\uDD02": "\uDB82\uDC4C",
+  "\u8773\uDB40\uDD02": "\uDB82\uDC4D",
+  "\u87AD\uDB40\uDD02": "\uDB82\uDC4E",
+  "\u87C0\uDB40\uDD02": "\uDB82\uDC4F",
+  "\u87C4\uDB40\uDD02": "\uDB82\uDC50",
+  "\u87C6\uDB40\uDD02": "\uDB82\uDC51",
+  "\u87C7\uDB40\uDD02": "\uDB82\uDC52",
+  "\u87D9\uDB40\uDD02": "\uDB82\uDC53",
+  "\u87E3\uDB40\uDD02": "\uDB82\uDC54",
+  "\u87EB\uDB40\uDD02": "\uDB82\uDC55",
+  "\u87F6\uDB40\uDD02": "\uDB82\uDC56",
+  "\u8801\uDB40\uDD02": "\uDB82\uDC57",
+  "\u8806\uDB40\uDD02": "\uDB82\uDC58",
+  "\u8807\uDB40\uDD02": "\uDB82\uDC59",
+  "\u880D\uDB40\uDD02": "\uDB82\uDC5A",
+  "\u8813\uDB40\uDD02": "\uDB82\uDC5B",
+  "\u8816\uDB40\uDD02": "\uDB82\uDC5C",
+  "\u881A\uDB40\uDD02": "\uDB82\uDC5D",
+  "\u881B\uDB40\uDD02": "\uDB82\uDC5E",
+  "\u881F\uDB40\uDD02": "\uDB82\uDC5F",
+  "\u8821\uDB40\uDD02": "\uDB82\uDC60",
+  "\u8823\uDB40\uDD02": "\uDB82\uDC61",
+  "\u8828\uDB40\uDD02": "\uDB82\uDC62",
+  "\u882D\uDB40\uDD02": "\uDB82\uDC63",
+  "\u8841\uDB40\uDD02": "\uDB82\uDC64",
+  "\u884A\uDB40\uDD02": "\uDB82\uDC65",
+  "\u886E\uDB40\uDD02": "\uDB82\uDC66",
+  "\u8871\uDB40\uDD02": "\uDB82\uDC67",
+  "\u8872\uDB40\uDD02": "\uDB82\uDC68",
+  "\u888D\uDB40\uDD02": "\uDB82\uDC69",
+  "\u889A\uDB40\uDD02": "\uDB82\uDC6A",
+  "\u88A2\uDB40\uDD02": "\uDB82\uDC6B",
+  "\u88B4\uDB40\uDD02": "\uDB82\uDC6C",
+  "\u88D2\uDB40\uDD02": "\uDB82\uDC6D",
+  "\u8907\uDB40\uDD02": "\uDB82\uDC6E",
+  "\u8912\uDB40\uDD02": "\uDB82\uDC6F",
+  "\u8918\uDB40\uDD02": "\uDB82\uDC70",
+  "\u891E\uDB40\uDD02": "\uDB82\uDC71",
+  "\u8927\uDB40\uDD02": "\uDB82\uDC72",
+  "\u892A\uDB40\uDD02": "\uDB82\uDC73",
+  "\u8935\uDB40\uDD02": "\uDB82\uDC74",
+  "\u8936\uDB40\uDD02": "\uDB82\uDC75",
+  "\u8943\uDB40\uDD02": "\uDB82\uDC76",
+  "\u8944\uDB40\uDD02": "\uDB82\uDC77",
+  "\u8956\uDB40\uDD02": "\uDB82\uDC78",
+  "\u895A\uDB40\uDD02": "\uDB82\uDC79",
+  "\u8972\uDB40\uDD02": "\uDB82\uDC7A",
+  "\u8974\uDB40\uDD02": "\uDB82\uDC7B",
+  "\u897A\uDB40\uDD02": "\uDB82\uDC7C",
+  "\u897C\uDB40\uDD02": "\uDB82\uDC7D",
+  "\u897D\uDB40\uDD02": "\uDB82\uDC7E",
+  "\u897F\uDB40\uDD02": "\uDB82\uDC7F",
+  "\u8983\uDB40\uDD02": "\uDB82\uDC80",
+  "\u8988\uDB40\uDD02": "\uDB82\uDC81",
+  "\u8989\uDB40\uDD02": "\uDB82\uDC82",
+  "\u898A\uDB40\uDD02": "\uDB82\uDC83",
+  "\u898D\uDB40\uDD02": "\uDB82\uDC84",
+  "\u8990\uDB40\uDD02": "\uDB82\uDC85",
+  "\u89A6\uDB40\uDD02": "\uDB82\uDC86",
+  "\u89A9\uDB40\uDD02": "\uDB82\uDC87",
+  "\u89B2\uDB40\uDD02": "\uDB82\uDC88",
+  "\u89B6\uDB40\uDD02": "\uDB82\uDC89",
+  "\u89C0\uDB40\uDD02": "\uDB82\uDC8A",
+  "\u89DA\uDB40\uDD02": "\uDB82\uDC8B",
+  "\u89E7\uDB40\uDD02": "\uDB82\uDC8C",
+  "\u89F4\uDB40\uDD02": "\uDB82\uDC8D",
+  "\u8A18\uDB40\uDD02": "\uDB82\uDC8E",
+  "\u8A1B\uDB40\uDD02": "\uDB82\uDC8F",
+  "\u8A25\uDB40\uDD02": "\uDB82\uDC90",
+  "\u8A3B\uDB40\uDD02": "\uDB82\uDC91",
+  "\u8A4E\uDB40\uDD02": "\uDB82\uDC92",
+  "\u8A60\uDB40\uDD02": "\uDB82\uDC93",
+  "\u8A64\uDB40\uDD02": "\uDB82\uDC94",
+  "\u8A6D\uDB40\uDD02": "\uDB82\uDC95",
+  "\u8A6E\uDB40\uDD02": "\uDB82\uDC96",
+  "\u8A72\uDB40\uDD02": "\uDB82\uDC97",
+  "\u8A7C\uDB40\uDD02": "\uDB82\uDC98",
+  "\u8A84\uDB40\uDD02": "\uDB82\uDC99",
+  "\u8A86\uDB40\uDD02": "\uDB82\uDC9A",
+  "\u8A9A\uDB40\uDD02": "\uDB82\uDC9B",
+  "\u8AA5\uDB40\uDD02": "\uDB82\uDC9C",
+  "\u8AA8\uDB40\uDD02": "\uDB82\uDC9D",
+  "\u8AAA\uDB40\uDD02": "\uDB82\uDC9E",
+  "\u8AAE\uDB40\uDD02": "\uDB82\uDC9F",
+  "\u8AB7\uDB40\uDD02": "\uDB82\uDCA0",
+  "\u8ABE\uDB40\uDD02": "\uDB82\uDCA1",
+  "\u8AC4\uDB40\uDD02": "\uDB82\uDCA2",
+  "\u8ACD\uDB40\uDD02": "\uDB82\uDCA3",
+  "\u8AE1\uDB40\uDD02": "\uDB82\uDCA4",
+  "\u8AE4\uDB40\uDD02": "\uDB82\uDCA5",
+  "\u8AE6\uDB40\uDD02": "\uDB82\uDCA6",
+  "\u8AF1\uDB40\uDD02": "\uDB82\uDCA7",
+  "\u8AF3\uDB40\uDD02": "\uDB82\uDCA8",
+  "\u8AF6\uDB40\uDD02": "\uDB82\uDCA9",
+  "\u8AFA\uDB40\uDD02": "\uDB82\uDCAA",
+  "\u8AFC\uDB40\uDD02": "\uDB82\uDCAB",
+  "\u8AFE\uDB40\uDD02": "\uDB82\uDCAC",
+  "\u8AFF\uDB40\uDD02": "\uDB82\uDCAD",
+  "\u8B0A\uDB40\uDD02": "\uDB82\uDCAE",
+  "\u8B0B\uDB40\uDD02": "\uDB82\uDCAF",
+  "\u8B0E\uDB40\uDD02": "\uDB82\uDCB0",
+  "\u8B14\uDB40\uDD02": "\uDB82\uDCB1",
+  "\u8B17\uDB40\uDD02": "\uDB82\uDCB2",
+  "\u8B1A\uDB40\uDD02": "\uDB82\uDCB3",
+  "\u8B28\uDB40\uDD02": "\uDB82\uDCB4",
+  "\u8B2B\uDB40\uDD02": "\uDB82\uDCB5",
+  "\u8B33\uDB40\uDD02": "\uDB82\uDCB6",
+  "\u8B37\uDB40\uDD02": "\uDB82\uDCB7",
+  "\u8B44\uDB40\uDD02": "\uDB82\uDCB8",
+  "\u8B45\uDB40\uDD02": "\uDB82\uDCB9",
+  "\u8B4C\uDB40\uDD02": "\uDB82\uDCBA",
+  "\u8B4F\uDB40\uDD02": "\uDB82\uDCBB",
+  "\u8B53\uDB40\uDD02": "\uDB82\uDCBC",
+  "\u8B58\uDB40\uDD02": "\uDB82\uDCBD",
+  "\u8B66\uDB40\uDD02": "\uDB82\uDCBE",
+  "\u8B69\uDB40\uDD02": "\uDB82\uDCBF",
+  "\u8B6A\uDB40\uDD02": "\uDB82\uDCC0",
+  "\u8B6D\uDB40\uDD02": "\uDB82\uDCC1",
+  "\u8B71\uDB40\uDD02": "\uDB82\uDCC2",
+  "\u8B74\uDB40\uDD02": "\uDB82\uDCC3",
+  "\u8B77\uDB40\uDD02": "\uDB82\uDCC4",
+  "\u8B81\uDB40\uDD02": "\uDB82\uDCC5",
+  "\u8B8A\uDB40\uDD02": "\uDB82\uDCC6",
+  "\u8B8B\uDB40\uDD02": "\uDB82\uDCC7",
+  "\u8B8C\uDB40\uDD02": "\uDB82\uDCC8",
+  "\u8B99\uDB40\uDD02": "\uDB82\uDCC9",
+  "\u8C3A\uDB40\uDD02": "\uDB82\uDCCA",
+  "\u8C3E\uDB40\uDD02": "\uDB82\uDCCB",
+  "\u8C3F\uDB40\uDD02": "\uDB82\uDCCC",
+  "\u8C41\uDB40\uDD02": "\uDB82\uDCCD",
+  "\u8C45\uDB40\uDD02": "\uDB82\uDCCE",
+  "\u8C55\uDB40\uDD02": "\uDB82\uDCCF",
+  "\u8C57\uDB40\uDD02": "\uDB82\uDCD0",
+  "\u8C59\uDB40\uDD02": "\uDB82\uDCD1",
+  "\u8C5A\uDB40\uDD02": "\uDB82\uDCD2",
+  "\u8C61\uDB40\uDD02": "\uDB82\uDCD3",
+  "\u8C62\uDB40\uDD02": "\uDB82\uDCD4",
+  "\u8C66\uDB40\uDD02": "\uDB82\uDCD5",
+  "\u8C6B\uDB40\uDD02": "\uDB82\uDCD6",
+  "\u8C6C\uDB40\uDD02": "\uDB82\uDCD7",
+  "\u8C76\uDB40\uDD02": "\uDB82\uDCD8",
+  "\u8C79\uDB40\uDD02": "\uDB82\uDCD9",
+  "\u8C93\uDB40\uDD02": "\uDB82\uDCDA",
+  "\u8C98\uDB40\uDD02": "\uDB82\uDCDB",
+  "\u8C9B\uDB40\uDD02": "\uDB82\uDCDC",
+  "\u8CBF\uDB40\uDD02": "\uDB82\uDCDD",
+  "\u8CC1\uDB40\uDD02": "\uDB82\uDCDE",
+  "\u8CC5\uDB40\uDD02": "\uDB82\uDCDF",
+  "\u8CCB\uDB40\uDD02": "\uDB82\uDCE0",
+  "\u8CED\uDB40\uDD02": "\uDB82\uDCE1",
+  "\u8CF2\uDB40\uDD02": "\uDB82\uDCE2",
+  "\u8CFA\uDB40\uDD02": "\uDB82\uDCE3",
+  "\u8CFB\uDB40\uDD02": "\uDB82\uDCE4",
+  "\u8D09\uDB40\uDD02": "\uDB82\uDCE5",
+  "\u8D0A\uDB40\uDD02": "\uDB82\uDCE6",
+  "\u8D0E\uDB40\uDD02": "\uDB82\uDCE7",
+  "\u8D10\uDB40\uDD02": "\uDB82\uDCE8",
+  "\u8D13\uDB40\uDD02": "\uDB82\uDCE9",
+  "\u8D1B\uDB40\uDD02": "\uDB82\uDCEA",
+  "\u8D1C\uDB40\uDD02": "\uDB82\uDCEB",
+  "\u8D6D\uDB40\uDD02": "\uDB82\uDCEC",
+  "\u8D73\uDB40\uDD02": "\uDB82\uDCED",
+  "\u8D82\uDB40\uDD02": "\uDB82\uDCEE",
+  "\u8DAF\uDB40\uDD02": "\uDB82\uDCEF",
+  "\u8DBC\uDB40\uDD02": "\uDB82\uDCF0",
+  "\u8DC7\uDB40\uDD02": "\uDB82\uDCF1",
+  "\u8DCB\uDB40\uDD02": "\uDB82\uDCF2",
+  "\u8DE4\uDB40\uDD02": "\uDB82\uDCF3",
+  "\u8DE8\uDB40\uDD02": "\uDB82\uDCF4",
+  "\u8DEB\uDB40\uDD02": "\uDB82\uDCF5",
+  "\u8DF0\uDB40\uDD02": "\uDB82\uDCF6",
+  "\u8E30\uDB40\uDD02": "\uDB82\uDCF7",
+  "\u8E38\uDB40\uDD02": "\uDB82\uDCF8",
+  "\u8E44\uDB40\uDD02": "\uDB82\uDCF9",
+  "\u8E48\uDB40\uDD02": "\uDB82\uDCFA",
+  "\u8E4B\uDB40\uDD02": "\uDB82\uDCFB",
+  "\u8E55\uDB40\uDD02": "\uDB82\uDCFC",
+  "\u8E5E\uDB40\uDD02": "\uDB82\uDCFD",
+  "\u8E62\uDB40\uDD02": "\uDB82\uDCFE",
+  "\u8E6E\uDB40\uDD02": "\uDB82\uDCFF",
+  "\u8E71\uDB40\uDD02": "\uDB82\uDD00",
+  "\u8E72\uDB40\uDD02": "\uDB82\uDD01",
+  "\u8E77\uDB40\uDD02": "\uDB82\uDD02",
+  "\u8E87\uDB40\uDD02": "\uDB82\uDD03",
+  "\u8E89\uDB40\uDD02": "\uDB82\uDD04",
+  "\u8E9A\uDB40\uDD02": "\uDB82\uDD05",
+  "\u8EAA\uDB40\uDD02": "\uDB82\uDD06",
+  "\u8EAC\uDB40\uDD02": "\uDB82\uDD07",
+  "\u8EAF\uDB40\uDD02": "\uDB82\uDD08",
+  "\u8EB0\uDB40\uDD02": "\uDB82\uDD09",
+  "\u8EBE\uDB40\uDD02": "\uDB82\uDD0A",
+  "\u8EC0\uDB40\uDD02": "\uDB82\uDD0B",
+  "\u8EC4\uDB40\uDD02": "\uDB82\uDD0C",
+  "\u8EC5\uDB40\uDD02": "\uDB82\uDD0D",
+  "\u8EC6\uDB40\uDD02": "\uDB82\uDD0E",
+  "\u8EC8\uDB40\uDD02": "\uDB82\uDD0F",
+  "\u8EF1\uDB40\uDD02": "\uDB82\uDD10",
+  "\u8F1D\uDB40\uDD02": "\uDB82\uDD11",
+  "\u8F1E\uDB40\uDD02": "\uDB82\uDD12",
+  "\u8F4C\uDB40\uDD02": "\uDB82\uDD13",
+  "\u8F52\uDB40\uDD02": "\uDB82\uDD14",
+  "\u8F54\uDB40\uDD02": "\uDB82\uDD15",
+  "\u8F55\uDB40\uDD02": "\uDB82\uDD16",
+  "\u8F65\uDB40\uDD02": "\uDB82\uDD17",
+  "\u8F9B\uDB40\uDD02": "\uDB82\uDD18",
+  "\u8FA5\uDB40\uDD02": "\uDB82\uDD19",
+  "\u8FA8\uDB40\uDD02": "\uDB82\uDD1A",
+  "\u8FAD\uDB40\uDD02": "\uDB82\uDD1B",
+  "\u8FB1\uDB40\uDD02": "\uDB82\uDD1C",
+  "\u8FB7\uDB40\uDD02": "\uDB82\uDD1D",
+  "\u8FBA\uDB40\uDD02": "\uDB82\uDD1E",
+  "\u8FBB\uDB40\uDD02": "\uDB82\uDD1F",
+  "\u8FBE\uDB40\uDD02": "\uDB82\uDD20",
+  "\u8FBF\uDB40\uDD02": "\uDB82\uDD21",
+  "\u8FC2\uDB40\uDD02": "\uDB82\uDD22",
+  "\u8FC3\uDB40\uDD02": "\uDB82\uDD23",
+  "\u8FC4\uDB40\uDD02": "\uDB82\uDD24",
+  "\u8FCA\uDB40\uDD02": "\uDB82\uDD25",
+  "\u8FCB\uDB40\uDD02": "\uDB82\uDD26",
+  "\u8FCD\uDB40\uDD02": "\uDB82\uDD27",
+  "\u8FD2\uDB40\uDD02": "\uDB82\uDD28",
+  "\u8FD3\uDB40\uDD02": "\uDB82\uDD29",
+  "\u8FD5\uDB40\uDD02": "\uDB82\uDD2A",
+  "\u8FDA\uDB40\uDD02": "\uDB82\uDD2B",
+  "\u8FE0\uDB40\uDD02": "\uDB82\uDD2C",
+  "\u8FE2\uDB40\uDD02": "\uDB82\uDD2D",
+  "\u8FE3\uDB40\uDD02": "\uDB82\uDD2E",
+  "\u8FE4\uDB40\uDD02": "\uDB82\uDD2F",
+  "\u8FE5\uDB40\uDD02": "\uDB82\uDD30",
+  "\u8FE6\uDB40\uDD02": "\uDB82\uDD31",
+  "\u8FE8\uDB40\uDD02": "\uDB82\uDD32",
+  "\u8FEE\uDB40\uDD02": "\uDB82\uDD33",
+  "\u8FF1\uDB40\uDD02": "\uDB82\uDD34",
+  "\u8FF4\uDB40\uDD02": "\uDB82\uDD35",
+  "\u8FF5\uDB40\uDD02": "\uDB82\uDD36",
+  "\u8FF8\uDB40\uDD02": "\uDB82\uDD37",
+  "\u8FF9\uDB40\uDD02": "\uDB82\uDD38",
+  "\u8FFB\uDB40\uDD02": "\uDB82\uDD39",
+  "\u8FFE\uDB40\uDD02": "\uDB82\uDD3A",
+  "\u9002\uDB40\uDD02": "\uDB82\uDD3B",
+  "\u9004\uDB40\uDD02": "\uDB82\uDD3C",
+  "\u9005\uDB40\uDD02": "\uDB82\uDD3D",
+  "\u9008\uDB40\uDD02": "\uDB82\uDD3E",
+  "\u900B\uDB40\uDD02": "\uDB82\uDD3F",
+  "\u900C\uDB40\uDD02": "\uDB82\uDD40",
+  "\u900D\uDB40\uDD02": "\uDB82\uDD41",
+  "\u9011\uDB40\uDD02": "\uDB82\uDD42",
+  "\u9013\uDB40\uDD02": "\uDB82\uDD43",
+  "\u9015\uDB40\uDD02": "\uDB82\uDD44",
+  "\u9016\uDB40\uDD02": "\uDB82\uDD45",
+  "\u9017\uDB40\uDD02": "\uDB82\uDD46",
+  "\u9018\uDB40\uDD02": "\uDB82\uDD47",
+  "\u9019\uDB40\uDD02": "\uDB82\uDD48",
+  "\u901B\uDB40\uDD02": "\uDB82\uDD49",
+  "\u9021\uDB40\uDD02": "\uDB82\uDD4A",
+  "\u9027\uDB40\uDD02": "\uDB82\uDD4B",
+  "\u9028\uDB40\uDD02": "\uDB82\uDD4C",
+  "\u9029\uDB40\uDD02": "\uDB82\uDD4D",
+  "\u902A\uDB40\uDD02": "\uDB82\uDD4E",
+  "\u902C\uDB40\uDD02": "\uDB82\uDD4F",
+  "\u902D\uDB40\uDD02": "\uDB82\uDD50",
+  "\u902F\uDB40\uDD02": "\uDB82\uDD51",
+  "\u9034\uDB40\uDD02": "\uDB82\uDD52",
+  "\u9036\uDB40\uDD02": "\uDB82\uDD53",
+  "\u9037\uDB40\uDD02": "\uDB82\uDD54",
+  "\u903E\uDB40\uDD02": "\uDB82\uDD55",
+  "\u903F\uDB40\uDD02": "\uDB82\uDD56",
+  "\u9044\uDB40\uDD02": "\uDB82\uDD57",
+  "\u9045\uDB40\uDD02": "\uDB82\uDD58",
+  "\u9049\uDB40\uDD02": "\uDB82\uDD59",
+  "\u904C\uDB40\uDD02": "\uDB82\uDD5A",
+  "\u904F\uDB40\uDD02": "\uDB82\uDD5B",
+  "\u9051\uDB40\uDD02": "\uDB82\uDD5C",
+  "\u9056\uDB40\uDD02": "\uDB82\uDD5D",
+  "\u9059\uDB40\uDD02": "\uDB82\uDD5E",
+  "\u905B\uDB40\uDD02": "\uDB82\uDD5F",
+  "\u905C\uDB40\uDD02": "\uDB82\uDD60",
+  "\u905D\uDB40\uDD02": "\uDB82\uDD61",
+  "\u905E\uDB40\uDD02": "\uDB82\uDD62",
+  "\u9061\uDB40\uDD02": "\uDB82\uDD63",
+  "\u9062\uDB40\uDD02": "\uDB82\uDD64",
+  "\u9065\uDB40\uDD02": "\uDB82\uDD65",
+  "\u9066\uDB40\uDD02": "\uDB82\uDD66",
+  "\u9067\uDB40\uDD02": "\uDB82\uDD67",
+  "\u9068\uDB40\uDD02": "\uDB82\uDD68",
+  "\u906C\uDB40\uDD02": "\uDB82\uDD69",
+  "\u906F\uDB40\uDD02": "\uDB82\uDD6A",
+  "\u9070\uDB40\uDD02": "\uDB82\uDD6B",
+  "\u9072\uDB40\uDD02": "\uDB82\uDD6C",
+  "\u9073\uDB40\uDD02": "\uDB82\uDD6D",
+  "\u9074\uDB40\uDD02": "\uDB82\uDD6E",
+  "\u9076\uDB40\uDD02": "\uDB82\uDD6F",
+  "\u9079\uDB40\uDD02": "\uDB82\uDD70",
+  "\u907D\uDB40\uDD02": "\uDB82\uDD71",
+  "\u9080\uDB40\uDD02": "\uDB82\uDD72",
+  "\u9082\uDB40\uDD02": "\uDB82\uDD73",
+  "\u9085\uDB40\uDD02": "\uDB82\uDD74",
+  "\u9088\uDB40\uDD02": "\uDB82\uDD75",
+  "\u908B\uDB40\uDD02": "\uDB82\uDD76",
+  "\u908C\uDB40\uDD02": "\uDB82\uDD77",
+  "\u908D\uDB40\uDD02": "\uDB82\uDD78",
+  "\u908E\uDB40\uDD02": "\uDB82\uDD79",
+  "\u908F\uDB40\uDD02": "\uDB82\uDD7A",
+  "\u9090\uDB40\uDD02": "\uDB82\uDD7B",
+  "\u9099\uDB40\uDD02": "\uDB82\uDD7C",
+  "\u90B4\uDB40\uDD02": "\uDB82\uDD7D",
+  "\u90D2\uDB40\uDD02": "\uDB82\uDD7E",
+  "\u90DB\uDB40\uDD02": "\uDB82\uDD7F",
+  "\u90E2\uDB40\uDD02": "\uDB82\uDD80",
+  "\u90E4\uDB40\uDD02": "\uDB82\uDD81",
+  "\u9100\uDB40\uDD02": "\uDB82\uDD82",
+  "\u9102\uDB40\uDD02": "\uDB82\uDD83",
+  "\u9115\uDB40\uDD02": "\uDB82\uDD84",
+  "\u9119\uDB40\uDD02": "\uDB82\uDD85",
+  "\u911A\uDB40\uDD02": "\uDB82\uDD86",
+  "\u9123\uDB40\uDD02": "\uDB82\uDD87",
+  "\u912D\uDB40\uDD02": "\uDB82\uDD88",
+  "\u912E\uDB40\uDD02": "\uDB82\uDD89",
+  "\u9137\uDB40\uDD02": "\uDB82\uDD8A",
+  "\u913D\uDB40\uDD02": "\uDB82\uDD8B",
+  "\u9152\uDB40\uDD02": "\uDB82\uDD8C",
+  "\u9162\uDB40\uDD02": "\uDB82\uDD8D",
+  "\u916A\uDB40\uDD02": "\uDB82\uDD8E",
+  "\u916C\uDB40\uDD02": "\uDB82\uDD8F",
+  "\u9175\uDB40\uDD02": "\uDB82\uDD90",
+  "\u9178\uDB40\uDD02": "\uDB82\uDD91",
+  "\u919C\uDB40\uDD02": "\uDB82\uDD92",
+  "\u91A4\uDB40\uDD02": "\uDB82\uDD93",
+  "\u91A7\uDB40\uDD02": "\uDB82\uDD94",
+  "\u91A8\uDB40\uDD02": "\uDB82\uDD95",
+  "\u91AB\uDB40\uDD02": "\uDB82\uDD96",
+  "\u91AC\uDB40\uDD02": "\uDB82\uDD97",
+  "\u91B0\uDB40\uDD02": "\uDB82\uDD98",
+  "\u91B5\uDB40\uDD02": "\uDB82\uDD99",
+  "\u91C8\uDB40\uDD02": "\uDB82\uDD9A",
+  "\u91CB\uDB40\uDD02": "\uDB82\uDD9B",
+  "\u91CD\uDB40\uDD02": "\uDB82\uDD9C",
+  "\u91DF\uDB40\uDD02": "\uDB82\uDD9D",
+  "\u91E9\uDB40\uDD02": "\uDB82\uDD9E",
+  "\u91EE\uDB40\uDD02": "\uDB82\uDD9F",
+  "\u91EF\uDB40\uDD02": "\uDB82\uDDA0",
+  "\u9210\uDB40\uDD02": "\uDB82\uDDA1",
+  "\u9213\uDB40\uDD02": "\uDB82\uDDA2",
+  "\u9229\uDB40\uDD02": "\uDB82\uDDA3",
+  "\u9238\uDB40\uDD02": "\uDB82\uDDA4",
+  "\u9242\uDB40\uDD02": "\uDB82\uDDA5",
+  "\u9245\uDB40\uDD02": "\uDB82\uDDA6",
+  "\u924B\uDB40\uDD02": "\uDB82\uDDA7",
+  "\u9261\uDB40\uDD02": "\uDB82\uDDA8",
+  "\u9268\uDB40\uDD02": "\uDB82\uDDA9",
+  "\u9278\uDB40\uDD02": "\uDB82\uDDAA",
+  "\u927C\uDB40\uDD02": "\uDB82\uDDAB",
+  "\u9283\uDB40\uDD02": "\uDB82\uDDAC",
+  "\u928E\uDB40\uDD02": "\uDB82\uDDAD",
+  "\u9293\uDB40\uDD02": "\uDB82\uDDAE",
+  "\u92A2\uDB40\uDD02": "\uDB82\uDDAF",
+  "\u92B7\uDB40\uDD02": "\uDB82\uDDB0",
+  "\u92C6\uDB40\uDD02": "\uDB82\uDDB1",
+  "\u92CB\uDB40\uDD02": "\uDB82\uDDB2",
+  "\u92CC\uDB40\uDD02": "\uDB82\uDDB3",
+  "\u92D5\uDB40\uDD02": "\uDB82\uDDB4",
+  "\u92D7\uDB40\uDD02": "\uDB82\uDDB5",
+  "\u92D8\uDB40\uDD02": "\uDB82\uDDB6",
+  "\u92DD\uDB40\uDD02": "\uDB82\uDDB7",
+  "\u92E3\uDB40\uDD02": "\uDB82\uDDB8",
+  "\u92EE\uDB40\uDD02": "\uDB82\uDDB9",
+  "\u92FB\uDB40\uDD02": "\uDB82\uDDBA",
+  "\u9300\uDB40\uDD02": "\uDB82\uDDBB",
+  "\u9302\uDB40\uDD02": "\uDB82\uDDBC",
+  "\u9306\uDB40\uDD02": "\uDB82\uDDBD",
+  "\u931A\uDB40\uDD02": "\uDB82\uDDBE",
+  "\u9328\uDB40\uDD02": "\uDB82\uDDBF",
+  "\u933A\uDB40\uDD02": "\uDB82\uDDC0",
+  "\u9348\uDB40\uDD02": "\uDB82\uDDC1",
+  "\u9351\uDB40\uDD02": "\uDB82\uDDC2",
+  "\u9365\uDB40\uDD02": "\uDB82\uDDC3",
+  "\u9369\uDB40\uDD02": "\uDB82\uDDC4",
+  "\u936E\uDB40\uDD02": "\uDB82\uDDC5",
+  "\u9373\uDB40\uDD02": "\uDB82\uDDC6",
+  "\u938B\uDB40\uDD02": "\uDB82\uDDC7",
+  "\u93A1\uDB40\uDD02": "\uDB82\uDDC8",
+  "\u93A6\uDB40\uDD02": "\uDB82\uDDC9",
+  "\u93AD\uDB40\uDD02": "\uDB82\uDDCA",
+  "\u93B0\uDB40\uDD02": "\uDB82\uDDCB",
+  "\u93B9\uDB40\uDD02": "\uDB82\uDDCC",
+  "\u93BA\uDB40\uDD02": "\uDB82\uDDCD",
+  "\u93C8\uDB40\uDD02": "\uDB82\uDDCE",
+  "\u93CC\uDB40\uDD02": "\uDB82\uDDCF",
+  "\u93D0\uDB40\uDD02": "\uDB82\uDDD0",
+  "\u93D1\uDB40\uDD02": "\uDB82\uDDD1",
+  "\u93D3\uDB40\uDD02": "\uDB82\uDDD2",
+  "\u93DE\uDB40\uDD02": "\uDB82\uDDD3",
+  "\u93E1\uDB40\uDD02": "\uDB82\uDDD4",
+  "\u93F5\uDB40\uDD02": "\uDB82\uDDD5",
+  "\u93FB\uDB40\uDD02": "\uDB82\uDDD6",
+  "\u9404\uDB40\uDD02": "\uDB82\uDDD7",
+  "\u9414\uDB40\uDD02": "\uDB82\uDDD8",
+  "\u9415\uDB40\uDD02": "\uDB82\uDDD9",
+  "\u9416\uDB40\uDD02": "\uDB82\uDDDA",
+  "\u9418\uDB40\uDD02": "\uDB82\uDDDB",
+  "\u9429\uDB40\uDD02": "\uDB82\uDDDC",
+  "\u942F\uDB40\uDD02": "\uDB82\uDDDD",
+  "\u9435\uDB40\uDD02": "\uDB82\uDDDE",
+  "\u943B\uDB40\uDD02": "\uDB82\uDDDF",
+  "\u9441\uDB40\uDD02": "\uDB82\uDDE0",
+  "\u944A\uDB40\uDD02": "\uDB82\uDDE1",
+  "\u9452\uDB40\uDD02": "\uDB82\uDDE2",
+  "\u945B\uDB40\uDD02": "\uDB82\uDDE3",
+  "\u945F\uDB40\uDD02": "\uDB82\uDDE4",
+  "\u946E\uDB40\uDD02": "\uDB82\uDDE5",
+  "\u9471\uDB40\uDD02": "\uDB82\uDDE6",
+  "\u9475\uDB40\uDD02": "\uDB82\uDDE7",
+  "\u9476\uDB40\uDD02": "\uDB82\uDDE8",
+  "\u9484\uDB40\uDD02": "\uDB82\uDDE9",
+  "\u958B\uDB40\uDD02": "\uDB82\uDDEA",
+  "\uD863\uDCDD\uDB40\uDD02": "\uDB82\uDDEB",
+  "\u95A1\uDB40\uDD02": "\uDB82\uDDEC",
+  "\u95AD\uDB40\uDD02": "\uDB82\uDDED",
+  "\u95C7\uDB40\uDD02": "\uDB82\uDDEE",
+  "\u95C8\uDB40\uDD02": "\uDB82\uDDEF",
+  "\u95C9\uDB40\uDD02": "\uDB82\uDDF0",
+  "\u95D2\uDB40\uDD02": "\uDB82\uDDF1",
+  "\u95E4\uDB40\uDD02": "\uDB82\uDDF2",
+  "\u95E5\uDB40\uDD02": "\uDB82\uDDF3",
+  "\u9654\uDB40\uDD02": "\uDB82\uDDF4",
+  "\u965F\uDB40\uDD02": "\uDB82\uDDF5",
+  "\u9675\uDB40\uDD02": "\uDB82\uDDF6",
+  "\u967B\uDB40\uDD02": "\uDB82\uDDF7",
+  "\u967F\uDB40\uDD02": "\uDB82\uDDF8",
+  "\u9681\uDB40\uDD02": "\uDB82\uDDF9",
+  "\u9682\uDB40\uDD02": "\uDB82\uDDFA",
+  "\u969C\uDB40\uDD02": "\uDB82\uDDFB",
+  "\u96A0\uDB40\uDD02": "\uDB82\uDDFC",
+  "\u96A8\uDB40\uDD02": "\uDB82\uDDFD",
+  "\u96AA\uDB40\uDD02": "\uDB82\uDDFE",
+  "\u96B1\uDB40\uDD02": "\uDB82\uDDFF",
+  "\u96B4\uDB40\uDD02": "\uDB82\uDE00",
+  "\u96B6\uDB40\uDD02": "\uDB82\uDE01",
+  "\u96B9\uDB40\uDD02": "\uDB82\uDE02",
+  "\u96D5\uDB40\uDD02": "\uDB82\uDE03",
+  "\u96D8\uDB40\uDD02": "\uDB82\uDE04",
+  "\u96D9\uDB40\uDD02": "\uDB82\uDE05",
+  "\u96DA\uDB40\uDD02": "\uDB82\uDE06",
+  "\u96E2\uDB40\uDD02": "\uDB82\uDE07",
+  "\u96E9\uDB40\uDD02": "\uDB82\uDE08",
+  "\u96EF\uDB40\uDD02": "\uDB82\uDE09",
+  "\u96F9\uDB40\uDD02": "\uDB82\uDE0A",
+  "\u9704\uDB40\uDD02": "\uDB82\uDE0B",
+  "\u9706\uDB40\uDD02": "\uDB82\uDE0C",
+  "\u9707\uDB40\uDD02": "\uDB82\uDE0D",
+  "\u9713\uDB40\uDD02": "\uDB82\uDE0E",
+  "\u9719\uDB40\uDD02": "\uDB82\uDE0F",
+  "\u972A\uDB40\uDD02": "\uDB82\uDE10",
+  "\u9736\uDB40\uDD02": "\uDB82\uDE11",
+  "\u9746\uDB40\uDD02": "\uDB82\uDE12",
+  "\u9749\uDB40\uDD02": "\uDB82\uDE13",
+  "\u9755\uDB40\uDD02": "\uDB82\uDE14",
+  "\u9757\uDB40\uDD02": "\uDB82\uDE15",
+  "\u9758\uDB40\uDD02": "\uDB82\uDE16",
+  "\u975A\uDB40\uDD02": "\uDB82\uDE17",
+  "\u975B\uDB40\uDD02": "\uDB82\uDE18",
+  "\u975E\uDB40\uDD02": "\uDB82\uDE19",
+  "\u9761\uDB40\uDD02": "\uDB82\uDE1A",
+  "\u9764\uDB40\uDD02": "\uDB82\uDE1B",
+  "\u9769\uDB40\uDD02": "\uDB82\uDE1C",
+  "\u976B\uDB40\uDD02": "\uDB82\uDE1D",
+  "\u9779\uDB40\uDD02": "\uDB82\uDE1E",
+  "\u9784\uDB40\uDD02": "\uDB82\uDE1F",
+  "\u9786\uDB40\uDD02": "\uDB82\uDE20",
+  "\u978F\uDB40\uDD02": "\uDB82\uDE21",
+  "\u9798\uDB40\uDD02": "\uDB82\uDE22",
+  "\u979A\uDB40\uDD02": "\uDB82\uDE23",
+  "\u97A8\uDB40\uDD02": "\uDB82\uDE24",
+  "\u97AD\uDB40\uDD02": "\uDB82\uDE25",
+  "\u97B3\uDB40\uDD02": "\uDB82\uDE26",
+  "\u97B8\uDB40\uDD02": "\uDB82\uDE27",
+  "\u97BE\uDB40\uDD02": "\uDB82\uDE28",
+  "\u97BF\uDB40\uDD02": "\uDB82\uDE29",
+  "\u97C3\uDB40\uDD02": "\uDB82\uDE2A",
+  "\u97C4\uDB40\uDD02": "\uDB82\uDE2B",
+  "\u97C6\uDB40\uDD02": "\uDB82\uDE2C",
+  "\u97C8\uDB40\uDD02": "\uDB82\uDE2D",
+  "\u97C9\uDB40\uDD02": "\uDB82\uDE2E",
+  "\u97CA\uDB40\uDD02": "\uDB82\uDE2F",
+  "\u97CB\uDB40\uDD02": "\uDB82\uDE30",
+  "\u97CC\uDB40\uDD02": "\uDB82\uDE31",
+  "\u97CD\uDB40\uDD02": "\uDB82\uDE32",
+  "\u97CE\uDB40\uDD02": "\uDB82\uDE33",
+  "\u97D0\uDB40\uDD02": "\uDB82\uDE34",
+  "\u97D1\uDB40\uDD02": "\uDB82\uDE35",
+  "\u97D4\uDB40\uDD02": "\uDB82\uDE36",
+  "\u97D7\uDB40\uDD02": "\uDB82\uDE37",
+  "\u97D8\uDB40\uDD02": "\uDB82\uDE38",
+  "\u97D9\uDB40\uDD02": "\uDB82\uDE39",
+  "\u97DB\uDB40\uDD02": "\uDB82\uDE3A",
+  "\u97DC\uDB40\uDD02": "\uDB82\uDE3B",
+  "\u97DD\uDB40\uDD02": "\uDB82\uDE3C",
+  "\u97E0\uDB40\uDD02": "\uDB82\uDE3D",
+  "\u97E1\uDB40\uDD02": "\uDB82\uDE3E",
+  "\u97E4\uDB40\uDD02": "\uDB82\uDE3F",
+  "\u97EE\uDB40\uDD02": "\uDB82\uDE40",
+  "\u97F1\uDB40\uDD02": "\uDB82\uDE41",
+  "\u97F5\uDB40\uDD02": "\uDB82\uDE42",
+  "\u97F6\uDB40\uDD02": "\uDB82\uDE43",
+  "\u97FA\uDB40\uDD02": "\uDB82\uDE44",
+  "\u97FB\uDB40\uDD02": "\uDB82\uDE45",
+  "\u9800\uDB40\uDD02": "\uDB82\uDE46",
+  "\u9803\uDB40\uDD02": "\uDB82\uDE47",
+  "\u9804\uDB40\uDD02": "\uDB82\uDE48",
+  "\u9811\uDB40\uDD02": "\uDB82\uDE49",
+  "\u9819\uDB40\uDD02": "\uDB82\uDE4A",
+  "\u9820\uDB40\uDD02": "\uDB82\uDE4B",
+  "\u9832\uDB40\uDD02": "\uDB82\uDE4C",
+  "\u9844\uDB40\uDD02": "\uDB82\uDE4D",
+  "\u984E\uDB40\uDD02": "\uDB82\uDE4E",
+  "\u985B\uDB40\uDD02": "\uDB82\uDE4F",
+  "\u9870\uDB40\uDD02": "\uDB82\uDE50",
+  "\u9874\uDB40\uDD02": "\uDB82\uDE51",
+  "\u98B6\uDB40\uDD02": "\uDB82\uDE52",
+  "\u98E3\uDB40\uDD02": "\uDB82\uDE53",
+  "\u98E6\uDB40\uDD02": "\uDB82\uDE54",
+  "\u98E9\uDB40\uDD02": "\uDB82\uDE55",
+  "\u98EA\uDB40\uDD02": "\uDB82\uDE56",
+  "\u98ED\uDB40\uDD02": "\uDB82\uDE57",
+  "\u98F6\uDB40\uDD02": "\uDB82\uDE58",
+  "\u9902\uDB40\uDD02": "\uDB82\uDE59",
+  "\u9905\uDB40\uDD02": "\uDB82\uDE5A",
+  "\u9911\uDB40\uDD02": "\uDB82\uDE5B",
+  "\u9912\uDB40\uDD02": "\uDB82\uDE5C",
+  "\u9914\uDB40\uDD02": "\uDB82\uDE5D",
+  "\u9915\uDB40\uDD02": "\uDB82\uDE5E",
+  "\u9916\uDB40\uDD02": "\uDB82\uDE5F",
+  "\u9917\uDB40\uDD02": "\uDB82\uDE60",
+  "\u9918\uDB40\uDD02": "\uDB82\uDE61",
+  "\u991A\uDB40\uDD02": "\uDB82\uDE62",
+  "\u991B\uDB40\uDD02": "\uDB82\uDE63",
+  "\u991C\uDB40\uDD02": "\uDB82\uDE64",
+  "\u991D\uDB40\uDD02": "\uDB82\uDE65",
+  "\u991E\uDB40\uDD02": "\uDB82\uDE66",
+  "\u991F\uDB40\uDD02": "\uDB82\uDE67",
+  "\u9920\uDB40\uDD02": "\uDB82\uDE68",
+  "\u9922\uDB40\uDD02": "\uDB82\uDE69",
+  "\u9924\uDB40\uDD02": "\uDB82\uDE6A",
+  "\u9926\uDB40\uDD02": "\uDB82\uDE6B",
+  "\u9927\uDB40\uDD02": "\uDB82\uDE6C",
+  "\u9929\uDB40\uDD02": "\uDB82\uDE6D",
+  "\u992B\uDB40\uDD02": "\uDB82\uDE6E",
+  "\u992C\uDB40\uDD02": "\uDB82\uDE6F",
+  "\u992E\uDB40\uDD02": "\uDB82\uDE70",
+  "\u9931\uDB40\uDD02": "\uDB82\uDE71",
+  "\u9932\uDB40\uDD02": "\uDB82\uDE72",
+  "\u9933\uDB40\uDD02": "\uDB82\uDE73",
+  "\u9934\uDB40\uDD02": "\uDB82\uDE74",
+  "\u9939\uDB40\uDD02": "\uDB82\uDE75",
+  "\u993A\uDB40\uDD02": "\uDB82\uDE76",
+  "\u993B\uDB40\uDD02": "\uDB82\uDE77",
+  "\u993C\uDB40\uDD02": "\uDB82\uDE78",
+  "\u993D\uDB40\uDD02": "\uDB82\uDE79",
+  "\u993E\uDB40\uDD02": "\uDB82\uDE7A",
+  "\u9940\uDB40\uDD02": "\uDB82\uDE7B",
+  "\u9941\uDB40\uDD02": "\uDB82\uDE7C",
+  "\u9942\uDB40\uDD02": "\uDB82\uDE7D",
+  "\u9946\uDB40\uDD02": "\uDB82\uDE7E",
+  "\u9947\uDB40\uDD02": "\uDB82\uDE7F",
+  "\u9948\uDB40\uDD02": "\uDB82\uDE80",
+  "\u9949\uDB40\uDD02": "\uDB82\uDE81",
+  "\u994C\uDB40\uDD02": "\uDB82\uDE82",
+  "\u994D\uDB40\uDD02": "\uDB82\uDE83",
+  "\u994E\uDB40\uDD02": "\uDB82\uDE84",
+  "\u9950\uDB40\uDD02": "\uDB82\uDE85",
+  "\u9951\uDB40\uDD02": "\uDB82\uDE86",
+  "\u9952\uDB40\uDD02": "\uDB82\uDE87",
+  "\u9955\uDB40\uDD02": "\uDB82\uDE88",
+  "\u9958\uDB40\uDD02": "\uDB82\uDE89",
+  "\u9959\uDB40\uDD02": "\uDB82\uDE8A",
+  "\u995B\uDB40\uDD02": "\uDB82\uDE8B",
+  "\u995C\uDB40\uDD02": "\uDB82\uDE8C",
+  "\u995E\uDB40\uDD02": "\uDB82\uDE8D",
+  "\u995F\uDB40\uDD02": "\uDB82\uDE8E",
+  "\u9960\uDB40\uDD02": "\uDB82\uDE8F",
+  "\u99B0\uDB40\uDD02": "\uDB82\uDE90",
+  "\u99BA\uDB40\uDD02": "\uDB82\uDE91",
+  "\u99BC\uDB40\uDD02": "\uDB82\uDE92",
+  "\u99DB\uDB40\uDD02": "\uDB82\uDE93",
+  "\u99ED\uDB40\uDD02": "\uDB82\uDE94",
+  "\u99EE\uDB40\uDD02": "\uDB82\uDE95",
+  "\u99F8\uDB40\uDD02": "\uDB82\uDE96",
+  "\u99FF\uDB40\uDD02": "\uDB82\uDE97",
+  "\u9A1E\uDB40\uDD02": "\uDB82\uDE98",
+  "\u9A40\uDB40\uDD02": "\uDB82\uDE99",
+  "\u9A41\uDB40\uDD02": "\uDB82\uDE9A",
+  "\u9A44\uDB40\uDD02": "\uDB82\uDE9B",
+  "\u9A4E\uDB40\uDD02": "\uDB82\uDE9C",
+  "\u9A54\uDB40\uDD02": "\uDB82\uDE9D",
+  "\u9A56\uDB40\uDD02": "\uDB82\uDE9E",
+  "\u9A58\uDB40\uDD02": "\uDB82\uDE9F",
+  "\u9A5A\uDB40\uDD02": "\uDB82\uDEA0",
+  "\u9A5B\uDB40\uDD02": "\uDB82\uDEA1",
+  "\u9A69\uDB40\uDD02": "\uDB82\uDEA2",
+  "\u9AA8\uDB40\uDD02": "\uDB82\uDEA3",
+  "\u9AB8\uDB40\uDD02": "\uDB82\uDEA4",
+  "\u9ABE\uDB40\uDD02": "\uDB82\uDEA5",
+  "\u9ABF\uDB40\uDD02": "\uDB82\uDEA6",
+  "\u9AC8\uDB40\uDD02": "\uDB82\uDEA7",
+  "\u9AD2\uDB40\uDD02": "\uDB82\uDEA8",
+  "\u9AD3\uDB40\uDD02": "\uDB82\uDEA9",
+  "\u9AD6\uDB40\uDD02": "\uDB82\uDEAA",
+  "\u9ADF\uDB40\uDD02": "\uDB82\uDEAB",
+  "\u9AEE\uDB40\uDD02": "\uDB82\uDEAC",
+  "\u9AF1\uDB40\uDD02": "\uDB82\uDEAD",
+  "\u9B06\uDB40\uDD02": "\uDB82\uDEAE",
+  "\u9B12\uDB40\uDD02": "\uDB82\uDEAF",
+  "\u9B1B\uDB40\uDD02": "\uDB82\uDEB0",
+  "\u9B23\uDB40\uDD02": "\uDB82\uDEB1",
+  "\u9B32\uDB40\uDD02": "\uDB82\uDEB2",
+  "\u9B3C\uDB40\uDD02": "\uDB82\uDEB3",
+  "\u9B43\uDB40\uDD02": "\uDB82\uDEB4",
+  "\u9B4F\uDB40\uDD02": "\uDB82\uDEB5",
+  "\u9B51\uDB40\uDD02": "\uDB82\uDEB6",
+  "\u9B75\uDB40\uDD02": "\uDB82\uDEB7",
+  "\u9B83\uDB40\uDD02": "\uDB82\uDEB8",
+  "\u9B8E\uDB40\uDD02": "\uDB82\uDEB9",
+  "\u9B91\uDB40\uDD02": "\uDB82\uDEBA",
+  "\u9B92\uDB40\uDD02": "\uDB82\uDEBB",
+  "\u9BA0\uDB40\uDD02": "\uDB82\uDEBC",
+  "\u9BAC\uDB40\uDD02": "\uDB82\uDEBD",
+  "\u9BB1\uDB40\uDD02": "\uDB82\uDEBE",
+  "\u9BBC\uDB40\uDD02": "\uDB82\uDEBF",
+  "\u9BC1\uDB40\uDD02": "\uDB82\uDEC0",
+  "\u9BC9\uDB40\uDD02": "\uDB82\uDEC1",
+  "\u9BCE\uDB40\uDD02": "\uDB82\uDEC2",
+  "\u9BD4\uDB40\uDD02": "\uDB82\uDEC3",
+  "\u9BE8\uDB40\uDD02": "\uDB82\uDEC4",
+  "\u9BEB\uDB40\uDD02": "\uDB82\uDEC5",
+  "\u9BF0\uDB40\uDD02": "\uDB82\uDEC6",
+  "\u9BF5\uDB40\uDD02": "\uDB82\uDEC7",
+  "\u9BFD\uDB40\uDD02": "\uDB82\uDEC8",
+  "\u9C00\uDB40\uDD02": "\uDB82\uDEC9",
+  "\u9C04\uDB40\uDD02": "\uDB82\uDECA",
+  "\u9C0B\uDB40\uDD02": "\uDB82\uDECB",
+  "\u9C0C\uDB40\uDD02": "\uDB82\uDECC",
+  "\u9C10\uDB40\uDD02": "\uDB82\uDECD",
+  "\u9C19\uDB40\uDD02": "\uDB82\uDECE",
+  "\u9C21\uDB40\uDD02": "\uDB82\uDECF",
+  "\u9C22\uDB40\uDD02": "\uDB82\uDED0",
+  "\u9C26\uDB40\uDD02": "\uDB82\uDED1",
+  "\u9C27\uDB40\uDD02": "\uDB82\uDED2",
+  "\u9C2D\uDB40\uDD02": "\uDB82\uDED3",
+  "\u9C2F\uDB40\uDD02": "\uDB82\uDED4",
+  "\u9C30\uDB40\uDD02": "\uDB82\uDED5",
+  "\u9C31\uDB40\uDD02": "\uDB82\uDED6",
+  "\u9C39\uDB40\uDD02": "\uDB82\uDED7",
+  "\u9C3A\uDB40\uDD02": "\uDB82\uDED8",
+  "\u9C41\uDB40\uDD02": "\uDB82\uDED9",
+  "\u9C4F\uDB40\uDD02": "\uDB82\uDEDA",
+  "\u9C52\uDB40\uDD02": "\uDB82\uDEDB",
+  "\u9C5D\uDB40\uDD02": "\uDB82\uDEDC",
+  "\u9C76\uDB40\uDD02": "\uDB82\uDEDD",
+  "\u9CE6\uDB40\uDD02": "\uDB82\uDEDE",
+  "\u9D2A\uDB40\uDD02": "\uDB82\uDEDF",
+  "\u9D43\uDB40\uDD02": "\uDB82\uDEE0",
+  "\u9D47\uDB40\uDD02": "\uDB82\uDEE1",
+  "\u9D65\uDB40\uDD02": "\uDB82\uDEE2",
+  "\u9D70\uDB40\uDD02": "\uDB82\uDEE3",
+  "\u9D7C\uDB40\uDD02": "\uDB82\uDEE4",
+  "\u9D84\uDB40\uDD02": "\uDB82\uDEE5",
+  "\u9D93\uDB40\uDD02": "\uDB82\uDEE6",
+  "\u9DA1\uDB40\uDD02": "\uDB82\uDEE7",
+  "\u9DB2\uDB40\uDD02": "\uDB82\uDEE8",
+  "\u9DB8\uDB40\uDD02": "\uDB82\uDEE9",
+  "\u9DB9\uDB40\uDD02": "\uDB82\uDEEA",
+  "\u9DBF\uDB40\uDD02": "\uDB82\uDEEB",
+  "\u9DC1\uDB40\uDD02": "\uDB82\uDEEC",
+  "\u9DC4\uDB40\uDD02": "\uDB82\uDEED",
+  "\u9DCA\uDB40\uDD02": "\uDB82\uDEEE",
+  "\u9DD6\uDB40\uDD02": "\uDB82\uDEEF",
+  "\u9DD7\uDB40\uDD02": "\uDB82\uDEF0",
+  "\u9DE3\uDB40\uDD02": "\uDB82\uDEF1",
+  "\u9DFE\uDB40\uDD02": "\uDB82\uDEF2",
+  "\u9E1B\uDB40\uDD02": "\uDB82\uDEF3",
+  "\u9E80\uDB40\uDD02": "\uDB82\uDEF4",
+  "\u9E81\uDB40\uDD02": "\uDB82\uDEF5",
+  "\u9E8C\uDB40\uDD02": "\uDB82\uDEF6",
+  "\u9E8E\uDB40\uDD02": "\uDB82\uDEF7",
+  "\u9E9E\uDB40\uDD02": "\uDB82\uDEF8",
+  "\u9EA8\uDB40\uDD02": "\uDB82\uDEF9",
+  "\u9EA9\uDB40\uDD02": "\uDB82\uDEFA",
+  "\u9EAC\uDB40\uDD02": "\uDB82\uDEFB",
+  "\u9EAE\uDB40\uDD02": "\uDB82\uDEFC",
+  "\u9EB0\uDB40\uDD02": "\uDB82\uDEFD",
+  "\u9EBC\uDB40\uDD02": "\uDB82\uDEFE",
+  "\u9EBD\uDB40\uDD02": "\uDB82\uDEFF",
+  "\u9EBE\uDB40\uDD02": "\uDB82\uDF00",
+  "\u9EC4\uDB40\uDD02": "\uDB82\uDF01",
+  "\u9EC8\uDB40\uDD02": "\uDB82\uDF02",
+  "\u9ECB\uDB40\uDD02": "\uDB82\uDF03",
+  "\u9ECE\uDB40\uDD02": "\uDB82\uDF04",
+  "\u9ED0\uDB40\uDD02": "\uDB82\uDF05",
+  "\u9ED4\uDB40\uDD02": "\uDB82\uDF06",
+  "\u9ED8\uDB40\uDD02": "\uDB82\uDF07",
+  "\u9EDC\uDB40\uDD02": "\uDB82\uDF08",
+  "\u9EDD\uDB40\uDD02": "\uDB82\uDF09",
+  "\u9EDE\uDB40\uDD02": "\uDB82\uDF0A",
+  "\u9EE0\uDB40\uDD02": "\uDB82\uDF0B",
+  "\u9EE5\uDB40\uDD02": "\uDB82\uDF0C",
+  "\u9EE8\uDB40\uDD02": "\uDB82\uDF0D",
+  "\u9EEF\uDB40\uDD02": "\uDB82\uDF0E",
+  "\u9EF4\uDB40\uDD02": "\uDB82\uDF0F",
+  "\u9EF7\uDB40\uDD02": "\uDB82\uDF10",
+  "\u9EF9\uDB40\uDD02": "\uDB82\uDF11",
+  "\u9EFB\uDB40\uDD02": "\uDB82\uDF12",
+  "\u9EFC\uDB40\uDD02": "\uDB82\uDF13",
+  "\u9EFD\uDB40\uDD02": "\uDB82\uDF14",
+  "\u9F02\uDB40\uDD02": "\uDB82\uDF15",
+  "\u9F03\uDB40\uDD02": "\uDB82\uDF16",
+  "\u9F07\uDB40\uDD02": "\uDB82\uDF17",
+  "\u9F0F\uDB40\uDD02": "\uDB82\uDF18",
+  "\u9F10\uDB40\uDD02": "\uDB82\uDF19",
+  "\u9F12\uDB40\uDD02": "\uDB82\uDF1A",
+  "\u9F15\uDB40\uDD02": "\uDB82\uDF1B",
+  "\u9F16\uDB40\uDD02": "\uDB82\uDF1C",
+  "\u9F1B\uDB40\uDD02": "\uDB82\uDF1D",
+  "\u9F22\uDB40\uDD02": "\uDB82\uDF1E",
+  "\u9F2C\uDB40\uDD02": "\uDB82\uDF1F",
+  "\u9F31\uDB40\uDD02": "\uDB82\uDF20",
+  "\u9F32\uDB40\uDD02": "\uDB82\uDF21",
+  "\u9F34\uDB40\uDD02": "\uDB82\uDF22",
+  "\u9F39\uDB40\uDD02": "\uDB82\uDF23",
+  "\u9F3A\uDB40\uDD02": "\uDB82\uDF24",
+  "\u9F3E\uDB40\uDD02": "\uDB82\uDF25",
+  "\u9F4F\uDB40\uDD02": "\uDB82\uDF26",
+  "\u9F56\uDB40\uDD02": "\uDB82\uDF27",
+  "\u9F60\uDB40\uDD02": "\uDB82\uDF28",
+  "\u9F76\uDB40\uDD02": "\uDB82\uDF29",
+  "\u9F90\uDB40\uDD02": "\uDB82\uDF2A",
+  "\u9F91\uDB40\uDD02": "\uDB82\uDF2B",
+  "\u9F94\uDB40\uDD02": "\uDB82\uDF2C",
+  "\u9F95\uDB40\uDD02": "\uDB82\uDF2D",
+  "\uFA13\uDB40\uDD02": "\uDB82\uDF2E",
+  "\uFA1F\uDB40\uDD02": "\uDB82\uDF2F",
+  "\uD840\uDC00\uDB40\uDD02": "\uDB82\uDF30",
+  "\uD840\uDC41\uDB40\uDD02": "\uDB82\uDF31",
+  "\uD840\uDCA2\uDB40\uDD02": "\uDB82\uDF32",
+  "\uD840\uDF2B\uDB40\uDD02": "\uDB82\uDF33",
+  "\uD840\uDFF9\uDB40\uDD02": "\uDB82\uDF34",
+  "\uD841\uDD09\uDB40\uDD02": "\uDB82\uDF35",
+  "\uD841\uDD25\uDB40\uDD02": "\uDB82\uDF36",
+  "\uD841\uDD4B\uDB40\uDD02": "\uDB82\uDF37",
+  "\uD842\uDC07\uDB40\uDD02": "\uDB82\uDF38",
+  "\uD842\uDED3\uDB40\uDD02": "\uDB82\uDF39",
+  "\uD843\uDD45\uDB40\uDD02": "\uDB82\uDF3A",
+  "\uD844\uDE74\uDB40\uDD02": "\uDB82\uDF3B",
+  "\uD844\uDF1B\uDB40\uDD02": "\uDB82\uDF3C",
+  "\uD845\uDC6D\uDB40\uDD02": "\uDB82\uDF3D",
+  "\uD845\uDF06\uDB40\uDD02": "\uDB82\uDF3E",
+  "\uD846\uDE0B\uDB40\uDD02": "\uDB82\uDF3F",
+  "\uD847\uDDA1\uDB40\uDD02": "\uDB82\uDF40",
+  "\uD847\uDF76\uDB40\uDD02": "\uDB82\uDF41",
+  "\uD847\uDFEE\uDB40\uDD02": "\uDB82\uDF42",
+  "\uD848\uDF31\uDB40\uDD02": "\uDB82\uDF43",
+  "\uD84B\uDC1D\uDB40\uDD02": "\uDB82\uDF44",
+  "\uD84C\uDFD2\uDB40\uDD02": "\uDB82\uDF45",
+  "\uD84D\uDD5A\uDB40\uDD02": "\uDB82\uDF46",
+  "\uD84D\uDE38\uDB40\uDD02": "\uDB82\uDF47",
+  "\uD84D\uDF1C\uDB40\uDD02": "\uDB82\uDF48",
+  "\uD84D\uDF3F\uDB40\uDD02": "\uDB82\uDF49",
+  "\uD84D\uDF64\uDB40\uDD02": "\uDB82\uDF4A",
+  "\uD84D\uDFE7\uDB40\uDD02": "\uDB82\uDF4B",
+  "\uD84E\uDD69\uDB40\uDD02": "\uDB82\uDF4C",
+  "\uD84F\uDC75\uDB40\uDD02": "\uDB82\uDF4D",
+  "\uD84F\uDCFE\uDB40\uDD02": "\uDB82\uDF4E",
+  "\uD84F\uDDF9\uDB40\uDD02": "\uDB82\uDF4F",
+  "\uD850\uDE85\uDB40\uDD02": "\uDB82\uDF50",
+  "\uD850\uDFC1\uDB40\uDD02": "\uDB82\uDF51",
+  "\uD853\uDC1E\uDB40\uDD02": "\uDB82\uDF52",
+  "\uD853\uDC83\uDB40\uDD02": "\uDB82\uDF53",
+  "\uD854\uDD02\uDB40\uDD02": "\uDB82\uDF54",
+  "\uD854\uDE4C\uDB40\uDD02": "\uDB82\uDF55",
+  "\uD855\uDE6E\uDB40\uDD02": "\uDB82\uDF56",
+  "\uD855\uDEC6\uDB40\uDD02": "\uDB82\uDF57",
+  "\uD855\uDFA9\uDB40\uDD02": "\uDB82\uDF58",
+  "\uD855\uDFB4\uDB40\uDD02": "\uDB82\uDF59",
+  "\uD857\uDC4B\uDB40\uDD02": "\uDB82\uDF5A",
+  "\uD858\uDE22\uDB40\uDD02": "\uDB82\uDF5B",
+  "\uD85A\uDF20\uDB40\uDD02": "\uDB82\uDF5C",
+  "\uD85B\uDC29\uDB40\uDD02": "\uDB82\uDF5D",
+  "\uD85B\uDC73\uDB40\uDD02": "\uDB82\uDF5E",
+  "\uD85B\uDCDD\uDB40\uDD02": "\uDB82\uDF5F",
+  "\uD85B\uDE40\uDB40\uDD02": "\uDB82\uDF60",
+  "\uD85B\uDF2F\uDB40\uDD02": "\uDB82\uDF61",
+  "\uD85B\uDF94\uDB40\uDD02": "\uDB82\uDF62",
+  "\uD85C\uDCF4\uDB40\uDD02": "\uDB82\uDF63",
+  "\uD85C\uDD0D\uDB40\uDD02": "\uDB82\uDF64",
+  "\uD85C\uDD39\uDB40\uDD02": "\uDB82\uDF65",
+  "\uD85C\uDFFE\uDB40\uDD02": "\uDB82\uDF66",
+  "\uD861\uDC55\uDB40\uDD02": "\uDB82\uDF67",
+  "\uD861\uDCE4\uDB40\uDD02": "\uDB82\uDF68",
+  "\uD861\uDD6B\uDB40\uDD02": "\uDB82\uDF69",
+  "\uD861\uDDC9\uDB40\uDD02": "\uDB82\uDF6A",
+  "\uD861\uDE59\uDB40\uDD02": "\uDB82\uDF6B",
+  "\uD861\uDE5A\uDB40\uDD02": "\uDB82\uDF6C",
+  "\uD861\uDE5F\uDB40\uDD02": "\uDB82\uDF6D",
+  "\uD862\uDE71\uDB40\uDD02": "\uDB82\uDF6E",
+  "\uD862\uDFEF\uDB40\uDD02": "\uDB82\uDF6F",
+  "\uD865\uDF0F\uDB40\uDD02": "\uDB82\uDF70",
+  "\uD865\uDF19\uDB40\uDD02": "\uDB82\uDF71",
+  "\uD865\uDF2F\uDB40\uDD02": "\uDB82\uDF72",
+  "\uD865\uDF34\uDB40\uDD02": "\uDB82\uDF73",
+  "\uD865\uDFAB\uDB40\uDD02": "\uDB82\uDF74",
+  "\uD865\uDFAD\uDB40\uDD02": "\uDB82\uDF75",
+  "\uD867\uDE8A\uDB40\uDD02": "\uDB82\uDF76",
+  "\uD867\uDEDB\uDB40\uDD02": "\uDB82\uDF77",
+  "\uD868\uDC2F\uDB40\uDD02": "\uDB82\uDF78",
+  "\uD868\uDCF9\uDB40\uDD02": "\uDB82\uDF79",
+  "\uD86D\uDF42\uDB40\uDD02": "\uDB82\uDF7A",
+  "\uD873\uDF4C\uDB40\uDD02": "\uDB82\uDF7B",
+  "\uD86D\uDF46\uDB40\uDD02": "\uDB82\uDF7C",
+  "\uD874\uDC77\uDB40\uDD02": "\uDB82\uDF7D",
+  "\uD86D\uDF51\uDB40\uDD02": "\uDB82\uDF7E",
+  "\uD86D\uDF62\uDB40\uDD02": "\uDB82\uDF7F",
+  "\uD875\uDE4C\uDB40\uDD02": "\uDB82\uDF80",
+  "\uD86D\uDF77\uDB40\uDD02": "\uDB82\uDF81",
+  "\uD86D\uDF76\uDB40\uDD02": "\uDB82\uDF82",
+  "\uD86D\uDF89\uDB40\uDD02": "\uDB82\uDF83",
+  "\uD86D\uDF8E\uDB40\uDD02": "\uDB82\uDF84",
+  "\uD86D\uDF93\uDB40\uDD02": "\uDB82\uDF85",
+  "\uD877\uDEBE\uDB40\uDD02": "\uDB82\uDF86",
+  "\uD86D\uDFB9\uDB40\uDD02": "\uDB82\uDF87",
+  "\uD874\uDC48\uDB40\uDD02": "\uDB82\uDF88",
+  "\uD878\uDFB0\uDB40\uDD02": "\uDB82\uDF89",
+  "\uD871\uDF3B\uDB40\uDD02": "\uDB82\uDF8A",
+  "\uD86D\uDFD2\uDB40\uDD02": "\uDB82\uDF8B",
+  "\uD86D\uDFD8\uDB40\uDD02": "\uDB82\uDF8C",
+  "\uD86E\uDD30\uDB40\uDD02": "\uDB82\uDF8D",
+  "\uD86E\uDDE4\uDB40\uDD02": "\uDB82\uDF8E",
+  "\uD874\uDE60\uDB40\uDD02": "\uDB82\uDF8F",
+  "\uD877\uDCD3\uDB40\uDD02": "\uDB82\uDF90",
+  "\u342E\uDB40\uDD03": "\uDB82\uDF91",
+  "\u44B9\uDB40\uDD03": "\uDB82\uDF92",
+  "\u4543\uDB40\uDD03": "\uDB82\uDF93",
+  "\u4674\uDB40\uDD03": "\uDB82\uDF94",
+  "\u4C17\uDB40\uDD03": "\uDB82\uDF95",
+  "\u4E08\uDB40\uDD03": "\uDB82\uDF96",
+  "\u4E0E\uDB40\uDD03": "\uDB82\uDF97",
+  "\u4E11\uDB40\uDD03": "\uDB82\uDF98",
+  "\u4E12\uDB40\uDD03": "\uDB82\uDF99",
+  "\u4E19\uDB40\uDD03": "\uDB82\uDF9A",
+  "\u4E26\uDB40\uDD03": "\uDB82\uDF9B",
+  "\u4E30\uDB40\uDD03": "\uDB82\uDF9C",
+  "\u4E39\uDB40\uDD03": "\uDB82\uDF9D",
+  "\u4E3B\uDB40\uDD03": "\uDB82\uDF9E",
+  "\u4E42\uDB40\uDD03": "\uDB82\uDF9F",
+  "\u4E55\uDB40\uDD03": "\uDB82\uDFA0",
+  "\u4E73\uDB40\uDD03": "\uDB82\uDFA1",
+  "\u4E9F\uDB40\uDD03": "\uDB82\uDFA2",
+  "\u4EA1\uDB40\uDD03": "\uDB82\uDFA3",
+  "\u4EA4\uDB40\uDD03": "\uDB82\uDFA4",
+  "\u4EB6\uDB40\uDD03": "\uDB82\uDFA5",
+  "\u4EB9\uDB40\uDD03": "\uDB82\uDFA6",
+  "\u4EE5\uDB40\uDD03": "\uDB82\uDFA7",
+  "\u4F34\uDB40\uDD03": "\uDB82\uDFA8",
+  "\u4F4F\uDB40\uDD03": "\uDB82\uDFA9",
+  "\u4F60\uDB40\uDD03": "\uDB82\uDFAA",
+  "\u4F7F\uDB40\uDD03": "\uDB82\uDFAB",
+  "\u4F96\uDB40\uDD03": "\uDB82\uDFAC",
+  "\u4FB5\uDB40\uDD03": "\uDB82\uDFAD",
+  "\u4FBF\uDB40\uDD03": "\uDB82\uDFAE",
+  "\u4FDE\uDB40\uDD03": "\uDB82\uDFAF",
+  "\u5049\uDB40\uDD03": "\uDB82\uDFB0",
+  "\u504F\uDB40\uDD03": "\uDB82\uDFB1",
+  "\u5056\uDB40\uDD03": "\uDB82\uDFB2",
+  "\u5065\uDB40\uDD03": "\uDB82\uDFB3",
+  "\u5070\uDB40\uDD03": "\uDB82\uDFB4",
+  "\u5085\uDB40\uDD03": "\uDB82\uDFB5",
+  "\u50C9\uDB40\uDD03": "\uDB82\uDFB6",
+  "\u50CF\uDB40\uDD03": "\uDB82\uDFB7",
+  "\u50E7\uDB40\uDD03": "\uDB82\uDFB8",
+  "\u50ED\uDB40\uDD03": "\uDB82\uDFB9",
+  "\u50F6\uDB40\uDD03": "\uDB82\uDFBA",
+  "\u5108\uDB40\uDD03": "\uDB82\uDFBB",
+  "\u511A\uDB40\uDD03": "\uDB82\uDFBC",
+  "\u512A\uDB40\uDD03": "\uDB82\uDFBD",
+  "\u5140\uDB40\uDD03": "\uDB82\uDFBE",
+  "\u5142\uDB40\uDD03": "\uDB82\uDFBF",
+  "\u5146\uDB40\uDD03": "\uDB82\uDFC0",
+  "\u514D\uDB40\uDD03": "\uDB82\uDFC1",
+  "\u5164\uDB40\uDD03": "\uDB82\uDFC2",
+  "\u5168\uDB40\uDD03": "\uDB82\uDFC3",
+  "\u516B\uDB40\uDD03": "\uDB82\uDFC4",
+  "\u516C\uDB40\uDD03": "\uDB82\uDFC5",
+  "\u5177\uDB40\uDD03": "\uDB82\uDFC6",
+  "\u517C\uDB40\uDD03": "\uDB82\uDFC7",
+  "\u5189\uDB40\uDD03": "\uDB82\uDFC8",
+  "\u518D\uDB40\uDD03": "\uDB82\uDFC9",
+  "\u518E\uDB40\uDD03": "\uDB82\uDFCA",
+  "\u5192\uDB40\uDD03": "\uDB82\uDFCB",
+  "\u5193\uDB40\uDD03": "\uDB82\uDFCC",
+  "\u519D\uDB40\uDD03": "\uDB82\uDFCD",
+  "\u51A2\uDB40\uDD03": "\uDB82\uDFCE",
+  "\u51A4\uDB40\uDD03": "\uDB82\uDFCF",
+  "\u51AC\uDB40\uDD03": "\uDB82\uDFD0",
+  "\u51CB\uDB40\uDD03": "\uDB82\uDFD1",
+  "\u51FD\uDB40\uDD03": "\uDB82\uDFD2",
+  "\u5203\uDB40\uDD03": "\uDB82\uDFD3",
+  "\u5206\uDB40\uDD03": "\uDB82\uDFD4",
+  "\u5207\uDB40\uDD03": "\uDB82\uDFD5",
+  "\u5224\uDB40\uDD03": "\uDB82\uDFD6",
+  "\u5238\uDB40\uDD03": "\uDB82\uDFD7",
+  "\u524A\uDB40\uDD03": "\uDB82\uDFD8",
+  "\u524D\uDB40\uDD03": "\uDB82\uDFD9",
+  "\u5271\uDB40\uDD03": "\uDB82\uDFDA",
+  "\u5275\uDB40\uDD03": "\uDB82\uDFDB",
+  "\u5289\uDB40\uDD03": "\uDB82\uDFDC",
+  "\u52C7\uDB40\uDD03": "\uDB82\uDFDD",
+  "\u52D7\uDB40\uDD03": "\uDB82\uDFDE",
+  "\u52D8\uDB40\uDD03": "\uDB82\uDFDF",
+  "\u52DD\uDB40\uDD03": "\uDB82\uDFE0",
+  "\u52FA\uDB40\uDD03": "\uDB82\uDFE1",
+  "\u5305\uDB40\uDD03": "\uDB82\uDFE2",
+  "\u5308\uDB40\uDD03": "\uDB82\uDFE3",
+  "\u530B\uDB40\uDD03": "\uDB82\uDFE4",
+  "\u5316\uDB40\uDD03": "\uDB82\uDFE5",
+  "\u5339\uDB40\uDD03": "\uDB82\uDFE6",
+  "\u533C\uDB40\uDD03": "\uDB82\uDFE7",
+  "\u533E\uDB40\uDD03": "\uDB82\uDFE8",
+  "\u533F\uDB40\uDD03": "\uDB82\uDFE9",
+  "\u5340\uDB40\uDD03": "\uDB82\uDFEA",
+  "\u534A\uDB40\uDD03": "\uDB82\uDFEB",
+  "\u535A\uDB40\uDD03": "\uDB82\uDFEC",
+  "\u5371\uDB40\uDD03": "\uDB82\uDFED",
+  "\u5377\uDB40\uDD03": "\uDB82\uDFEE",
+  "\u537F\uDB40\uDD03": "\uDB82\uDFEF",
+  "\u53CA\uDB40\uDD03": "\uDB82\uDFF0",
+  "\u53D0\uDB40\uDD03": "\uDB82\uDFF1",
+  "\u53DB\uDB40\uDD03": "\uDB82\uDFF2",
+  "\u53DF\uDB40\uDD03": "\uDB82\uDFF3",
+  "\u53F1\uDB40\uDD03": "\uDB82\uDFF4",
+  "\u53F2\uDB40\uDD03": "\uDB82\uDFF5",
+  "\u5438\uDB40\uDD03": "\uDB82\uDFF6",
+  "\u5440\uDB40\uDD03": "\uDB82\uDFF7",
+  "\u5448\uDB40\uDD03": "\uDB82\uDFF8",
+  "\u5468\uDB40\uDD03": "\uDB82\uDFF9",
+  "\u548E\uDB40\uDD03": "\uDB82\uDFFA",
+  "\u54AC\uDB40\uDD03": "\uDB82\uDFFB",
+  "\u54B2\uDB40\uDD03": "\uDB82\uDFFC",
+  "\u54BC\uDB40\uDD03": "\uDB82\uDFFD",
+  "\u5510\uDB40\uDD03": "\uDB82\uDFFE",
+  "\u5539\uDB40\uDD03": "\uDB82\uDFFF",
+  "\u5544\uDB40\uDD03": "\uDB83\uDC00",
+  "\u5546\uDB40\uDD03": "\uDB83\uDC01",
+  "\u5553\uDB40\uDD03": "\uDB83\uDC02",
+  "\u555A\uDB40\uDD03": "\uDB83\uDC03",
+  "\u5584\uDB40\uDD03": "\uDB83\uDC04",
+  "\u5599\uDB40\uDD03": "\uDB83\uDC05",
+  "\u559C\uDB40\uDD03": "\uDB83\uDC06",
+  "\u55AE\uDB40\uDD03": "\uDB83\uDC07",
+  "\u5605\uDB40\uDD03": "\uDB83\uDC08",
+  "\u5609\uDB40\uDD03": "\uDB83\uDC09",
+  "\u5674\uDB40\uDD03": "\uDB83\uDC0A",
+  "\u5678\uDB40\uDD03": "\uDB83\uDC0B",
+  "\u5694\uDB40\uDD03": "\uDB83\uDC0C",
+  "\u56A5\uDB40\uDD03": "\uDB83\uDC0D",
+  "\u56C0\uDB40\uDD03": "\uDB83\uDC0E",
+  "\u56C1\uDB40\uDD03": "\uDB83\uDC0F",
+  "\u56CE\uDB40\uDD03": "\uDB83\uDC10",
+  "\u56D3\uDB40\uDD03": "\uDB83\uDC11",
+  "\u56EE\uDB40\uDD03": "\uDB83\uDC12",
+  "\u570D\uDB40\uDD03": "\uDB83\uDC13",
+  "\u5711\uDB40\uDD03": "\uDB83\uDC14",
+  "\u5716\uDB40\uDD03": "\uDB83\uDC15",
+  "\u5747\uDB40\uDD03": "\uDB83\uDC16",
+  "\u576A\uDB40\uDD03": "\uDB83\uDC17",
+  "\u57CE\uDB40\uDD03": "\uDB83\uDC18",
+  "\u57D6\uDB40\uDD03": "\uDB83\uDC19",
+  "\u580B\uDB40\uDD03": "\uDB83\uDC1A",
+  "\u5819\uDB40\uDD03": "\uDB83\uDC1B",
+  "\u5830\uDB40\uDD03": "\uDB83\uDC1C",
+  "\u583D\uDB40\uDD03": "\uDB83\uDC1D",
+  "\u5858\uDB40\uDD03": "\uDB83\uDC1E",
+  "\u5859\uDB40\uDD03": "\uDB83\uDC1F",
+  "\u5870\uDB40\uDD03": "\uDB83\uDC20",
+  "\u588D\uDB40\uDD03": "\uDB83\uDC21",
+  "\u589C\uDB40\uDD03": "\uDB83\uDC22",
+  "\u58AB\uDB40\uDD03": "\uDB83\uDC23",
+  "\u58B8\uDB40\uDD03": "\uDB83\uDC24",
+  "\u58D3\uDB40\uDD03": "\uDB83\uDC25",
+  "\u5900\uDB40\uDD03": "\uDB83\uDC26",
+  "\u590F\uDB40\uDD03": "\uDB83\uDC27",
+  "\u5914\uDB40\uDD03": "\uDB83\uDC28",
+  "\u591B\uDB40\uDD03": "\uDB83\uDC29",
+  "\u5922\uDB40\uDD03": "\uDB83\uDC2A",
+  "\u5953\uDB40\uDD03": "\uDB83\uDC2B",
+  "\u5960\uDB40\uDD03": "\uDB83\uDC2C",
+  "\u5962\uDB40\uDD03": "\uDB83\uDC2D",
+  "\u5984\uDB40\uDD03": "\uDB83\uDC2E",
+  "\u59A5\uDB40\uDD03": "\uDB83\uDC2F",
+  "\u59DA\uDB40\uDD03": "\uDB83\uDC30",
+  "\u59EC\uDB40\uDD03": "\uDB83\uDC31",
+  "\u5A1C\uDB40\uDD03": "\uDB83\uDC32",
+  "\u5A36\uDB40\uDD03": "\uDB83\uDC33",
+  "\u5A66\uDB40\uDD03": "\uDB83\uDC34",
+  "\u5A9B\uDB40\uDD03": "\uDB83\uDC35",
+  "\u5ABA\uDB40\uDD03": "\uDB83\uDC36",
+  "\u5AC2\uDB40\uDD03": "\uDB83\uDC37",
+  "\u5ACC\uDB40\uDD03": "\uDB83\uDC38",
+  "\u5B34\uDB40\uDD03": "\uDB83\uDC39",
+  "\u5B5A\uDB40\uDD03": "\uDB83\uDC3A",
+  "\u5B64\uDB40\uDD03": "\uDB83\uDC3B",
+  "\u5B73\uDB40\uDD03": "\uDB83\uDC3C",
+  "\u5B7C\uDB40\uDD03": "\uDB83\uDC3D",
+  "\u5BB5\uDB40\uDD03": "\uDB83\uDC3E",
+  "\u5BC3\uDB40\uDD03": "\uDB83\uDC3F",
+  "\u5BD2\uDB40\uDD03": "\uDB83\uDC40",
+  "\u5BD7\uDB40\uDD03": "\uDB83\uDC41",
+  "\u5BDB\uDB40\uDD03": "\uDB83\uDC42",
+  "\u5BE7\uDB40\uDD03": "\uDB83\uDC43",
+  "\u5BEC\uDB40\uDD03": "\uDB83\uDC44",
+  "\u5BF5\uDB40\uDD03": "\uDB83\uDC45",
+  "\u5C06\uDB40\uDD03": "\uDB83\uDC46",
+  "\u5C07\uDB40\uDD03": "\uDB83\uDC47",
+  "\u5C0B\uDB40\uDD03": "\uDB83\uDC48",
+  "\u5C0E\uDB40\uDD03": "\uDB83\uDC49",
+  "\u5C28\uDB40\uDD03": "\uDB83\uDC4A",
+  "\u5C2D\uDB40\uDD03": "\uDB83\uDC4B",
+  "\u5C60\uDB40\uDD03": "\uDB83\uDC4C",
+  "\u5D29\uDB40\uDD03": "\uDB83\uDC4D",
+  "\u5D87\uDB40\uDD03": "\uDB83\uDC4E",
+  "\u5DC3\uDB40\uDD03": "\uDB83\uDC4F",
+  "\u5DC9\uDB40\uDD03": "\uDB83\uDC50",
+  "\u5DCD\uDB40\uDD03": "\uDB83\uDC51",
+  "\u5DD3\uDB40\uDD03": "\uDB83\uDC52",
+  "\u5DD6\uDB40\uDD03": "\uDB83\uDC53",
+  "\u5DD9\uDB40\uDD03": "\uDB83\uDC54",
+  "\u5DE1\uDB40\uDD03": "\uDB83\uDC55",
+  "\u5DE2\uDB40\uDD03": "\uDB83\uDC56",
+  "\u5DE8\uDB40\uDD03": "\uDB83\uDC57",
+  "\u5DEE\uDB40\uDD03": "\uDB83\uDC58",
+  "\u5DF8\uDB40\uDD03": "\uDB83\uDC59",
+  "\u5DFB\uDB40\uDD03": "\uDB83\uDC5A",
+  "\u5DFD\uDB40\uDD03": "\uDB83\uDC5B",
+  "\u5E1D\uDB40\uDD03": "\uDB83\uDC5C",
+  "\u5E2B\uDB40\uDD03": "\uDB83\uDC5D",
+  "\u5E30\uDB40\uDD03": "\uDB83\uDC5E",
+  "\u5E3D\uDB40\uDD03": "\uDB83\uDC5F",
+  "\u5E43\uDB40\uDD03": "\uDB83\uDC60",
+  "\u5E54\uDB40\uDD03": "\uDB83\uDC61",
+  "\u5E63\uDB40\uDD03": "\uDB83\uDC62",
+  "\u5E64\uDB40\uDD03": "\uDB83\uDC63",
+  "\u5E6A\uDB40\uDD03": "\uDB83\uDC64",
+  "\u5E6D\uDB40\uDD03": "\uDB83\uDC65",
+  "\u5E73\uDB40\uDD03": "\uDB83\uDC66",
+  "\u5E75\uDB40\uDD03": "\uDB83\uDC67",
+  "\u5E7E\uDB40\uDD03": "\uDB83\uDC68",
+  "\u5E96\uDB40\uDD03": "\uDB83\uDC69",
+  "\u5EAC\uDB40\uDD03": "\uDB83\uDC6A",
+  "\u5EAD\uDB40\uDD03": "\uDB83\uDC6B",
+  "\u5EC9\uDB40\uDD03": "\uDB83\uDC6C",
+  "\u5ECF\uDB40\uDD03": "\uDB83\uDC6D",
+  "\u5ED0\uDB40\uDD03": "\uDB83\uDC6E",
+  "\u5EE0\uDB40\uDD03": "\uDB83\uDC6F",
+  "\u5EF7\uDB40\uDD03": "\uDB83\uDC70",
+  "\u5EFA\uDB40\uDD03": "\uDB83\uDC71",
+  "\u5EFC\uDB40\uDD03": "\uDB83\uDC72",
+  "\u5F0A\uDB40\uDD03": "\uDB83\uDC73",
+  "\u5F13\uDB40\uDD03": "\uDB83\uDC74",
+  "\u5F2D\uDB40\uDD03": "\uDB83\uDC75",
+  "\u5F31\uDB40\uDD03": "\uDB83\uDC76",
+  "\u5F38\uDB40\uDD03": "\uDB83\uDC77",
+  "\u5F45\uDB40\uDD03": "\uDB83\uDC78",
+  "\u5F4C\uDB40\uDD03": "\uDB83\uDC79",
+  "\u5F50\uDB40\uDD03": "\uDB83\uDC7A",
+  "\u5F56\uDB40\uDD03": "\uDB83\uDC7B",
+  "\u5F57\uDB40\uDD03": "\uDB83\uDC7C",
+  "\u5F62\uDB40\uDD03": "\uDB83\uDC7D",
+  "\u5F69\uDB40\uDD03": "\uDB83\uDC7E",
+  "\u5F6B\uDB40\uDD03": "\uDB83\uDC7F",
+  "\u5F80\uDB40\uDD03": "\uDB83\uDC80",
+  "\u5F98\uDB40\uDD03": "\uDB83\uDC81",
+  "\u5FA1\uDB40\uDD03": "\uDB83\uDC82",
+  "\u5FAE\uDB40\uDD03": "\uDB83\uDC83",
+  "\u5FB5\uDB40\uDD03": "\uDB83\uDC84",
+  "\u5FCD\uDB40\uDD03": "\uDB83\uDC85",
+  "\u5FD8\uDB40\uDD03": "\uDB83\uDC86",
+  "\u5FD9\uDB40\uDD03": "\uDB83\uDC87",
+  "\u6025\uDB40\uDD03": "\uDB83\uDC88",
+  "\u6050\uDB40\uDD03": "\uDB83\uDC89",
+  "\u605D\uDB40\uDD03": "\uDB83\uDC8A",
+  "\u6062\uDB40\uDD03": "\uDB83\uDC8B",
+  "\u6065\uDB40\uDD03": "\uDB83\uDC8C",
+  "\u607E\uDB40\uDD03": "\uDB83\uDC8D",
+  "\u60A4\uDB40\uDD03": "\uDB83\uDC8E",
+  "\u60B2\uDB40\uDD03": "\uDB83\uDC8F",
+  "\u60C5\uDB40\uDD03": "\uDB83\uDC90",
+  "\u60D8\uDB40\uDD03": "\uDB83\uDC91",
+  "\u60E0\uDB40\uDD03": "\uDB83\uDC92",
+  "\u6108\uDB40\uDD03": "\uDB83\uDC93",
+  "\u6109\uDB40\uDD03": "\uDB83\uDC94",
+  "\u610F\uDB40\uDD03": "\uDB83\uDC95",
+  "\u611B\uDB40\uDD03": "\uDB83\uDC96",
+  "\u613D\uDB40\uDD03": "\uDB83\uDC97",
+  "\u6148\uDB40\uDD03": "\uDB83\uDC98",
+  "\u614C\uDB40\uDD03": "\uDB83\uDC99",
+  "\u614E\uDB40\uDD03": "\uDB83\uDC9A",
+  "\u615D\uDB40\uDD03": "\uDB83\uDC9B",
+  "\u6162\uDB40\uDD03": "\uDB83\uDC9C",
+  "\u6165\uDB40\uDD03": "\uDB83\uDC9D",
+  "\u617A\uDB40\uDD03": "\uDB83\uDC9E",
+  "\u6182\uDB40\uDD03": "\uDB83\uDC9F",
+  "\u6190\uDB40\uDD03": "\uDB83\uDCA0",
+  "\u61A4\uDB40\uDD03": "\uDB83\uDCA1",
+  "\u61DE\uDB40\uDD03": "\uDB83\uDCA2",
+  "\u61FE\uDB40\uDD03": "\uDB83\uDCA3",
+  "\u6210\uDB40\uDD03": "\uDB83\uDCA4",
+  "\u6220\uDB40\uDD03": "\uDB83\uDCA5",
+  "\u623B\uDB40\uDD03": "\uDB83\uDCA6",
+  "\u623F\uDB40\uDD03": "\uDB83\uDCA7",
+  "\u6240\uDB40\uDD03": "\uDB83\uDCA8",
+  "\u6241\uDB40\uDD03": "\uDB83\uDCA9",
+  "\u6247\uDB40\uDD03": "\uDB83\uDCAA",
+  "\u6248\uDB40\uDD03": "\uDB83\uDCAB",
+  "\u6268\uDB40\uDD03": "\uDB83\uDCAC",
+  "\u6271\uDB40\uDD03": "\uDB83\uDCAD",
+  "\u62B1\uDB40\uDD03": "\uDB83\uDCAE",
+  "\u62CC\uDB40\uDD03": "\uDB83\uDCAF",
+  "\u62D0\uDB40\uDD03": "\uDB83\uDCB0",
+  "\u62D2\uDB40\uDD03": "\uDB83\uDCB1",
+  "\u62F3\uDB40\uDD03": "\uDB83\uDCB2",
+  "\u62F7\uDB40\uDD03": "\uDB83\uDCB3",
+  "\u6308\uDB40\uDD03": "\uDB83\uDCB4",
+  "\u6368\uDB40\uDD03": "\uDB83\uDCB5",
+  "\u6369\uDB40\uDD03": "\uDB83\uDCB6",
+  "\u636E\uDB40\uDD03": "\uDB83\uDCB7",
+  "\u6383\uDB40\uDD03": "\uDB83\uDCB8",
+  "\u6392\uDB40\uDD03": "\uDB83\uDCB9",
+  "\u63A1\uDB40\uDD03": "\uDB83\uDCBA",
+  "\u63A7\uDB40\uDD03": "\uDB83\uDCBB",
+  "\u63BE\uDB40\uDD03": "\uDB83\uDCBC",
+  "\u63C5\uDB40\uDD03": "\uDB83\uDCBD",
+  "\u63F3\uDB40\uDD03": "\uDB83\uDCBE",
+  "\u63F4\uDB40\uDD03": "\uDB83\uDCBF",
+  "\u6406\uDB40\uDD03": "\uDB83\uDCC0",
+  "\u640F\uDB40\uDD03": "\uDB83\uDCC1",
+  "\u641C\uDB40\uDD03": "\uDB83\uDCC2",
+  "\u6428\uDB40\uDD03": "\uDB83\uDCC3",
+  "\u6442\uDB40\uDD03": "\uDB83\uDCC4",
+  "\u6460\uDB40\uDD03": "\uDB83\uDCC5",
+  "\u6469\uDB40\uDD03": "\uDB83\uDCC6",
+  "\u6490\uDB40\uDD03": "\uDB83\uDCC7",
+  "\u64DA\uDB40\uDD03": "\uDB83\uDCC8",
+  "\u64EA\uDB40\uDD03": "\uDB83\uDCC9",
+  "\u64F2\uDB40\uDD03": "\uDB83\uDCCA",
+  "\u64F6\uDB40\uDD03": "\uDB83\uDCCB",
+  "\u64FF\uDB40\uDD03": "\uDB83\uDCCC",
+  "\u651D\uDB40\uDD03": "\uDB83\uDCCD",
+  "\u6535\uDB40\uDD03": "\uDB83\uDCCE",
+  "\u655D\uDB40\uDD03": "\uDB83\uDCCF",
+  "\u655E\uDB40\uDD03": "\uDB83\uDCD0",
+  "\u6562\uDB40\uDD03": "\uDB83\uDCD1",
+  "\u6577\uDB40\uDD03": "\uDB83\uDCD2",
+  "\u6583\uDB40\uDD03": "\uDB83\uDCD3",
+  "\u6587\uDB40\uDD03": "\uDB83\uDCD4",
+  "\u6589\uDB40\uDD03": "\uDB83\uDCD5",
+  "\u6590\uDB40\uDD03": "\uDB83\uDCD6",
+  "\u659C\uDB40\uDD03": "\uDB83\uDCD7",
+  "\u65C5\uDB40\uDD03": "\uDB83\uDCD8",
+  "\u65E1\uDB40\uDD03": "\uDB83\uDCD9",
+  "\u65E2\uDB40\uDD03": "\uDB83\uDCDA",
+  "\u6608\uDB40\uDD03": "\uDB83\uDCDB",
+  "\u660E\uDB40\uDD03": "\uDB83\uDCDC",
+  "\u6648\uDB40\uDD03": "\uDB83\uDCDD",
+  "\u6667\uDB40\uDD03": "\uDB83\uDCDE",
+  "\u6681\uDB40\uDD03": "\uDB83\uDCDF",
+  "\u668E\uDB40\uDD03": "\uDB83\uDCE0",
+  "\u6696\uDB40\uDD03": "\uDB83\uDCE1",
+  "\u6697\uDB40\uDD03": "\uDB83\uDCE2",
+  "\u66B1\uDB40\uDD03": "\uDB83\uDCE3",
+  "\u66D9\uDB40\uDD03": "\uDB83\uDCE4",
+  "\u66DA\uDB40\uDD03": "\uDB83\uDCE5",
+  "\u66DC\uDB40\uDD03": "\uDB83\uDCE6",
+  "\u66F4\uDB40\uDD03": "\uDB83\uDCE7",
+  "\u66F5\uDB40\uDD03": "\uDB83\uDCE8",
+  "\u66FB\uDB40\uDD03": "\uDB83\uDCE9",
+  "\u66FC\uDB40\uDD03": "\uDB83\uDCEA",
+  "\u66FE\uDB40\uDD03": "\uDB83\uDCEB",
+  "\u6700\uDB40\uDD03": "\uDB83\uDCEC",
+  "\u6701\uDB40\uDD03": "\uDB83\uDCED",
+  "\u6703\uDB40\uDD03": "\uDB83\uDCEE",
+  "\u6708\uDB40\uDD03": "\uDB83\uDCEF",
+  "\u6709\uDB40\uDD03": "\uDB83\uDCF0",
+  "\u670B\uDB40\uDD03": "\uDB83\uDCF1",
+  "\u670D\uDB40\uDD03": "\uDB83\uDCF2",
+  "\u6714\uDB40\uDD03": "\uDB83\uDCF3",
+  "\u671D\uDB40\uDD03": "\uDB83\uDCF4",
+  "\u671E\uDB40\uDD03": "\uDB83\uDCF5",
+  "\u671F\uDB40\uDD03": "\uDB83\uDCF6",
+  "\u6726\uDB40\uDD03": "\uDB83\uDCF7",
+  "\u6753\uDB40\uDD03": "\uDB83\uDCF8",
+  "\u6756\uDB40\uDD03": "\uDB83\uDCF9",
+  "\u675E\uDB40\uDD03": "\uDB83\uDCFA",
+  "\u677E\uDB40\uDD03": "\uDB83\uDCFB",
+  "\u6785\uDB40\uDD03": "\uDB83\uDCFC",
+  "\u67A6\uDB40\uDD03": "\uDB83\uDCFD",
+  "\u67A9\uDB40\uDD03": "\uDB83\uDCFE",
+  "\u67C4\uDB40\uDD03": "\uDB83\uDCFF",
+  "\u67CA\uDB40\uDD03": "\uDB83\uDD00",
+  "\u67D4\uDB40\uDD03": "\uDB83\uDD01",
+  "\u67E7\uDB40\uDD03": "\uDB83\uDD02",
+  "\u67F1\uDB40\uDD03": "\uDB83\uDD03",
+  "\u6801\uDB40\uDD03": "\uDB83\uDD04",
+  "\u6813\uDB40\uDD03": "\uDB83\uDD05",
+  "\u681F\uDB40\uDD03": "\uDB83\uDD06",
+  "\u6821\uDB40\uDD03": "\uDB83\uDD07",
+  "\u6840\uDB40\uDD03": "\uDB83\uDD08",
+  "\u6852\uDB40\uDD03": "\uDB83\uDD09",
+  "\u6897\uDB40\uDD03": "\uDB83\uDD0A",
+  "\u689B\uDB40\uDD03": "\uDB83\uDD0B",
+  "\u689D\uDB40\uDD03": "\uDB83\uDD0C",
+  "\u68A2\uDB40\uDD03": "\uDB83\uDD0D",
+  "\u68C8\uDB40\uDD03": "\uDB83\uDD0E",
+  "\u68DA\uDB40\uDD03": "\uDB83\uDD0F",
+  "\u691B\uDB40\uDD03": "\uDB83\uDD10",
+  "\u6930\uDB40\uDD03": "\uDB83\uDD11",
+  "\u693D\uDB40\uDD03": "\uDB83\uDD12",
+  "\u6954\uDB40\uDD03": "\uDB83\uDD13",
+  "\u695E\uDB40\uDD03": "\uDB83\uDD14",
+  "\u696B\uDB40\uDD03": "\uDB83\uDD15",
+  "\u6994\uDB40\uDD03": "\uDB83\uDD16",
+  "\u69A7\uDB40\uDD03": "\uDB83\uDD17",
+  "\u69BB\uDB40\uDD03": "\uDB83\uDD18",
+  "\u69C1\uDB40\uDD03": "\uDB83\uDD19",
+  "\u69C7\uDB40\uDD03": "\uDB83\uDD1A",
+  "\u69CB\uDB40\uDD03": "\uDB83\uDD1B",
+  "\u69CF\uDB40\uDD03": "\uDB83\uDD1C",
+  "\u69E2\uDB40\uDD03": "\uDB83\uDD1D",
+  "\u69E9\uDB40\uDD03": "\uDB83\uDD1E",
+  "\u69EA\uDB40\uDD03": "\uDB83\uDD1F",
+  "\u69FF\uDB40\uDD03": "\uDB83\uDD20",
+  "\u6A44\uDB40\uDD03": "\uDB83\uDD21",
+  "\u6A5F\uDB40\uDD03": "\uDB83\uDD22",
+  "\u6A73\uDB40\uDD03": "\uDB83\uDD23",
+  "\u6A8E\uDB40\uDD03": "\uDB83\uDD24",
+  "\u6A90\uDB40\uDD03": "\uDB83\uDD25",
+  "\u6A9C\uDB40\uDD03": "\uDB83\uDD26",
+  "\u6AAC\uDB40\uDD03": "\uDB83\uDD27",
+  "\u6AB3\uDB40\uDD03": "\uDB83\uDD28",
+  "\u6AD4\uDB40\uDD03": "\uDB83\uDD29",
+  "\u6ADB\uDB40\uDD03": "\uDB83\uDD2A",
+  "\u6ADE\uDB40\uDD03": "\uDB83\uDD2B",
+  "\u6B0A\uDB40\uDD03": "\uDB83\uDD2C",
+  "\u6B1D\uDB40\uDD03": "\uDB83\uDD2D",
+  "\u6B24\uDB40\uDD03": "\uDB83\uDD2E",
+  "\u6B70\uDB40\uDD03": "\uDB83\uDD2F",
+  "\u6B72\uDB40\uDD03": "\uDB83\uDD30",
+  "\u6B73\uDB40\uDD03": "\uDB83\uDD31",
+  "\u6BAF\uDB40\uDD03": "\uDB83\uDD32",
+  "\u6BBB\uDB40\uDD03": "\uDB83\uDD33",
+  "\u6C13\uDB40\uDD03": "\uDB83\uDD34",
+  "\u6C42\uDB40\uDD03": "\uDB83\uDD35",
+  "\u6C6D\uDB40\uDD03": "\uDB83\uDD36",
+  "\u6C97\uDB40\uDD03": "\uDB83\uDD37",
+  "\u6CD2\uDB40\uDD03": "\uDB83\uDD38",
+  "\u6CE1\uDB40\uDD03": "\uDB83\uDD39",
+  "\u6CF0\uDB40\uDD03": "\uDB83\uDD3A",
+  "\u6D69\uDB40\uDD03": "\uDB83\uDD3B",
+  "\u6D6E\uDB40\uDD03": "\uDB83\uDD3C",
+  "\u6D78\uDB40\uDD03": "\uDB83\uDD3D",
+  "\u6D88\uDB40\uDD03": "\uDB83\uDD3E",
+  "\u6DBF\uDB40\uDD03": "\uDB83\uDD3F",
+  "\u6DF5\uDB40\uDD03": "\uDB83\uDD40",
+  "\u6DFB\uDB40\uDD03": "\uDB83\uDD41",
+  "\u6E2F\uDB40\uDD03": "\uDB83\uDD42",
+  "\u6E5B\uDB40\uDD03": "\uDB83\uDD43",
+  "\u6E6E\uDB40\uDD03": "\uDB83\uDD44",
+  "\u6E72\uDB40\uDD03": "\uDB83\uDD45",
+  "\u6E7E\uDB40\uDD03": "\uDB83\uDD46",
+  "\u6E9D\uDB40\uDD03": "\uDB83\uDD47",
+  "\u6EA2\uDB40\uDD03": "\uDB83\uDD48",
+  "\u6EB2\uDB40\uDD03": "\uDB83\uDD49",
+  "\u6ED5\uDB40\uDD03": "\uDB83\uDD4A",
+  "\u6EEC\uDB40\uDD03": "\uDB83\uDD4B",
+  "\u6EFE\uDB40\uDD03": "\uDB83\uDD4C",
+  "\u6EFF\uDB40\uDD03": "\uDB83\uDD4D",
+  "\u6F3B\uDB40\uDD03": "\uDB83\uDD4E",
+  "\u6F3E\uDB40\uDD03": "\uDB83\uDD4F",
+  "\u6F54\uDB40\uDD03": "\uDB83\uDD50",
+  "\u6F64\uDB40\uDD03": "\uDB83\uDD51",
+  "\u6F6D\uDB40\uDD03": "\uDB83\uDD52",
+  "\u6F6E\uDB40\uDD03": "\uDB83\uDD53",
+  "\u6F74\uDB40\uDD03": "\uDB83\uDD54",
+  "\u6F7E\uDB40\uDD03": "\uDB83\uDD55",
+  "\u6F80\uDB40\uDD03": "\uDB83\uDD56",
+  "\u6F82\uDB40\uDD03": "\uDB83\uDD57",
+  "\u6F98\uDB40\uDD03": "\uDB83\uDD58",
+  "\u6F9A\uDB40\uDD03": "\uDB83\uDD59",
+  "\u6FA4\uDB40\uDD03": "\uDB83\uDD5A",
+  "\u6FAB\uDB40\uDD03": "\uDB83\uDD5B",
+  "\u6FDB\uDB40\uDD03": "\uDB83\uDD5C",
+  "\u6FEF\uDB40\uDD03": "\uDB83\uDD5D",
+  "\u6FF1\uDB40\uDD03": "\uDB83\uDD5E",
+  "\u701B\uDB40\uDD03": "\uDB83\uDD5F",
+  "\u701E\uDB40\uDD03": "\uDB83\uDD60",
+  "\u7026\uDB40\uDD03": "\uDB83\uDD61",
+  "\u7027\uDB40\uDD03": "\uDB83\uDD62",
+  "\u704A\uDB40\uDD03": "\uDB83\uDD63",
+  "\u706E\uDB40\uDD03": "\uDB83\uDD64",
+  "\u7070\uDB40\uDD03": "\uDB83\uDD65",
+  "\u70AD\uDB40\uDD03": "\uDB83\uDD66",
+  "\u7152\uDB40\uDD03": "\uDB83\uDD67",
+  "\u7159\uDB40\uDD03": "\uDB83\uDD68",
+  "\u7162\uDB40\uDD03": "\uDB83\uDD69",
+  "\u7194\uDB40\uDD03": "\uDB83\uDD6A",
+  "\u71C1\uDB40\uDD03": "\uDB83\uDD6B",
+  "\u71D0\uDB40\uDD03": "\uDB83\uDD6C",
+  "\u71E7\uDB40\uDD03": "\uDB83\uDD6D",
+  "\u71EE\uDB40\uDD03": "\uDB83\uDD6E",
+  "\u71FF\uDB40\uDD03": "\uDB83\uDD6F",
+  "\u7228\uDB40\uDD03": "\uDB83\uDD70",
+  "\u7236\uDB40\uDD03": "\uDB83\uDD71",
+  "\u723A\uDB40\uDD03": "\uDB83\uDD72",
+  "\u723B\uDB40\uDD03": "\uDB83\uDD73",
+  "\u723E\uDB40\uDD03": "\uDB83\uDD74",
+  "\u7247\uDB40\uDD03": "\uDB83\uDD75",
+  "\u724C\uDB40\uDD03": "\uDB83\uDD76",
+  "\u72D0\uDB40\uDD03": "\uDB83\uDD77",
+  "\u72E1\uDB40\uDD03": "\uDB83\uDD78",
+  "\u731C\uDB40\uDD03": "\uDB83\uDD79",
+  "\u7387\uDB40\uDD03": "\uDB83\uDD7A",
+  "\u73CE\uDB40\uDD03": "\uDB83\uDD7B",
+  "\u73E5\uDB40\uDD03": "\uDB83\uDD7C",
+  "\u73ED\uDB40\uDD03": "\uDB83\uDD7D",
+  "\u7422\uDB40\uDD03": "\uDB83\uDD7E",
+  "\u7432\uDB40\uDD03": "\uDB83\uDD7F",
+  "\u7434\uDB40\uDD03": "\uDB83\uDD80",
+  "\u744B\uDB40\uDD03": "\uDB83\uDD81",
+  "\u745F\uDB40\uDD03": "\uDB83\uDD82",
+  "\u7471\uDB40\uDD03": "\uDB83\uDD83",
+  "\u74A3\uDB40\uDD03": "\uDB83\uDD84",
+  "\u74B0\uDB40\uDD03": "\uDB83\uDD85",
+  "\u74CA\uDB40\uDD03": "\uDB83\uDD86",
+  "\u74DC\uDB40\uDD03": "\uDB83\uDD87",
+  "\u74DF\uDB40\uDD03": "\uDB83\uDD88",
+  "\u74E0\uDB40\uDD03": "\uDB83\uDD89",
+  "\u74E3\uDB40\uDD03": "\uDB83\uDD8A",
+  "\u7504\uDB40\uDD03": "\uDB83\uDD8B",
+  "\u7506\uDB40\uDD03": "\uDB83\uDD8C",
+  "\u750C\uDB40\uDD03": "\uDB83\uDD8D",
+  "\u750D\uDB40\uDD03": "\uDB83\uDD8E",
+  "\u7526\uDB40\uDD03": "\uDB83\uDD8F",
+  "\u7554\uDB40\uDD03": "\uDB83\uDD90",
+  "\u7559\uDB40\uDD03": "\uDB83\uDD91",
+  "\u7570\uDB40\uDD03": "\uDB83\uDD92",
+  "\u75BC\uDB40\uDD03": "\uDB83\uDD93",
+  "\u761B\uDB40\uDD03": "\uDB83\uDD94",
+  "\u7652\uDB40\uDD03": "\uDB83\uDD95",
+  "\u7662\uDB40\uDD03": "\uDB83\uDD96",
+  "\u7669\uDB40\uDD03": "\uDB83\uDD97",
+  "\u7672\uDB40\uDD03": "\uDB83\uDD98",
+  "\u7684\uDB40\uDD03": "\uDB83\uDD99",
+  "\u7693\uDB40\uDD03": "\uDB83\uDD9A",
+  "\u76C6\uDB40\uDD03": "\uDB83\uDD9B",
+  "\u76DB\uDB40\uDD03": "\uDB83\uDD9C",
+  "\u76DF\uDB40\uDD03": "\uDB83\uDD9D",
+  "\u76F2\uDB40\uDD03": "\uDB83\uDD9E",
+  "\u76F4\uDB40\uDD03": "\uDB83\uDD9F",
+  "\u771E\uDB40\uDD03": "\uDB83\uDDA0",
+  "\u771F\uDB40\uDD03": "\uDB83\uDDA1",
+  "\u7737\uDB40\uDD03": "\uDB83\uDDA2",
+  "\u773E\uDB40\uDD03": "\uDB83\uDDA3",
+  "\u778E\uDB40\uDD03": "\uDB83\uDDA4",
+  "\u77AC\uDB40\uDD03": "\uDB83\uDDA5",
+  "\u77C7\uDB40\uDD03": "\uDB83\uDDA6",
+  "\u77E9\uDB40\uDD03": "\uDB83\uDDA7",
+  "\u7832\uDB40\uDD03": "\uDB83\uDDA8",
+  "\u785D\uDB40\uDD03": "\uDB83\uDDA9",
+  "\u786C\uDB40\uDD03": "\uDB83\uDDAA",
+  "\u787C\uDB40\uDD03": "\uDB83\uDDAB",
+  "\u78D4\uDB40\uDD03": "\uDB83\uDDAC",
+  "\u78E8\uDB40\uDD03": "\uDB83\uDDAD",
+  "\u78EF\uDB40\uDD03": "\uDB83\uDDAE",
+  "\u792A\uDB40\uDD03": "\uDB83\uDDAF",
+  "\u7934\uDB40\uDD03": "\uDB83\uDDB0",
+  "\u7940\uDB40\uDD03": "\uDB83\uDDB1",
+  "\u7958\uDB40\uDD03": "\uDB83\uDDB2",
+  "\u7962\uDB40\uDD03": "\uDB83\uDDB3",
+  "\u7984\uDB40\uDD03": "\uDB83\uDDB4",
+  "\u798A\uDB40\uDD03": "\uDB83\uDDB5",
+  "\u7995\uDB40\uDD03": "\uDB83\uDDB6",
+  "\u7998\uDB40\uDD03": "\uDB83\uDDB7",
+  "\u799D\uDB40\uDD03": "\uDB83\uDDB8",
+  "\u79A7\uDB40\uDD03": "\uDB83\uDDB9",
+  "\u79A8\uDB40\uDD03": "\uDB83\uDDBA",
+  "\u79A9\uDB40\uDD03": "\uDB83\uDDBB",
+  "\u79AA\uDB40\uDD03": "\uDB83\uDDBC",
+  "\u79AB\uDB40\uDD03": "\uDB83\uDDBD",
+  "\u79AE\uDB40\uDD03": "\uDB83\uDDBE",
+  "\u79B1\uDB40\uDD03": "\uDB83\uDDBF",
+  "\u79BB\uDB40\uDD03": "\uDB83\uDDC0",
+  "\u7A0B\uDB40\uDD03": "\uDB83\uDDC1",
+  "\u7A17\uDB40\uDD03": "\uDB83\uDDC2",
+  "\u7A27\uDB40\uDD03": "\uDB83\uDDC3",
+  "\u7A31\uDB40\uDD03": "\uDB83\uDDC4",
+  "\u7A3D\uDB40\uDD03": "\uDB83\uDDC5",
+  "\u7A57\uDB40\uDD03": "\uDB83\uDDC6",
+  "\u7A62\uDB40\uDD03": "\uDB83\uDDC7",
+  "\u7A7A\uDB40\uDD03": "\uDB83\uDDC8",
+  "\u7A95\uDB40\uDD03": "\uDB83\uDDC9",
+  "\u7A97\uDB40\uDD03": "\uDB83\uDDCA",
+  "\u7AAE\uDB40\uDD03": "\uDB83\uDDCB",
+  "\u7ABB\uDB40\uDD03": "\uDB83\uDDCC",
+  "\u7AC8\uDB40\uDD03": "\uDB83\uDDCD",
+  "\u7B08\uDB40\uDD03": "\uDB83\uDDCE",
+  "\u7B51\uDB40\uDD03": "\uDB83\uDDCF",
+  "\u7B99\uDB40\uDD03": "\uDB83\uDDD0",
+  "\u7B9E\uDB40\uDD03": "\uDB83\uDDD1",
+  "\u7BAD\uDB40\uDD03": "\uDB83\uDDD2",
+  "\u7BC4\uDB40\uDD03": "\uDB83\uDDD3",
+  "\u7BC9\uDB40\uDD03": "\uDB83\uDDD4",
+  "\u7BDD\uDB40\uDD03": "\uDB83\uDDD5",
+  "\u7BE0\uDB40\uDD03": "\uDB83\uDDD6",
+  "\u7BF7\uDB40\uDD03": "\uDB83\uDDD7",
+  "\u7C09\uDB40\uDD03": "\uDB83\uDDD8",
+  "\u7C13\uDB40\uDD03": "\uDB83\uDDD9",
+  "\u7C2A\uDB40\uDD03": "\uDB83\uDDDA",
+  "\u7C3E\uDB40\uDD03": "\uDB83\uDDDB",
+  "\u7C3F\uDB40\uDD03": "\uDB83\uDDDC",
+  "\u7C4D\uDB40\uDD03": "\uDB83\uDDDD",
+  "\u7C58\uDB40\uDD03": "\uDB83\uDDDE",
+  "\u7C60\uDB40\uDD03": "\uDB83\uDDDF",
+  "\u7C67\uDB40\uDD03": "\uDB83\uDDE0",
+  "\u7C69\uDB40\uDD03": "\uDB83\uDDE1",
+  "\u7C7E\uDB40\uDD03": "\uDB83\uDDE2",
+  "\u7C82\uDB40\uDD03": "\uDB83\uDDE3",
+  "\u7C89\uDB40\uDD03": "\uDB83\uDDE4",
+  "\u7C90\uDB40\uDD03": "\uDB83\uDDE5",
+  "\u7CAE\uDB40\uDD03": "\uDB83\uDDE6",
+  "\u7CC0\uDB40\uDD03": "\uDB83\uDDE7",
+  "\u7CD6\uDB40\uDD03": "\uDB83\uDDE8",
+  "\u7CF2\uDB40\uDD03": "\uDB83\uDDE9",
+  "\u7D00\uDB40\uDD03": "\uDB83\uDDEA",
+  "\u7D04\uDB40\uDD03": "\uDB83\uDDEB",
+  "\u7D0B\uDB40\uDD03": "\uDB83\uDDEC",
+  "\u7D0D\uDB40\uDD03": "\uDB83\uDDED",
+  "\u7D1A\uDB40\uDD03": "\uDB83\uDDEE",
+  "\u7D1B\uDB40\uDD03": "\uDB83\uDDEF",
+  "\u7D42\uDB40\uDD03": "\uDB83\uDDF0",
+  "\u7D46\uDB40\uDD03": "\uDB83\uDDF1",
+  "\u7D5E\uDB40\uDD03": "\uDB83\uDDF2",
+  "\u7D63\uDB40\uDD03": "\uDB83\uDDF3",
+  "\u7D73\uDB40\uDD03": "\uDB83\uDDF4",
+  "\u7D86\uDB40\uDD03": "\uDB83\uDDF5",
+  "\u7D9B\uDB40\uDD03": "\uDB83\uDDF6",
+  "\u7D9F\uDB40\uDD03": "\uDB83\uDDF7",
+  "\u7DAE\uDB40\uDD03": "\uDB83\uDDF8",
+  "\u7DCB\uDB40\uDD03": "\uDB83\uDDF9",
+  "\u7DCF\uDB40\uDD03": "\uDB83\uDDFA",
+  "\u7DDD\uDB40\uDD03": "\uDB83\uDDFB",
+  "\u7DE8\uDB40\uDD03": "\uDB83\uDDFC",
+  "\u7DE9\uDB40\uDD03": "\uDB83\uDDFD",
+  "\u7DEF\uDB40\uDD03": "\uDB83\uDDFE",
+  "\u7E0A\uDB40\uDD03": "\uDB83\uDDFF",
+  "\u7E1B\uDB40\uDD03": "\uDB83\uDE00",
+  "\u7E2B\uDB40\uDD03": "\uDB83\uDE01",
+  "\u7E43\uDB40\uDD03": "\uDB83\uDE02",
+  "\u7E6D\uDB40\uDD03": "\uDB83\uDE03",
+  "\u7E7D\uDB40\uDD03": "\uDB83\uDE04",
+  "\u7E92\uDB40\uDD03": "\uDB83\uDE05",
+  "\u7F3E\uDB40\uDD03": "\uDB83\uDE06",
+  "\u7F50\uDB40\uDD03": "\uDB83\uDE07",
+  "\u7F54\uDB40\uDD03": "\uDB83\uDE08",
+  "\u7F6A\uDB40\uDD03": "\uDB83\uDE09",
+  "\u7F9E\uDB40\uDD03": "\uDB83\uDE0A",
+  "\u7FA1\uDB40\uDD03": "\uDB83\uDE0B",
+  "\u7FAE\uDB40\uDD03": "\uDB83\uDE0C",
+  "\u7FAF\uDB40\uDD03": "\uDB83\uDE0D",
+  "\u7FC5\uDB40\uDD03": "\uDB83\uDE0E",
+  "\u7FC6\uDB40\uDD03": "\uDB83\uDE0F",
+  "\u7FCC\uDB40\uDD03": "\uDB83\uDE10",
+  "\u7FD2\uDB40\uDD03": "\uDB83\uDE11",
+  "\u7FD4\uDB40\uDD03": "\uDB83\uDE12",
+  "\u7FE0\uDB40\uDD03": "\uDB83\uDE13",
+  "\u7FE6\uDB40\uDD03": "\uDB83\uDE14",
+  "\u7FEB\uDB40\uDD03": "\uDB83\uDE15",
+  "\u7FF0\uDB40\uDD03": "\uDB83\uDE16",
+  "\u7FFB\uDB40\uDD03": "\uDB83\uDE17",
+  "\u8000\uDB40\uDD03": "\uDB83\uDE18",
+  "\u8003\uDB40\uDD03": "\uDB83\uDE19",
+  "\u8012\uDB40\uDD03": "\uDB83\uDE1A",
+  "\u8015\uDB40\uDD03": "\uDB83\uDE1B",
+  "\u8017\uDB40\uDD03": "\uDB83\uDE1C",
+  "\u801C\uDB40\uDD03": "\uDB83\uDE1D",
+  "\u8028\uDB40\uDD03": "\uDB83\uDE1E",
+  "\u8036\uDB40\uDD03": "\uDB83\uDE1F",
+  "\u8056\uDB40\uDD03": "\uDB83\uDE20",
+  "\u805F\uDB40\uDD03": "\uDB83\uDE21",
+  "\u8070\uDB40\uDD03": "\uDB83\uDE22",
+  "\u8073\uDB40\uDD03": "\uDB83\uDE23",
+  "\u8074\uDB40\uDD03": "\uDB83\uDE24",
+  "\u8076\uDB40\uDD03": "\uDB83\uDE25",
+  "\u8077\uDB40\uDD03": "\uDB83\uDE26",
+  "\u807E\uDB40\uDD03": "\uDB83\uDE27",
+  "\u8087\uDB40\uDD03": "\uDB83\uDE28",
+  "\u8096\uDB40\uDD03": "\uDB83\uDE29",
+  "\u809E\uDB40\uDD03": "\uDB83\uDE2A",
+  "\u80A9\uDB40\uDD03": "\uDB83\uDE2B",
+  "\u80AD\uDB40\uDD03": "\uDB83\uDE2C",
+  "\u80BA\uDB40\uDD03": "\uDB83\uDE2D",
+  "\u80D6\uDB40\uDD03": "\uDB83\uDE2E",
+  "\u80DE\uDB40\uDD03": "\uDB83\uDE2F",
+  "\u8106\uDB40\uDD03": "\uDB83\uDE30",
+  "\u8129\uDB40\uDD03": "\uDB83\uDE31",
+  "\u8153\uDB40\uDD03": "\uDB83\uDE32",
+  "\u8154\uDB40\uDD03": "\uDB83\uDE33",
+  "\u8170\uDB40\uDD03": "\uDB83\uDE34",
+  "\u8171\uDB40\uDD03": "\uDB83\uDE35",
+  "\u817F\uDB40\uDD03": "\uDB83\uDE36",
+  "\u8184\uDB40\uDD03": "\uDB83\uDE37",
+  "\u818A\uDB40\uDD03": "\uDB83\uDE38",
+  "\u81B5\uDB40\uDD03": "\uDB83\uDE39",
+  "\u81C8\uDB40\uDD03": "\uDB83\uDE3A",
+  "\u8200\uDB40\uDD03": "\uDB83\uDE3B",
+  "\u8201\uDB40\uDD03": "\uDB83\uDE3C",
+  "\u820C\uDB40\uDD03": "\uDB83\uDE3D",
+  "\u821B\uDB40\uDD03": "\uDB83\uDE3E",
+  "\u821C\uDB40\uDD03": "\uDB83\uDE3F",
+  "\u821F\uDB40\uDD03": "\uDB83\uDE40",
+  "\u822E\uDB40\uDD03": "\uDB83\uDE41",
+  "\u8240\uDB40\uDD03": "\uDB83\uDE42",
+  "\u8247\uDB40\uDD03": "\uDB83\uDE43",
+  "\u8258\uDB40\uDD03": "\uDB83\uDE44",
+  "\u8268\uDB40\uDD03": "\uDB83\uDE45",
+  "\u8283\uDB40\uDD03": "\uDB83\uDE46",
+  "\u828D\uDB40\uDD03": "\uDB83\uDE47",
+  "\u8292\uDB40\uDD03": "\uDB83\uDE48",
+  "\u82AC\uDB40\uDD03": "\uDB83\uDE49",
+  "\u82AE\uDB40\uDD03": "\uDB83\uDE4A",
+  "\u82B1\uDB40\uDD03": "\uDB83\uDE4B",
+  "\u82C5\uDB40\uDD03": "\uDB83\uDE4C",
+  "\u82D1\uDB40\uDD03": "\uDB83\uDE4D",
+  "\u82D2\uDB40\uDD03": "\uDB83\uDE4E",
+  "\u82DE\uDB40\uDD03": "\uDB83\uDE4F",
+  "\u82DF\uDB40\uDD03": "\uDB83\uDE50",
+  "\u82E2\uDB40\uDD03": "\uDB83\uDE51",
+  "\u82E3\uDB40\uDD03": "\uDB83\uDE52",
+  "\u82E5\uDB40\uDD03": "\uDB83\uDE53",
+  "\u82F1\uDB40\uDD03": "\uDB83\uDE54",
+  "\u82F3\uDB40\uDD03": "\uDB83\uDE55",
+  "\u82F9\uDB40\uDD03": "\uDB83\uDE56",
+  "\u82FD\uDB40\uDD03": "\uDB83\uDE57",
+  "\u8302\uDB40\uDD03": "\uDB83\uDE58",
+  "\u8303\uDB40\uDD03": "\uDB83\uDE59",
+  "\u8323\uDB40\uDD03": "\uDB83\uDE5A",
+  "\u832B\uDB40\uDD03": "\uDB83\uDE5B",
+  "\u8330\uDB40\uDD03": "\uDB83\uDE5C",
+  "\u8338\uDB40\uDD03": "\uDB83\uDE5D",
+  "\u8342\uDB40\uDD03": "\uDB83\uDE5E",
+  "\u8343\uDB40\uDD03": "\uDB83\uDE5F",
+  "\u8344\uDB40\uDD03": "\uDB83\uDE60",
+  "\u8345\uDB40\uDD03": "\uDB83\uDE61",
+  "\u8346\uDB40\uDD03": "\uDB83\uDE62",
+  "\u834A\uDB40\uDD03": "\uDB83\uDE63",
+  "\u834F\uDB40\uDD03": "\uDB83\uDE64",
+  "\u8351\uDB40\uDD03": "\uDB83\uDE65",
+  "\u8352\uDB40\uDD03": "\uDB83\uDE66",
+  "\u8353\uDB40\uDD03": "\uDB83\uDE67",
+  "\u8362\uDB40\uDD03": "\uDB83\uDE68",
+  "\u8375\uDB40\uDD03": "\uDB83\uDE69",
+  "\u837B\uDB40\uDD03": "\uDB83\uDE6A",
+  "\u837F\uDB40\uDD03": "\uDB83\uDE6B",
+  "\u8393\uDB40\uDD03": "\uDB83\uDE6C",
+  "\u8396\uDB40\uDD03": "\uDB83\uDE6D",
+  "\u839A\uDB40\uDD03": "\uDB83\uDE6E",
+  "\u839B\uDB40\uDD03": "\uDB83\uDE6F",
+  "\u83AD\uDB40\uDD03": "\uDB83\uDE70",
+  "\u83B5\uDB40\uDD03": "\uDB83\uDE71",
+  "\u83BD\uDB40\uDD03": "\uDB83\uDE72",
+  "\u83C1\uDB40\uDD03": "\uDB83\uDE73",
+  "\u83D3\uDB40\uDD03": "\uDB83\uDE74",
+  "\u83D4\uDB40\uDD03": "\uDB83\uDE75",
+  "\u83D8\uDB40\uDD03": "\uDB83\uDE76",
+  "\u83DC\uDB40\uDD03": "\uDB83\uDE77",
+  "\u83E1\uDB40\uDD03": "\uDB83\uDE78",
+  "\u83EF\uDB40\uDD03": "\uDB83\uDE79",
+  "\u83F0\uDB40\uDD03": "\uDB83\uDE7A",
+  "\u83F1\uDB40\uDD03": "\uDB83\uDE7B",
+  "\u83F2\uDB40\uDD03": "\uDB83\uDE7C",
+  "\u83F7\uDB40\uDD03": "\uDB83\uDE7D",
+  "\u8403\uDB40\uDD03": "\uDB83\uDE7E",
+  "\u8404\uDB40\uDD03": "\uDB83\uDE7F",
+  "\u840B\uDB40\uDD03": "\uDB83\uDE80",
+  "\u840C\uDB40\uDD03": "\uDB83\uDE81",
+  "\u840D\uDB40\uDD03": "\uDB83\uDE82",
+  "\u840F\uDB40\uDD03": "\uDB83\uDE83",
+  "\u8413\uDB40\uDD03": "\uDB83\uDE84",
+  "\u8415\uDB40\uDD03": "\uDB83\uDE85",
+  "\u8420\uDB40\uDD03": "\uDB83\uDE86",
+  "\u8422\uDB40\uDD03": "\uDB83\uDE87",
+  "\u842C\uDB40\uDD03": "\uDB83\uDE88",
+  "\u8449\uDB40\uDD03": "\uDB83\uDE89",
+  "\u8457\uDB40\uDD03": "\uDB83\uDE8A",
+  "\u845A\uDB40\uDD03": "\uDB83\uDE8B",
+  "\u845C\uDB40\uDD03": "\uDB83\uDE8C",
+  "\u8462\uDB40\uDD03": "\uDB83\uDE8D",
+  "\u8466\uDB40\uDD03": "\uDB83\uDE8E",
+  "\u847A\uDB40\uDD03": "\uDB83\uDE8F",
+  "\u847D\uDB40\uDD03": "\uDB83\uDE90",
+  "\u8481\uDB40\uDD03": "\uDB83\uDE91",
+  "\u8482\uDB40\uDD03": "\uDB83\uDE92",
+  "\u8485\uDB40\uDD03": "\uDB83\uDE93",
+  "\u8499\uDB40\uDD03": "\uDB83\uDE94",
+  "\u849C\uDB40\uDD03": "\uDB83\uDE95",
+  "\u84A1\uDB40\uDD03": "\uDB83\uDE96",
+  "\u84A6\uDB40\uDD03": "\uDB83\uDE97",
+  "\u84A8\uDB40\uDD03": "\uDB83\uDE98",
+  "\u84B9\uDB40\uDD03": "\uDB83\uDE99",
+  "\u84BB\uDB40\uDD03": "\uDB83\uDE9A",
+  "\u84CA\uDB40\uDD03": "\uDB83\uDE9B",
+  "\u84CF\uDB40\uDD03": "\uDB83\uDE9C",
+  "\u84D0\uDB40\uDD03": "\uDB83\uDE9D",
+  "\u84D9\uDB40\uDD03": "\uDB83\uDE9E",
+  "\u84DC\uDB40\uDD03": "\uDB83\uDE9F",
+  "\u84EA\uDB40\uDD03": "\uDB83\uDEA0",
+  "\u84EE\uDB40\uDD03": "\uDB83\uDEA1",
+  "\u84F1\uDB40\uDD03": "\uDB83\uDEA2",
+  "\u84F4\uDB40\uDD03": "\uDB83\uDEA3",
+  "\u84FC\uDB40\uDD03": "\uDB83\uDEA4",
+  "\u84FD\uDB40\uDD03": "\uDB83\uDEA5",
+  "\u8511\uDB40\uDD03": "\uDB83\uDEA6",
+  "\u8513\uDB40\uDD03": "\uDB83\uDEA7",
+  "\u8517\uDB40\uDD03": "\uDB83\uDEA8",
+  "\u8521\uDB40\uDD03": "\uDB83\uDEA9",
+  "\u8523\uDB40\uDD03": "\uDB83\uDEAA",
+  "\u8525\uDB40\uDD03": "\uDB83\uDEAB",
+  "\u8532\uDB40\uDD03": "\uDB83\uDEAC",
+  "\u853D\uDB40\uDD03": "\uDB83\uDEAD",
+  "\u853E\uDB40\uDD03": "\uDB83\uDEAE",
+  "\u8541\uDB40\uDD03": "\uDB83\uDEAF",
+  "\u8543\uDB40\uDD03": "\uDB83\uDEB0",
+  "\u8548\uDB40\uDD03": "\uDB83\uDEB1",
+  "\u8551\uDB40\uDD03": "\uDB83\uDEB2",
+  "\u8555\uDB40\uDD03": "\uDB83\uDEB3",
+  "\u8556\uDB40\uDD03": "\uDB83\uDEB4",
+  "\u8559\uDB40\uDD03": "\uDB83\uDEB5",
+  "\u855D\uDB40\uDD03": "\uDB83\uDEB6",
+  "\u8561\uDB40\uDD03": "\uDB83\uDEB7",
+  "\u8563\uDB40\uDD03": "\uDB83\uDEB8",
+  "\u8568\uDB40\uDD03": "\uDB83\uDEB9",
+  "\u856B\uDB40\uDD03": "\uDB83\uDEBA",
+  "\u8584\uDB40\uDD03": "\uDB83\uDEBB",
+  "\u8587\uDB40\uDD03": "\uDB83\uDEBC",
+  "\u858A\uDB40\uDD03": "\uDB83\uDEBD",
+  "\u858C\uDB40\uDD03": "\uDB83\uDEBE",
+  "\u858F\uDB40\uDD03": "\uDB83\uDEBF",
+  "\u8598\uDB40\uDD03": "\uDB83\uDEC0",
+  "\u85AB\uDB40\uDD03": "\uDB83\uDEC1",
+  "\u85AF\uDB40\uDD03": "\uDB83\uDEC2",
+  "\u85C9\uDB40\uDD03": "\uDB83\uDEC3",
+  "\u85CD\uDB40\uDD03": "\uDB83\uDEC4",
+  "\u85CF\uDB40\uDD03": "\uDB83\uDEC5",
+  "\u85D5\uDB40\uDD03": "\uDB83\uDEC6",
+  "\u85DA\uDB40\uDD03": "\uDB83\uDEC7",
+  "\u85E1\uDB40\uDD03": "\uDB83\uDEC8",
+  "\u85E4\uDB40\uDD03": "\uDB83\uDEC9",
+  "\u85E5\uDB40\uDD03": "\uDB83\uDECA",
+  "\u85EA\uDB40\uDD03": "\uDB83\uDECB",
+  "\u85F7\uDB40\uDD03": "\uDB83\uDECC",
+  "\u85F9\uDB40\uDD03": "\uDB83\uDECD",
+  "\u85FC\uDB40\uDD03": "\uDB83\uDECE",
+  "\u85FE\uDB40\uDD03": "\uDB83\uDECF",
+  "\u8607\uDB40\uDD03": "\uDB83\uDED0",
+  "\u860B\uDB40\uDD03": "\uDB83\uDED1",
+  "\u8616\uDB40\uDD03": "\uDB83\uDED2",
+  "\u8618\uDB40\uDD03": "\uDB83\uDED3",
+  "\u8619\uDB40\uDD03": "\uDB83\uDED4",
+  "\u861A\uDB40\uDD03": "\uDB83\uDED5",
+  "\u8622\uDB40\uDD03": "\uDB83\uDED6",
+  "\u8624\uDB40\uDD03": "\uDB83\uDED7",
+  "\u8627\uDB40\uDD03": "\uDB83\uDED8",
+  "\u8629\uDB40\uDD03": "\uDB83\uDED9",
+  "\u862D\uDB40\uDD03": "\uDB83\uDEDA",
+  "\u8630\uDB40\uDD03": "\uDB83\uDEDB",
+  "\u8636\uDB40\uDD03": "\uDB83\uDEDC",
+  "\u8641\uDB40\uDD03": "\uDB83\uDEDD",
+  "\u864E\uDB40\uDD03": "\uDB83\uDEDE",
+  "\u8650\uDB40\uDD03": "\uDB83\uDEDF",
+  "\u8654\uDB40\uDD03": "\uDB83\uDEE0",
+  "\u865E\uDB40\uDD03": "\uDB83\uDEE1",
+  "\u868A\uDB40\uDD03": "\uDB83\uDEE2",
+  "\u86A9\uDB40\uDD03": "\uDB83\uDEE3",
+  "\u86AB\uDB40\uDD03": "\uDB83\uDEE4",
+  "\u86E9\uDB40\uDD03": "\uDB83\uDEE5",
+  "\u86F8\uDB40\uDD03": "\uDB83\uDEE6",
+  "\u8703\uDB40\uDD03": "\uDB83\uDEE7",
+  "\u8712\uDB40\uDD03": "\uDB83\uDEE8",
+  "\u871A\uDB40\uDD03": "\uDB83\uDEE9",
+  "\u8737\uDB40\uDD03": "\uDB83\uDEEA",
+  "\u873B\uDB40\uDD03": "\uDB83\uDEEB",
+  "\u8755\uDB40\uDD03": "\uDB83\uDEEC",
+  "\u8759\uDB40\uDD03": "\uDB83\uDEED",
+  "\u8782\uDB40\uDD03": "\uDB83\uDEEE",
+  "\u87A3\uDB40\uDD03": "\uDB83\uDEEF",
+  "\u87BD\uDB40\uDD03": "\uDB83\uDEF0",
+  "\u8803\uDB40\uDD03": "\uDB83\uDEF1",
+  "\u880D\uDB40\uDD03": "\uDB83\uDEF2",
+  "\u880E\uDB40\uDD03": "\uDB83\uDEF3",
+  "\u881B\uDB40\uDD03": "\uDB83\uDEF4",
+  "\u8821\uDB40\uDD03": "\uDB83\uDEF5",
+  "\u8842\uDB40\uDD03": "\uDB83\uDEF6",
+  "\u8846\uDB40\uDD03": "\uDB83\uDEF7",
+  "\u884A\uDB40\uDD03": "\uDB83\uDEF8",
+  "\u884B\uDB40\uDD03": "\uDB83\uDEF9",
+  "\u8853\uDB40\uDD03": "\uDB83\uDEFA",
+  "\u885B\uDB40\uDD03": "\uDB83\uDEFB",
+  "\u8863\uDB40\uDD03": "\uDB83\uDEFC",
+  "\u889E\uDB40\uDD03": "\uDB83\uDEFD",
+  "\u88F4\uDB40\uDD03": "\uDB83\uDEFE",
+  "\u890A\uDB40\uDD03": "\uDB83\uDEFF",
+  "\u891C\uDB40\uDD03": "\uDB83\uDF00",
+  "\u892B\uDB40\uDD03": "\uDB83\uDF01",
+  "\u8935\uDB40\uDD03": "\uDB83\uDF02",
+  "\u893B\uDB40\uDD03": "\uDB83\uDF03",
+  "\u8941\uDB40\uDD03": "\uDB83\uDF04",
+  "\u896A\uDB40\uDD03": "\uDB83\uDF05",
+  "\u896F\uDB40\uDD03": "\uDB83\uDF06",
+  "\u8981\uDB40\uDD03": "\uDB83\uDF07",
+  "\u8983\uDB40\uDD03": "\uDB83\uDF08",
+  "\u8986\uDB40\uDD03": "\uDB83\uDF09",
+  "\u8987\uDB40\uDD03": "\uDB83\uDF0A",
+  "\u8990\uDB40\uDD03": "\uDB83\uDF0B",
+  "\u89AF\uDB40\uDD03": "\uDB83\uDF0C",
+  "\u89BD\uDB40\uDD03": "\uDB83\uDF0D",
+  "\u89C0\uDB40\uDD03": "\uDB83\uDF0E",
+  "\u89D2\uDB40\uDD03": "\uDB83\uDF0F",
+  "\u89E3\uDB40\uDD03": "\uDB83\uDF10",
+  "\u8A0A\uDB40\uDD03": "\uDB83\uDF11",
+  "\u8A12\uDB40\uDD03": "\uDB83\uDF12",
+  "\u8A1F\uDB40\uDD03": "\uDB83\uDF13",
+  "\u8A55\uDB40\uDD03": "\uDB83\uDF14",
+  "\u8A8D\uDB40\uDD03": "\uDB83\uDF15",
+  "\u8AA0\uDB40\uDD03": "\uDB83\uDF16",
+  "\u8AA4\uDB40\uDD03": "\uDB83\uDF17",
+  "\u8AA5\uDB40\uDD03": "\uDB83\uDF18",
+  "\u8AB9\uDB40\uDD03": "\uDB83\uDF19",
+  "\u8ABF\uDB40\uDD03": "\uDB83\uDF1A",
+  "\u8ACB\uDB40\uDD03": "\uDB83\uDF1B",
+  "\u8ADB\uDB40\uDD03": "\uDB83\uDF1C",
+  "\u8ADE\uDB40\uDD03": "\uDB83\uDF1D",
+  "\u8AED\uDB40\uDD03": "\uDB83\uDF1E",
+  "\u8AF1\uDB40\uDD03": "\uDB83\uDF1F",
+  "\u8B04\uDB40\uDD03": "\uDB83\uDF20",
+  "\u8B0A\uDB40\uDD03": "\uDB83\uDF21",
+  "\u8B19\uDB40\uDD03": "\uDB83\uDF22",
+  "\u8B1A\uDB40\uDD03": "\uDB83\uDF23",
+  "\u8B1B\uDB40\uDD03": "\uDB83\uDF24",
+  "\u8B1D\uDB40\uDD03": "\uDB83\uDF25",
+  "\u8B2C\uDB40\uDD03": "\uDB83\uDF26",
+  "\u8B33\uDB40\uDD03": "\uDB83\uDF27",
+  "\u8B39\uDB40\uDD03": "\uDB83\uDF28",
+  "\u8B3E\uDB40\uDD03": "\uDB83\uDF29",
+  "\u8B41\uDB40\uDD03": "\uDB83\uDF2A",
+  "\u8B44\uDB40\uDD03": "\uDB83\uDF2B",
+  "\u8B4C\uDB40\uDD03": "\uDB83\uDF2C",
+  "\u8B4F\uDB40\uDD03": "\uDB83\uDF2D",
+  "\u8B53\uDB40\uDD03": "\uDB83\uDF2E",
+  "\u8B5A\uDB40\uDD03": "\uDB83\uDF2F",
+  "\u8B5C\uDB40\uDD03": "\uDB83\uDF30",
+  "\u8B81\uDB40\uDD03": "\uDB83\uDF31",
+  "\u8C3A\uDB40\uDD03": "\uDB83\uDF32",
+  "\u8C41\uDB40\uDD03": "\uDB83\uDF33",
+  "\u8C55\uDB40\uDD03": "\uDB83\uDF34",
+  "\u8C61\uDB40\uDD03": "\uDB83\uDF35",
+  "\u8C6A\uDB40\uDD03": "\uDB83\uDF36",
+  "\u8CA7\uDB40\uDD03": "\uDB83\uDF37",
+  "\u8CA8\uDB40\uDD03": "\uDB83\uDF38",
+  "\u8CAB\uDB40\uDD03": "\uDB83\uDF39",
+  "\u8D05\uDB40\uDD03": "\uDB83\uDF3A",
+  "\u8D0F\uDB40\uDD03": "\uDB83\uDF3B",
+  "\u8D1C\uDB40\uDD03": "\uDB83\uDF3C",
+  "\u8D73\uDB40\uDD03": "\uDB83\uDF3D",
+  "\u8D77\uDB40\uDD03": "\uDB83\uDF3E",
+  "\u8D99\uDB40\uDD03": "\uDB83\uDF3F",
+  "\u8DB9\uDB40\uDD03": "\uDB83\uDF40",
+  "\u8DDA\uDB40\uDD03": "\uDB83\uDF41",
+  "\u8DDD\uDB40\uDD03": "\uDB83\uDF42",
+  "\u8DF3\uDB40\uDD03": "\uDB83\uDF43",
+  "\u8E09\uDB40\uDD03": "\uDB83\uDF44",
+  "\u8E4A\uDB40\uDD03": "\uDB83\uDF45",
+  "\u8E72\uDB40\uDD03": "\uDB83\uDF46",
+  "\u8E87\uDB40\uDD03": "\uDB83\uDF47",
+  "\u8E8D\uDB40\uDD03": "\uDB83\uDF48",
+  "\u8E91\uDB40\uDD03": "\uDB83\uDF49",
+  "\u8E9A\uDB40\uDD03": "\uDB83\uDF4A",
+  "\u8EA1\uDB40\uDD03": "\uDB83\uDF4B",
+  "\u8ED4\uDB40\uDD03": "\uDB83\uDF4C",
+  "\u8F03\uDB40\uDD03": "\uDB83\uDF4D",
+  "\u8F13\uDB40\uDD03": "\uDB83\uDF4E",
+  "\u8F29\uDB40\uDD03": "\uDB83\uDF4F",
+  "\u8F38\uDB40\uDD03": "\uDB83\uDF50",
+  "\u8FA8\uDB40\uDD03": "\uDB83\uDF51",
+  "\u8FB1\uDB40\uDD03": "\uDB83\uDF52",
+  "\u8FBC\uDB40\uDD03": "\uDB83\uDF53",
+  "\u8FC6\uDB40\uDD03": "\uDB83\uDF54",
+  "\u8FCE\uDB40\uDD03": "\uDB83\uDF55",
+  "\u8FD1\uDB40\uDD03": "\uDB83\uDF56",
+  "\u8FD3\uDB40\uDD03": "\uDB83\uDF57",
+  "\u8FE9\uDB40\uDD03": "\uDB83\uDF58",
+  "\u8FEA\uDB40\uDD03": "\uDB83\uDF59",
+  "\u8FEB\uDB40\uDD03": "\uDB83\uDF5A",
+  "\u8FED\uDB40\uDD03": "\uDB83\uDF5B",
+  "\u8FEF\uDB40\uDD03": "\uDB83\uDF5C",
+  "\u8FF0\uDB40\uDD03": "\uDB83\uDF5D",
+  "\u8FF7\uDB40\uDD03": "\uDB83\uDF5E",
+  "\u8FFA\uDB40\uDD03": "\uDB83\uDF5F",
+  "\u8FFD\uDB40\uDD03": "\uDB83\uDF60",
+  "\u9000\uDB40\uDD03": "\uDB83\uDF61",
+  "\u9001\uDB40\uDD03": "\uDB83\uDF62",
+  "\u9004\uDB40\uDD03": "\uDB83\uDF63",
+  "\u9006\uDB40\uDD03": "\uDB83\uDF64",
+  "\u900D\uDB40\uDD03": "\uDB83\uDF65",
+  "\u900E\uDB40\uDD03": "\uDB83\uDF66",
+  "\u900F\uDB40\uDD03": "\uDB83\uDF67",
+  "\u9010\uDB40\uDD03": "\uDB83\uDF68",
+  "\u9011\uDB40\uDD03": "\uDB83\uDF69",
+  "\u9014\uDB40\uDD03": "\uDB83\uDF6A",
+  "\u9016\uDB40\uDD03": "\uDB83\uDF6B",
+  "\u901A\uDB40\uDD03": "\uDB83\uDF6C",
+  "\u901D\uDB40\uDD03": "\uDB83\uDF6D",
+  "\u901E\uDB40\uDD03": "\uDB83\uDF6E",
+  "\u901F\uDB40\uDD03": "\uDB83\uDF6F",
+  "\u9020\uDB40\uDD03": "\uDB83\uDF70",
+  "\u9022\uDB40\uDD03": "\uDB83\uDF71",
+  "\u9023\uDB40\uDD03": "\uDB83\uDF72",
+  "\u902E\uDB40\uDD03": "\uDB83\uDF73",
+  "\u9031\uDB40\uDD03": "\uDB83\uDF74",
+  "\u9032\uDB40\uDD03": "\uDB83\uDF75",
+  "\u9035\uDB40\uDD03": "\uDB83\uDF76",
+  "\u9039\uDB40\uDD03": "\uDB83\uDF77",
+  "\u903C\uDB40\uDD03": "\uDB83\uDF78",
+  "\u903E\uDB40\uDD03": "\uDB83\uDF79",
+  "\u9041\uDB40\uDD03": "\uDB83\uDF7A",
+  "\u9047\uDB40\uDD03": "\uDB83\uDF7B",
+  "\u904A\uDB40\uDD03": "\uDB83\uDF7C",
+  "\u904B\uDB40\uDD03": "\uDB83\uDF7D",
+  "\u904C\uDB40\uDD03": "\uDB83\uDF7E",
+  "\u904D\uDB40\uDD03": "\uDB83\uDF7F",
+  "\u904E\uDB40\uDD03": "\uDB83\uDF80",
+  "\u904F\uDB40\uDD03": "\uDB83\uDF81",
+  "\u9050\uDB40\uDD03": "\uDB83\uDF82",
+  "\u9052\uDB40\uDD03": "\uDB83\uDF83",
+  "\u9053\uDB40\uDD03": "\uDB83\uDF84",
+  "\u9054\uDB40\uDD03": "\uDB83\uDF85",
+  "\u9058\uDB40\uDD03": "\uDB83\uDF86",
+  "\u9060\uDB40\uDD03": "\uDB83\uDF87",
+  "\u9062\uDB40\uDD03": "\uDB83\uDF88",
+  "\u9063\uDB40\uDD03": "\uDB83\uDF89",
+  "\u9068\uDB40\uDD03": "\uDB83\uDF8A",
+  "\u9069\uDB40\uDD03": "\uDB83\uDF8B",
+  "\u906D\uDB40\uDD03": "\uDB83\uDF8C",
+  "\u906E\uDB40\uDD03": "\uDB83\uDF8D",
+  "\u906F\uDB40\uDD03": "\uDB83\uDF8E",
+  "\u9072\uDB40\uDD03": "\uDB83\uDF8F",
+  "\u9074\uDB40\uDD03": "\uDB83\uDF90",
+  "\u9078\uDB40\uDD03": "\uDB83\uDF91",
+  "\u907A\uDB40\uDD03": "\uDB83\uDF92",
+  "\u907C\uDB40\uDD03": "\uDB83\uDF93",
+  "\u907D\uDB40\uDD03": "\uDB83\uDF94",
+  "\u907F\uDB40\uDD03": "\uDB83\uDF95",
+  "\u9080\uDB40\uDD03": "\uDB83\uDF96",
+  "\u9081\uDB40\uDD03": "\uDB83\uDF97",
+  "\u9083\uDB40\uDD03": "\uDB83\uDF98",
+  "\u9084\uDB40\uDD03": "\uDB83\uDF99",
+  "\u9087\uDB40\uDD03": "\uDB83\uDF9A",
+  "\u90A3\uDB40\uDD03": "\uDB83\uDF9B",
+  "\u90A8\uDB40\uDD03": "\uDB83\uDF9C",
+  "\u90E2\uDB40\uDD03": "\uDB83\uDF9D",
+  "\u9115\uDB40\uDD03": "\uDB83\uDF9E",
+  "\u9130\uDB40\uDD03": "\uDB83\uDF9F",
+  "\u914B\uDB40\uDD03": "\uDB83\uDFA0",
+  "\u914C\uDB40\uDD03": "\uDB83\uDFA1",
+  "\u914D\uDB40\uDD03": "\uDB83\uDFA2",
+  "\u9172\uDB40\uDD03": "\uDB83\uDFA3",
+  "\u9177\uDB40\uDD03": "\uDB83\uDFA4",
+  "\u9178\uDB40\uDD03": "\uDB83\uDFA5",
+  "\u91AA\uDB40\uDD03": "\uDB83\uDFA6",
+  "\u91B5\uDB40\uDD03": "\uDB83\uDFA7",
+  "\u91BA\uDB40\uDD03": "\uDB83\uDFA8",
+  "\u91C1\uDB40\uDD03": "\uDB83\uDFA9",
+  "\u91C7\uDB40\uDD03": "\uDB83\uDFAA",
+  "\u91DC\uDB40\uDD03": "\uDB83\uDFAB",
+  "\u91E3\uDB40\uDD03": "\uDB83\uDFAC",
+  "\u91FC\uDB40\uDD03": "\uDB83\uDFAD",
+  "\u92CC\uDB40\uDD03": "\uDB83\uDFAE",
+  "\u92E9\uDB40\uDD03": "\uDB83\uDFAF",
+  "\u931A\uDB40\uDD03": "\uDB83\uDFB0",
+  "\u9335\uDB40\uDD03": "\uDB83\uDFB1",
+  "\u9365\uDB40\uDD03": "\uDB83\uDFB2",
+  "\u9375\uDB40\uDD03": "\uDB83\uDFB3",
+  "\u938C\uDB40\uDD03": "\uDB83\uDFB4",
+  "\u9396\uDB40\uDD03": "\uDB83\uDFB5",
+  "\u939A\uDB40\uDD03": "\uDB83\uDFB6",
+  "\u93A1\uDB40\uDD03": "\uDB83\uDFB7",
+  "\u93B0\uDB40\uDD03": "\uDB83\uDFB8",
+  "\u93B9\uDB40\uDD03": "\uDB83\uDFB9",
+  "\u9453\uDB40\uDD03": "\uDB83\uDFBA",
+  "\u9477\uDB40\uDD03": "\uDB83\uDFBB",
+  "\u9592\uDB40\uDD03": "\uDB83\uDFBC",
+  "\u95AB\uDB40\uDD03": "\uDB83\uDFBD",
+  "\u95BB\uDB40\uDD03": "\uDB83\uDFBE",
+  "\u95BC\uDB40\uDD03": "\uDB83\uDFBF",
+  "\u95CD\uDB40\uDD03": "\uDB83\uDFC0",
+  "\u95D0\uDB40\uDD03": "\uDB83\uDFC1",
+  "\u964D\uDB40\uDD03": "\uDB83\uDFC2",
+  "\u968A\uDB40\uDD03": "\uDB83\uDFC3",
+  "\u9694\uDB40\uDD03": "\uDB83\uDFC4",
+  "\u9699\uDB40\uDD03": "\uDB83\uDFC5",
+  "\u96A7\uDB40\uDD03": "\uDB83\uDFC6",
+  "\u96BB\uDB40\uDD03": "\uDB83\uDFC7",
+  "\u96C7\uDB40\uDD03": "\uDB83\uDFC8",
+  "\u96D8\uDB40\uDD03": "\uDB83\uDFC9",
+  "\u96DA\uDB40\uDD03": "\uDB83\uDFCA",
+  "\u96E3\uDB40\uDD03": "\uDB83\uDFCB",
+  "\u96E8\uDB40\uDD03": "\uDB83\uDFCC",
+  "\u96EA\uDB40\uDD03": "\uDB83\uDFCD",
+  "\u96F0\uDB40\uDD03": "\uDB83\uDFCE",
+  "\u9721\uDB40\uDD03": "\uDB83\uDFCF",
+  "\u9724\uDB40\uDD03": "\uDB83\uDFD0",
+  "\u9774\uDB40\uDD03": "\uDB83\uDFD1",
+  "\u97A8\uDB40\uDD03": "\uDB83\uDFD2",
+  "\u97B8\uDB40\uDD03": "\uDB83\uDFD3",
+  "\u97C6\uDB40\uDD03": "\uDB83\uDFD4",
+  "\u97C8\uDB40\uDD03": "\uDB83\uDFD5",
+  "\u97CB\uDB40\uDD03": "\uDB83\uDFD6",
+  "\u97CC\uDB40\uDD03": "\uDB83\uDFD7",
+  "\u97D1\uDB40\uDD03": "\uDB83\uDFD8",
+  "\u97D3\uDB40\uDD03": "\uDB83\uDFD9",
+  "\u97DC\uDB40\uDD03": "\uDB83\uDFDA",
+  "\u97DE\uDB40\uDD03": "\uDB83\uDFDB",
+  "\u97E4\uDB40\uDD03": "\uDB83\uDFDC",
+  "\u97F3\uDB40\uDD03": "\uDB83\uDFDD",
+  "\u97FA\uDB40\uDD03": "\uDB83\uDFDE",
+  "\u97FB\uDB40\uDD03": "\uDB83\uDFDF",
+  "\u980C\uDB40\uDD03": "\uDB83\uDFE0",
+  "\u9812\uDB40\uDD03": "\uDB83\uDFE1",
+  "\u9813\uDB40\uDD03": "\uDB83\uDFE2",
+  "\u9824\uDB40\uDD03": "\uDB83\uDFE3",
+  "\u9832\uDB40\uDD03": "\uDB83\uDFE4",
+  "\u9867\uDB40\uDD03": "\uDB83\uDFE5",
+  "\u9873\uDB40\uDD03": "\uDB83\uDFE6",
+  "\u98DF\uDB40\uDD03": "\uDB83\uDFE7",
+  "\u98E2\uDB40\uDD03": "\uDB83\uDFE8",
+  "\u98E6\uDB40\uDD03": "\uDB83\uDFE9",
+  "\u98EB\uDB40\uDD03": "\uDB83\uDFEA",
+  "\u98ED\uDB40\uDD03": "\uDB83\uDFEB",
+  "\u98F4\uDB40\uDD03": "\uDB83\uDFEC",
+  "\u98FD\uDB40\uDD03": "\uDB83\uDFED",
+  "\u98FE\uDB40\uDD03": "\uDB83\uDFEE",
+  "\u9903\uDB40\uDD03": "\uDB83\uDFEF",
+  "\u9909\uDB40\uDD03": "\uDB83\uDFF0",
+  "\u990A\uDB40\uDD03": "\uDB83\uDFF1",
+  "\u9910\uDB40\uDD03": "\uDB83\uDFF2",
+  "\u9912\uDB40\uDD03": "\uDB83\uDFF3",
+  "\u9913\uDB40\uDD03": "\uDB83\uDFF4",
+  "\u9915\uDB40\uDD03": "\uDB83\uDFF5",
+  "\u991D\uDB40\uDD03": "\uDB83\uDFF6",
+  "\u9921\uDB40\uDD03": "\uDB83\uDFF7",
+  "\u9927\uDB40\uDD03": "\uDB83\uDFF8",
+  "\u9934\uDB40\uDD03": "\uDB83\uDFF9",
+  "\u9939\uDB40\uDD03": "\uDB83\uDFFA",
+  "\u9942\uDB40\uDD03": "\uDB83\uDFFB",
+  "\u9946\uDB40\uDD03": "\uDB83\uDFFC",
+  "\u9947\uDB40\uDD03": "\uDB83\uDFFD",
+  "\u9949\uDB40\uDD03": "\uDB83\uDFFE",
+  "\u994B\uDB40\uDD03": "\uDB83\uDFFF",
+  "\u994C\uDB40\uDD03": "\uDB84\uDC00",
+  "\u9951\uDB40\uDD03": "\uDB84\uDC01",
+  "\u9959\uDB40\uDD03": "\uDB84\uDC02",
+  "\u995B\uDB40\uDD03": "\uDB84\uDC03",
+  "\u995C\uDB40\uDD03": "\uDB84\uDC04",
+  "\u99C1\uDB40\uDD03": "\uDB84\uDC05",
+  "\u99D0\uDB40\uDD03": "\uDB84\uDC06",
+  "\u9A19\uDB40\uDD03": "\uDB84\uDC07",
+  "\u9A30\uDB40\uDD03": "\uDB84\uDC08",
+  "\u9A4A\uDB40\uDD03": "\uDB84\uDC09",
+  "\u9A56\uDB40\uDD03": "\uDB84\uDC0A",
+  "\u9A5F\uDB40\uDD03": "\uDB84\uDC0B",
+  "\u9A65\uDB40\uDD03": "\uDB84\uDC0C",
+  "\u9AA8\uDB40\uDD03": "\uDB84\uDC0D",
+  "\u9AD6\uDB40\uDD03": "\uDB84\uDC0E",
+  "\u9AEF\uDB40\uDD03": "\uDB84\uDC0F",
+  "\u9B18\uDB40\uDD03": "\uDB84\uDC10",
+  "\u9B2D\uDB40\uDD03": "\uDB84\uDC11",
+  "\u9B2E\uDB40\uDD03": "\uDB84\uDC12",
+  "\u9B32\uDB40\uDD03": "\uDB84\uDC13",
+  "\u9B4D\uDB40\uDD03": "\uDB84\uDC14",
+  "\u9B54\uDB40\uDD03": "\uDB84\uDC15",
+  "\u9B8E\uDB40\uDD03": "\uDB84\uDC16",
+  "\u9B97\uDB40\uDD03": "\uDB84\uDC17",
+  "\u9BAB\uDB40\uDD03": "\uDB84\uDC18",
+  "\u9BB1\uDB40\uDD03": "\uDB84\uDC19",
+  "\u9BB9\uDB40\uDD03": "\uDB84\uDC1A",
+  "\u9BD6\uDB40\uDD03": "\uDB84\uDC1B",
+  "\u9BDB\uDB40\uDD03": "\uDB84\uDC1C",
+  "\u9BE1\uDB40\uDD03": "\uDB84\uDC1D",
+  "\u9BF1\uDB40\uDD03": "\uDB84\uDC1E",
+  "\u9BF2\uDB40\uDD03": "\uDB84\uDC1F",
+  "\u9C0C\uDB40\uDD03": "\uDB84\uDC20",
+  "\u9C10\uDB40\uDD03": "\uDB84\uDC21",
+  "\u9C3B\uDB40\uDD03": "\uDB84\uDC22",
+  "\u9C41\uDB40\uDD03": "\uDB84\uDC23",
+  "\u9C48\uDB40\uDD03": "\uDB84\uDC24",
+  "\u9C57\uDB40\uDD03": "\uDB84\uDC25",
+  "\u9C76\uDB40\uDD03": "\uDB84\uDC26",
+  "\u9D07\uDB40\uDD03": "\uDB84\uDC27",
+  "\u9D08\uDB40\uDD03": "\uDB84\uDC28",
+  "\u9D09\uDB40\uDD03": "\uDB84\uDC29",
+  "\u9D48\uDB40\uDD03": "\uDB84\uDC2A",
+  "\u9D60\uDB40\uDD03": "\uDB84\uDC2B",
+  "\u9D6C\uDB40\uDD03": "\uDB84\uDC2C",
+  "\u9DB2\uDB40\uDD03": "\uDB84\uDC2D",
+  "\u9DBF\uDB40\uDD03": "\uDB84\uDC2E",
+  "\u9DC0\uDB40\uDD03": "\uDB84\uDC2F",
+  "\u9DC1\uDB40\uDD03": "\uDB84\uDC30",
+  "\u9E81\uDB40\uDD03": "\uDB84\uDC31",
+  "\u9E97\uDB40\uDD03": "\uDB84\uDC32",
+  "\u9EAA\uDB40\uDD03": "\uDB84\uDC33",
+  "\u9EAD\uDB40\uDD03": "\uDB84\uDC34",
+  "\u9EBB\uDB40\uDD03": "\uDB84\uDC35",
+  "\u9EBF\uDB40\uDD03": "\uDB84\uDC36",
+  "\u9ECC\uDB40\uDD03": "\uDB84\uDC37",
+  "\u9EDB\uDB40\uDD03": "\uDB84\uDC38",
+  "\u9EEF\uDB40\uDD03": "\uDB84\uDC39",
+  "\u9EF9\uDB40\uDD03": "\uDB84\uDC3A",
+  "\u9F07\uDB40\uDD03": "\uDB84\uDC3B",
+  "\u9F1B\uDB40\uDD03": "\uDB84\uDC3C",
+  "\u9F31\uDB40\uDD03": "\uDB84\uDC3D",
+  "\u9F3B\uDB40\uDD03": "\uDB84\uDC3E",
+  "\u9F4A\uDB40\uDD03": "\uDB84\uDC3F",
+  "\u9F4B\uDB40\uDD03": "\uDB84\uDC40",
+  "\u9F4E\uDB40\uDD03": "\uDB84\uDC41",
+  "\u9F67\uDB40\uDD03": "\uDB84\uDC42",
+  "\u9F9C\uDB40\uDD03": "\uDB84\uDC43",
+  "\u9F9D\uDB40\uDD03": "\uDB84\uDC44",
+  "\uFA11\uDB40\uDD03": "\uDB84\uDC45",
+  "\uFA1F\uDB40\uDD03": "\uDB84\uDC46",
+  "\uFA24\uDB40\uDD03": "\uDB84\uDC47",
+  "\uD840\uDC41\uDB40\uDD03": "\uDB84\uDC48",
+  "\uD840\uDF2B\uDB40\uDD03": "\uDB84\uDC49",
+  "\uD841\uDD25\uDB40\uDD03": "\uDB84\uDC4A",
+  "\uD84D\uDDC4\uDB40\uDD03": "\uDB84\uDC4B",
+  "\uD84F\uDCFE\uDB40\uDD03": "\uDB84\uDC4C",
+  "\uD84F\uDF1B\uDB40\uDD03": "\uDB84\uDC4D",
+  "\uD853\uDC1E\uDB40\uDD03": "\uDB84\uDC4E",
+  "\uD858\uDE22\uDB40\uDD03": "\uDB84\uDC4F",
+  "\uD85B\uDC73\uDB40\uDD03": "\uDB84\uDC50",
+  "\uD861\uDD6B\uDB40\uDD03": "\uDB84\uDC51",
+  "\uD867\uDE3D\uDB40\uDD03": "\uDB84\uDC52",
+  "\uD867\uDE8A\uDB40\uDD03": "\uDB84\uDC53",
+  "\uD873\uDF4C\uDB40\uDD03": "\uDB84\uDC54",
+  "\uD86D\uDF77\uDB40\uDD03": "\uDB84\uDC55",
+  "\uD875\uDEB6\uDB40\uDD03": "\uDB84\uDC56",
+  "\u903A\uDB40\uDD03": "\uDB84\uDC57",
+  "\uD86E\uDDE4\uDB40\uDD03": "\uDB84\uDC58",
+  "\uD874\uDE60\uDB40\uDD03": "\uDB84\uDC59",
+  "\u3404\uDB40\uDD00": "\uDB84\uDC5A",
+  "\u3441\uDB40\uDD00": "\uDB84\uDC5B",
+  "\u3442\uDB40\uDD00": "\uDB84\uDC5C",
+  "\u348A\uDB40\uDD00": "\uDB84\uDC5D",
+  "\u34B8\uDB40\uDD00": "\uDB84\uDC5E",
+  "\u34B9\uDB40\uDD00": "\uDB84\uDC5F",
+  "\u34DE\uDB40\uDD00": "\uDB84\uDC60",
+  "\u355B\uDB40\uDD00": "\uDB84\uDC61",
+  "\u355C\uDB40\uDD00": "\uDB84\uDC62",
+  "\u36A2\uDB40\uDD00": "\uDB84\uDC63",
+  "\u3815\uDB40\uDD00": "\uDB84\uDC64",
+  "\u38A2\uDB40\uDD00": "\uDB84\uDC65",
+  "\u38A3\uDB40\uDD00": "\uDB84\uDC66",
+  "\u38FC\uDB40\uDD00": "\uDB84\uDC67",
+  "\u39A2\uDB40\uDD00": "\uDB84\uDC68",
+  "\u3AA4\uDB40\uDD00": "\uDB84\uDC69",
+  "\u3AE0\uDB40\uDD00": "\uDB84\uDC6A",
+  "\u3AF4\uDB40\uDD00": "\uDB84\uDC6B",
+  "\u3B0A\uDB40\uDD00": "\uDB84\uDC6C",
+  "\u3B27\uDB40\uDD00": "\uDB84\uDC6D",
+  "\u3B78\uDB40\uDD00": "\uDB84\uDC6E",
+  "\u3BEC\uDB40\uDD00": "\uDB84\uDC6F",
+  "\u3C4E\uDB40\uDD00": "\uDB84\uDC70",
+  "\u3CDF\uDB40\uDD00": "\uDB84\uDC71",
+  "\u3D04\uDB40\uDD00": "\uDB84\uDC72",
+  "\u3D1B\uDB40\uDD00": "\uDB84\uDC73",
+  "\u3D5D\uDB40\uDD00": "\uDB84\uDC74",
+  "\u3D80\uDB40\uDD00": "\uDB84\uDC75",
+  "\u4104\uDB40\uDD00": "\uDB84\uDC76",
+  "\u410D\uDB40\uDD00": "\uDB84\uDC77",
+  "\u410F\uDB40\uDD00": "\uDB84\uDC78",
+  "\u4120\uDB40\uDD00": "\uDB84\uDC79",
+  "\u4165\uDB40\uDD00": "\uDB84\uDC7A",
+  "\u4183\uDB40\uDD00": "\uDB84\uDC7B",
+  "\u42E3\uDB40\uDD00": "\uDB84\uDC7C",
+  "\u43D9\uDB40\uDD00": "\uDB84\uDC7D",
+  "\u43E2\uDB40\uDD00": "\uDB84\uDC7E",
+  "\u440B\uDB40\uDD00": "\uDB84\uDC7F",
+  "\u465D\uDB40\uDD00": "\uDB84\uDC80",
+  "\u4670\uDB40\uDD00": "\uDB84\uDC81",
+  "\u4672\uDB40\uDD00": "\uDB84\uDC82",
+  "\u46AC\uDB40\uDD00": "\uDB84\uDC83",
+  "\u4722\uDB40\uDD00": "\uDB84\uDC84",
+  "\u4875\uDB40\uDD00": "\uDB84\uDC85",
+  "\u48B0\uDB40\uDD00": "\uDB84\uDC86",
+  "\u49A8\uDB40\uDD00": "\uDB84\uDC87",
+  "\u4A9D\uDB40\uDD00": "\uDB84\uDC88",
+  "\u4C50\uDB40\uDD00": "\uDB84\uDC89",
+  "\u4C95\uDB40\uDD00": "\uDB84\uDC8A",
+  "\u4D2A\uDB40\uDD00": "\uDB84\uDC8B",
+  "\u4E3D\uDB40\uDD00": "\uDB84\uDC8C",
+  "\u4EB7\uDB40\uDD00": "\uDB84\uDC8D",
+  "\u4F9C\uDB40\uDD00": "\uDB84\uDC8E",
+  "\u4FB1\uDB40\uDD00": "\uDB84\uDC8F",
+  "\u508B\uDB40\uDD00": "\uDB84\uDC90",
+  "\u5125\uDB40\uDD00": "\uDB84\uDC91",
+  "\u549E\uDB40\uDD00": "\uDB84\uDC92",
+  "\u54B5\uDB40\uDD00": "\uDB84\uDC93",
+  "\u5568\uDB40\uDD00": "\uDB84\uDC94",
+  "\u5683\uDB40\uDD00": "\uDB84\uDC95",
+  "\u5717\uDB40\uDD00": "\uDB84\uDC96",
+  "\u5900\uDB40\uDD00": "\uDB84\uDC97",
+  "\u59A0\uDB40\uDD00": "\uDB84\uDC98",
+  "\u5BC8\uDB40\uDD00": "\uDB84\uDC99",
+  "\u5C8D\uDB40\uDD00": "\uDB84\uDC9A",
+  "\u5D6E\uDB40\uDD00": "\uDB84\uDC9B",
+  "\u5E23\uDB40\uDD00": "\uDB84\uDC9C",
+  "\u5E42\uDB40\uDD00": "\uDB84\uDC9D",
+  "\u5E69\uDB40\uDD00": "\uDB84\uDC9E",
+  "\u5E6F\uDB40\uDD00": "\uDB84\uDC9F",
+  "\u5EBB\uDB40\uDD00": "\uDB84\uDCA0",
+  "\u5FB2\uDB40\uDD00": "\uDB84\uDCA1",
+  "\u5FDF\uDB40\uDD00": "\uDB84\uDCA2",
+  "\u615C\uDB40\uDD00": "\uDB84\uDCA3",
+  "\u6205\uDB40\uDD00": "\uDB84\uDCA4",
+  "\u6286\uDB40\uDD00": "\uDB84\uDCA5",
+  "\u6459\uDB40\uDD00": "\uDB84\uDCA6",
+  "\u6466\uDB40\uDD00": "\uDB84\uDCA7",
+  "\u65F3\uDB40\uDD00": "\uDB84\uDCA8",
+  "\u660B\uDB40\uDD00": "\uDB84\uDCA9",
+  "\u6721\uDB40\uDD00": "\uDB84\uDCAA",
+  "\u6825\uDB40\uDD00": "\uDB84\uDCAB",
+  "\u6956\uDB40\uDD00": "\uDB84\uDCAC",
+  "\u69E4\uDB40\uDD00": "\uDB84\uDCAD",
+  "\u6A5D\uDB40\uDD00": "\uDB84\uDCAE",
+  "\u6A96\uDB40\uDD00": "\uDB84\uDCAF",
+  "\u6AA8\uDB40\uDD00": "\uDB84\uDCB0",
+  "\u6BFA\uDB40\uDD00": "\uDB84\uDCB1",
+  "\u6CA0\uDB40\uDD00": "\uDB84\uDCB2",
+  "\u6CB7\uDB40\uDD00": "\uDB84\uDCB3",
+  "\uD84F\uDD60\uDB40\uDD00": "\uDB84\uDCB4",
+  "\u6E33\uDB40\uDD00": "\uDB84\uDCB5",
+  "\u6F28\uDB40\uDD00": "\uDB84\uDCB6",
+  "\u6FC4\uDB40\uDD00": "\uDB84\uDCB7",
+  "\u7010\uDB40\uDD00": "\uDB84\uDCB8",
+  "\u7022\uDB40\uDD00": "\uDB84\uDCB9",
+  "\u7041\uDB40\uDD00": "\uDB84\uDCBA",
+  "\u717A\uDB40\uDD00": "\uDB84\uDCBB",
+  "\u71A5\uDB40\uDD00": "\uDB84\uDCBC",
+  "\u72B3\uDB40\uDD00": "\uDB84\uDCBD",
+  "\u73A3\uDB40\uDD00": "\uDB84\uDCBE",
+  "\u74CB\uDB40\uDD00": "\uDB84\uDCBF",
+  "\u776D\uDB40\uDD00": "\uDB84\uDCC0",
+  "\u787B\uDB40\uDD00": "\uDB84\uDCC1",
+  "\u794C\uDB40\uDD00": "\uDB84\uDCC2",
+  "\u7961\uDB40\uDD00": "\uDB84\uDCC3",
+  "\u7963\uDB40\uDD00": "\uDB84\uDCC4",
+  "\u7971\uDB40\uDD00": "\uDB84\uDCC5",
+  "\u7973\uDB40\uDD00": "\uDB84\uDCC6",
+  "\u7982\uDB40\uDD00": "\uDB84\uDCC7",
+  "\u7997\uDB40\uDD00": "\uDB84\uDCC8",
+  "\u79AC\uDB40\uDD00": "\uDB84\uDCC9",
+  "\u79AD\uDB40\uDD00": "\uDB84\uDCCA",
+  "\u7A4B\uDB40\uDD00": "\uDB84\uDCCB",
+  "\uD878\uDD52\uDB40\uDD00": "\uDB84\uDCCC",
+  "\u7C3B\uDB40\uDD00": "\uDB84\uDCCD",
+  "\u7D58\uDB40\uDD00": "\uDB84\uDCCE",
+  "\u7DF0\uDB40\uDD00": "\uDB84\uDCCF",
+  "\u7E0C\uDB40\uDD00": "\uDB84\uDCD0",
+  "\u7E68\uDB40\uDD00": "\uDB84\uDCD1",
+  "\u8187\uDB40\uDD00": "\uDB84\uDCD2",
+  "\uD86D\uDFCB\uDB40\uDD00": "\uDB84\uDCD3",
+  "\u8211\uDB40\uDD00": "\uDB84\uDCD4",
+  "\u8275\uDB40\uDD00": "\uDB84\uDCD5",
+  "\uD85A\uDF0A\uDB40\uDD00": "\uDB84\uDCD6",
+  "\u8595\uDB40\uDD00": "\uDB84\uDCD7",
+  "\uD871\uDFD3\uDB40\uDD00": "\uDB84\uDCD8",
+  "\u866A\uDB40\uDD00": "\uDB84\uDCD9",
+  "\u8744\uDB40\uDD00": "\uDB84\uDCDA",
+  "\u8773\uDB40\uDD00": "\uDB84\uDCDB",
+  "\u88A3\uDB40\uDD00": "\uDB84\uDCDC",
+  "\u88D7\uDB40\uDD00": "\uDB84\uDCDD",
+  "\u8933\uDB40\uDD00": "\uDB84\uDCDE",
+  "\u8B89\uDB40\uDD00": "\uDB84\uDCDF",
+  "\u8E46\uDB40\uDD00": "\uDB84\uDCE0",
+  "\u8E6E\uDB40\uDD00": "\uDB84\uDCE1",
+  "\u8FAC\uDB40\uDD00": "\uDB84\uDCE2",
+  "\u8FC3\uDB40\uDD00": "\uDB84\uDCE3",
+  "\u8FE1\uDB40\uDD00": "\uDB84\uDCE4",
+  "\u8FEC\uDB40\uDD00": "\uDB84\uDCE5",
+  "\u8FFF\uDB40\uDD00": "\uDB84\uDCE6",
+  "\u9024\uDB40\uDD00": "\uDB84\uDCE7",
+  "\u902B\uDB40\uDD00": "\uDB84\uDCE8",
+  "\u9040\uDB40\uDD00": "\uDB84\uDCE9",
+  "\u905F\uDB40\uDD00": "\uDB84\uDCEA",
+  "\u907B\uDB40\uDD00": "\uDB84\uDCEB",
+  "\u908D\uDB40\uDD00": "\uDB84\uDCEC",
+  "\u90F1\uDB40\uDD00": "\uDB84\uDCED",
+  "\u919A\uDB40\uDD00": "\uDB84\uDCEE",
+  "\u93E0\uDB40\uDD00": "\uDB84\uDCEF",
+  "\u9429\uDB40\uDD00": "\uDB84\uDCF0",
+  "\u9439\uDB40\uDD00": "\uDB84\uDCF1",
+  "\u975D\uDB40\uDD00": "\uDB84\uDCF2",
+  "\u98E4\uDB40\uDD00": "\uDB84\uDCF3",
+  "\u98F5\uDB40\uDD00": "\uDB84\uDCF4",
+  "\u98FB\uDB40\uDD00": "\uDB84\uDCF5",
+  "\u9923\uDB40\uDD00": "\uDB84\uDCF6",
+  "\u9929\uDB40\uDD00": "\uDB84\uDCF7",
+  "\u992A\uDB40\uDD00": "\uDB84\uDCF8",
+  "\u992D\uDB40\uDD00": "\uDB84\uDCF9",
+  "\u9930\uDB40\uDD00": "\uDB84\uDCFA",
+  "\u9936\uDB40\uDD00": "\uDB84\uDCFB",
+  "\u9944\uDB40\uDD00": "\uDB84\uDCFC",
+  "\u994A\uDB40\uDD00": "\uDB84\uDCFD",
+  "\u9956\uDB40\uDD00": "\uDB84\uDCFE",
+  "\u995D\uDB40\uDD00": "\uDB84\uDCFF",
+  "\u9961\uDB40\uDD00": "\uDB84\uDD00",
+  "\u99A7\uDB40\uDD00": "\uDB84\uDD01",
+  "\u99B7\uDB40\uDD00": "\uDB84\uDD02",
+  "\uD840\uDDBB\uDB40\uDD00": "\uDB84\uDD03",
+  "\uD841\uDC57\uDB40\uDD00": "\uDB84\uDD04",
+  "\uD841\uDC96\uDB40\uDD00": "\uDB84\uDD05",
+  "\uD841\uDD25\uDB40\uDD00": "\uDB84\uDD06",
+  "\uD842\uDF93\uDB40\uDD00": "\uDB84\uDD07",
+  "\uD843\uDD4A\uDB40\uDD00": "\uDB84\uDD08",
+  "\uD843\uDEDB\uDB40\uDD00": "\uDB84\uDD09",
+  "\uD844\uDE75\uDB40\uDD00": "\uDB84\uDD0A",
+  "\uD844\uDEA5\uDB40\uDD00": "\uDB84\uDD0B",
+  "\uD844\uDF69\uDB40\uDD00": "\uDB84\uDD0C",
+  "\uD845\uDC5E\uDB40\uDD00": "\uDB84\uDD0D",
+  "\uD845\uDC5F\uDB40\uDD00": "\uDB84\uDD0E",
+  "\uD846\uDCEA\uDB40\uDD00": "\uDB84\uDD0F",
+  "\uD846\uDF4E\uDB40\uDD00": "\uDB84\uDD10",
+  "\uD847\uDC31\uDB40\uDD00": "\uDB84\uDD11",
+  "\u5DDF\uDB40\uDD00": "\uDB84\uDD12",
+  "\uD848\uDF1B\uDB40\uDD00": "\uDB84\uDD13",
+  "\uD849\uDCED\uDB40\uDD00": "\uDB84\uDD14",
+  "\uD849\uDD37\uDB40\uDD00": "\uDB84\uDD15",
+  "\uD84A\uDC35\uDB40\uDD00": "\uDB84\uDD16",
+  "\uD84A\uDC43\uDB40\uDD00": "\uDB84\uDD17",
+  "\uD84B\uDD8A\uDB40\uDD00": "\uDB84\uDD18",
+  "\uD84B\uDDD0\uDB40\uDD00": "\uDB84\uDD19",
+  "\uD84C\uDD4D\uDB40\uDD00": "\uDB84\uDD1A",
+  "\uD84C\uDF6E\uDB40\uDD00": "\uDB84\uDD1B",
+  "\uD84C\uDFB5\uDB40\uDD00": "\uDB84\uDD1C",
+  "\uD84D\uDCC9\uDB40\uDD00": "\uDB84\uDD1D",
+  "\uD84D\uDF4B\uDB40\uDD00": "\uDB84\uDD1E",
+  "\uD84D\uDF80\uDB40\uDD00": "\uDB84\uDD1F",
+  "\uD84D\uDFF3\uDB40\uDD00": "\uDB84\uDD20",
+  "\uD84E\uDD69\uDB40\uDD00": "\uDB84\uDD21",
+  "\uD84F\uDC10\uDB40\uDD00": "\uDB84\uDD22",
+  "\uD84F\uDCA8\uDB40\uDD00": "\uDB84\uDD23",
+  "\uD84F\uDE32\uDB40\uDD00": "\uDB84\uDD24",
+  "\uD84F\uDF1B\uDB40\uDD00": "\uDB84\uDD25",
+  "\uD850\uDD38\uDB40\uDD00": "\uDB84\uDD26",
+  "\uD850\uDE85\uDB40\uDD00": "\uDB84\uDD27",
+  "\uD850\uDFC1\uDB40\uDD00": "\uDB84\uDD28",
+  "\uD853\uDC6B\uDB40\uDD00": "\uDB84\uDD29",
+  "\uD853\uDC83\uDB40\uDD00": "\uDB84\uDD2A",
+  "\uD853\uDCFF\uDB40\uDD00": "\uDB84\uDD2B",
+  "\uD855\uDE07\uDB40\uDD00": "\uDB84\uDD2C",
+  "\uD855\uDE26\uDB40\uDD00": "\uDB84\uDD2D",
+  "\uD855\uDE2C\uDB40\uDD00": "\uDB84\uDD2E",
+  "\uD855\uDE30\uDB40\uDD00": "\uDB84\uDD2F",
+  "\uD855\uDE6E\uDB40\uDD00": "\uDB84\uDD30",
+  "\uD855\uDEC6\uDB40\uDD00": "\uDB84\uDD31",
+  "\uD855\uDED9\uDB40\uDD00": "\uDB84\uDD32",
+  "\uD855\uDEDC\uDB40\uDD00": "\uDB84\uDD33",
+  "\uD855\uDEF2\uDB40\uDD00": "\uDB84\uDD34",
+  "\uD855\uDF05\uDB40\uDD00": "\uDB84\uDD35",
+  "\uD855\uDF26\uDB40\uDD00": "\uDB84\uDD36",
+  "\uD856\uDC35\uDB40\uDD00": "\uDB84\uDD37",
+  "\uD856\uDE2B\uDB40\uDD00": "\uDB84\uDD38",
+  "\uD856\uDEE1\uDB40\uDD00": "\uDB84\uDD39",
+  "\uD856\uDF5F\uDB40\uDD00": "\uDB84\uDD3A",
+  "\uD856\uDFFF\uDB40\uDD00": "\uDB84\uDD3B",
+  "\uD857\uDF9E\uDB40\uDD00": "\uDB84\uDD3C",
+  "\uD858\uDDD7\uDB40\uDD00": "\uDB84\uDD3D",
+  "\uD858\uDE8B\uDB40\uDD00": "\uDB84\uDD3E",
+  "\uD858\uDFC1\uDB40\uDD00": "\uDB84\uDD3F",
+  "\uD859\uDC08\uDB40\uDD00": "\uDB84\uDD40",
+  "\uD859\uDCB3\uDB40\uDD00": "\uDB84\uDD41",
+  "\uD859\uDEAF\uDB40\uDD00": "\uDB84\uDD42",
+  "\uD85A\uDDE0\uDB40\uDD00": "\uDB84\uDD43",
+  "\uD85A\uDEAD\uDB40\uDD00": "\uDB84\uDD44",
+  "\uD85A\uDF1E\uDB40\uDD00": "\uDB84\uDD45",
+  "\uD85B\uDF2F\uDB40\uDD00": "\uDB84\uDD46",
+  "\uD85C\uDC39\uDB40\uDD00": "\uDB84\uDD47",
+  "\uD85C\uDF69\uDB40\uDD00": "\uDB84\uDD48",
+  "\uD85D\uDD25\uDB40\uDD00": "\uDB84\uDD49",
+  "\uD85D\uDE02\uDB40\uDD00": "\uDB84\uDD4A",
+  "\uD85D\uDF05\uDB40\uDD00": "\uDB84\uDD4B",
+  "\uD85D\uDF0F\uDB40\uDD00": "\uDB84\uDD4C",
+  "\uD85D\uDF53\uDB40\uDD00": "\uDB84\uDD4D",
+  "\uD85D\uDF71\uDB40\uDD00": "\uDB84\uDD4E",
+  "\uD85D\uDFAA\uDB40\uDD00": "\uDB84\uDD4F",
+  "\uD85D\uDFB8\uDB40\uDD00": "\uDB84\uDD50",
+  "\uD85E\uDDDA\uDB40\uDD00": "\uDB84\uDD51",
+  "\uD85E\uDF87\uDB40\uDD00": "\uDB84\uDD52",
+  "\uD85E\uDFC6\uDB40\uDD00": "\uDB84\uDD53",
+  "\uD85F\uDD2A\uDB40\uDD00": "\uDB84\uDD54",
+  "\uD85F\uDE19\uDB40\uDD00": "\uDB84\uDD55",
+  "\uD85F\uDE3D\uDB40\uDD00": "\uDB84\uDD56",
+  "\uD85F\uDFC0\uDB40\uDD00": "\uDB84\uDD57",
+  "\uD861\uDC4D\uDB40\uDD00": "\uDB84\uDD58",
+  "\uD861\uDC8C\uDB40\uDD00": "\uDB84\uDD59",
+  "\uD861\uDCC5\uDB40\uDD00": "\uDB84\uDD5A",
+  "\uD861\uDCCD\uDB40\uDD00": "\uDB84\uDD5B",
+  "\uD861\uDD1D\uDB40\uDD00": "\uDB84\uDD5C",
+  "\uD861\uDD1F\uDB40\uDD00": "\uDB84\uDD5D",
+  "\uD861\uDD27\uDB40\uDD00": "\uDB84\uDD5E",
+  "\uD861\uDD2F\uDB40\uDD00": "\uDB84\uDD5F",
+  "\uD861\uDD88\uDB40\uDD00": "\uDB84\uDD60",
+  "\uD861\uDDB9\uDB40\uDD00": "\uDB84\uDD61",
+  "\uD861\uDDBF\uDB40\uDD00": "\uDB84\uDD62",
+  "\uD861\uDE22\uDB40\uDD00": "\uDB84\uDD63",
+  "\uD861\uDE5A\uDB40\uDD00": "\uDB84\uDD64",
+  "\uD861\uDE5F\uDB40\uDD00": "\uDB84\uDD65",
+  "\uD864\uDC31\uDB40\uDD00": "\uDB84\uDD66",
+  "\uD864\uDF79\uDB40\uDD00": "\uDB84\uDD67",
+  "\uD865\uDD48\uDB40\uDD00": "\uDB84\uDD68",
+  "\uD865\uDE38\uDB40\uDD00": "\uDB84\uDD69",
+  "\uD865\uDE82\uDB40\uDD00": "\uDB84\uDD6A",
+  "\uD865\uDE85\uDB40\uDD00": "\uDB84\uDD6B",
+  "\uD865\uDF08\uDB40\uDD00": "\uDB84\uDD6C",
+  "\uD865\uDF8D\uDB40\uDD00": "\uDB84\uDD6D",
+  "\uD865\uDFAD\uDB40\uDD00": "\uDB84\uDD6E",
+  "\uD865\uDFCB\uDB40\uDD00": "\uDB84\uDD6F",
+  "\uD866\uDC94\uDB40\uDD00": "\uDB84\uDD70",
+  "\uD866\uDD18\uDB40\uDD00": "\uDB84\uDD71",
+  "\uD867\uDE77\uDB40\uDD00": "\uDB84\uDD72",
+  "\uD868\uDC4B\uDB40\uDD00": "\uDB84\uDD73",
+  "\uD868\uDE91\uDB40\uDD00": "\uDB84\uDD74",
+  "\uD869\uDD02\uDB40\uDD00": "\uDB84\uDD75",
+  "\uD869\uDD6F\uDB40\uDD00": "\uDB84\uDD76",
+  "\uD86D\uDF41\uDB40\uDD00": "\uDB84\uDD77",
+  "\uD873\uDED0\uDB40\uDD00": "\uDB84\uDD78",
+  "\uD873\uDF4C\uDB40\uDD00": "\uDB84\uDD79",
+  "\uD869\uDF46\uDB40\uDD00": "\uDB84\uDD7A",
+  "\uD877\uDD48\uDB40\uDD00": "\uDB84\uDD7B",
+  "\uD874\uDDA2\uDB40\uDD00": "\uDB84\uDD7C",
+  "\uD877\uDD44\uDB40\uDD00": "\uDB84\uDD7D",
+  "\uD840\uDC4A\uDB40\uDD00": "\uDB84\uDD7E",
+  "\uD874\uDC6F\uDB40\uDD00": "\uDB84\uDD7F",
+  "\uD874\uDC77\uDB40\uDD00": "\uDB84\uDD80",
+  "\uD874\uDD8F\uDB40\uDD00": "\uDB84\uDD81",
+  "\uD843\uDDF0\uDB40\uDD00": "\uDB84\uDD82",
+  "\uD874\uDEDB\uDB40\uDD00": "\uDB84\uDD83",
+  "\uD86D\uDF63\uDB40\uDD00": "\uDB84\uDD84",
+  "\uD846\uDF36\uDB40\uDD00": "\uDB84\uDD85",
+  "\uD875\uDEB6\uDB40\uDD00": "\uDB84\uDD86",
+  "\uD86D\uDF78\uDB40\uDD00": "\uDB84\uDD87",
+  "\uD876\uDC86\uDB40\uDD00": "\uDB84\uDD88",
+  "\uD86D\uDF80\uDB40\uDD00": "\uDB84\uDD89",
+  "\uD870\uDCFE\uDB40\uDD00": "\uDB84\uDD8A",
+  "\uD876\uDF4B\uDB40\uDD00": "\uDB84\uDD8B",
+  "\uD86B\uDD89\uDB40\uDD00": "\uDB84\uDD8C",
+  "\uD877\uDF41\uDB40\uDD00": "\uDB84\uDD8D",
+  "\uD86D\uDFB9\uDB40\uDD00": "\uDB84\uDD8E",
+  "\uD878\uDF06\uDB40\uDD00": "\uDB84\uDD8F",
+  "\uD871\uDF37\uDB40\uDD00": "\uDB84\uDD90",
+  "\uD871\uDF3B\uDB40\uDD00": "\uDB84\uDD91",
+  "\uD86D\uDFEA\uDB40\uDD00": "\uDB84\uDD92",
+  "\u49DF\uDB40\uDD00": "\uDB84\uDD93",
+  "\uD87A\uDDCA\uDB40\uDD00": "\uDB84\uDD94",
+  "\uD87A\uDDF0\uDB40\uDD00": "\uDB84\uDD95",
+  "\uD873\uDD6B\uDB40\uDD00": "\uDB84\uDD96",
+  "\uD87A\uDF71\uDB40\uDD00": "\uDB84\uDD97",
+  "\uD874\uDCB2\uDB40\uDD00": "\uDB84\uDD98",
+  "\uD86E\uDDE4\uDB40\uDD00": "\uDB84\uDD99",
+  "\uD86E\uDFF1\uDB40\uDD00": "\uDB84\uDD9A",
+  "\uD875\uDCF1\uDB40\uDD00": "\uDB84\uDD9B",
+  "\uD86A\uDDE8\uDB40\uDD00": "\uDB84\uDD9C",
+  "\uD875\uDF10\uDB40\uDD00": "\uDB84\uDD9D",
+  "\uD875\uDFBE\uDB40\uDD00": "\uDB84\uDD9E",
+  "\uD875\uDFF1\uDB40\uDD00": "\uDB84\uDD9F",
+  "\uD86B\uDD03\uDB40\uDD00": "\uDB84\uDDA0",
+  "\uD877\uDC7D\uDB40\uDD00": "\uDB84\uDDA1",
+  "\uD877\uDC9E\uDB40\uDD00": "\uDB84\uDDA2",
+  "\uD877\uDCD3\uDB40\uDD00": "\uDB84\uDDA3",
+  "\uD878\uDCEC\uDB40\uDD00": "\uDB84\uDDA4",
+  "\uD879\uDFD0\uDB40\uDD00": "\uDB84\uDDA5",
+  "\uD86D\uDC68\uDB40\uDD00": "\uDB84\uDDA6",
+  "\uD87A\uDE41\uDB40\uDD00": "\uDB84\uDDA7",
+  "\u4E0E\uDB40\uDD04": "\uDB84\uDDA8",
+  "\u4E11\uDB40\uDD04": "\uDB84\uDDA9",
+  "\u4E19\uDB40\uDD04": "\uDB84\uDDAA",
+  "\u4EA2\uDB40\uDD04": "\uDB84\uDDAB",
+  "\u4EA4\uDB40\uDD04": "\uDB84\uDDAC",
+  "\u4ED7\uDB40\uDD04": "\uDB84\uDDAD",
+  "\u4F60\uDB40\uDD04": "\uDB84\uDDAE",
+  "\u5065\uDB40\uDD04": "\uDB84\uDDAF",
+  "\u5091\uDB40\uDD04": "\uDB84\uDDB0",
+  "\u50CA\uDB40\uDD04": "\uDB84\uDDB1",
+  "\u50CF\uDB40\uDD04": "\uDB84\uDDB2",
+  "\u50E7\uDB40\uDD04": "\uDB84\uDDB3",
+  "\u50F2\uDB40\uDD04": "\uDB84\uDDB4",
+  "\u513C\uDB40\uDD04": "\uDB84\uDDB5",
+  "\u5142\uDB40\uDD04": "\uDB84\uDDB6",
+  "\u514A\uDB40\uDD04": "\uDB84\uDDB7",
+  "\u5154\uDB40\uDD04": "\uDB84\uDDB8",
+  "\u5177\uDB40\uDD04": "\uDB84\uDDB9",
+  "\u517C\uDB40\uDD04": "\uDB84\uDDBA",
+  "\u518D\uDB40\uDD04": "\uDB84\uDDBB",
+  "\u5193\uDB40\uDD04": "\uDB84\uDDBC",
+  "\u5195\uDB40\uDD04": "\uDB84\uDDBD",
+  "\u51A2\uDB40\uDD04": "\uDB84\uDDBE",
+  "\u51A4\uDB40\uDD04": "\uDB84\uDDBF",
+  "\u51B4\uDB40\uDD04": "\uDB84\uDDC0",
+  "\u5207\uDB40\uDD04": "\uDB84\uDDC1",
+  "\u5224\uDB40\uDD04": "\uDB84\uDDC2",
+  "\u5272\uDB40\uDD04": "\uDB84\uDDC3",
+  "\u5294\uDB40\uDD04": "\uDB84\uDDC4",
+  "\u52CC\uDB40\uDD04": "\uDB84\uDDC5",
+  "\u52E4\uDB40\uDD04": "\uDB84\uDDC6",
+  "\u5308\uDB40\uDD04": "\uDB84\uDDC7",
+  "\u535A\uDB40\uDD04": "\uDB84\uDDC8",
+  "\u5371\uDB40\uDD04": "\uDB84\uDDC9",
+  "\u5377\uDB40\uDD04": "\uDB84\uDDCA",
+  "\u53DB\uDB40\uDD04": "\uDB84\uDDCB",
+  "\u53DF\uDB40\uDD04": "\uDB84\uDDCC",
+  "\u540F\uDB40\uDD04": "\uDB84\uDDCD",
+  "\u5448\uDB40\uDD04": "\uDB84\uDDCE",
+  "\u5533\uDB40\uDD04": "\uDB84\uDDCF",
+  "\u5544\uDB40\uDD04": "\uDB84\uDDD0",
+  "\u5546\uDB40\uDD04": "\uDB84\uDDD1",
+  "\u5584\uDB40\uDD04": "\uDB84\uDDD2",
+  "\u5599\uDB40\uDD04": "\uDB84\uDDD3",
+  "\u559C\uDB40\uDD04": "\uDB84\uDDD4",
+  "\u55A9\uDB40\uDD04": "\uDB84\uDDD5",
+  "\u55AB\uDB40\uDD04": "\uDB84\uDDD6",
+  "\u55E4\uDB40\uDD04": "\uDB84\uDDD7",
+  "\u5605\uDB40\uDD04": "\uDB84\uDDD8",
+  "\u5609\uDB40\uDD04": "\uDB84\uDDD9",
+  "\u5642\uDB40\uDD04": "\uDB84\uDDDA",
+  "\u5668\uDB40\uDD04": "\uDB84\uDDDB",
+  "\u5674\uDB40\uDD04": "\uDB84\uDDDC",
+  "\u56C1\uDB40\uDD04": "\uDB84\uDDDD",
+  "\u56CE\uDB40\uDD04": "\uDB84\uDDDE",
+  "\u570D\uDB40\uDD04": "\uDB84\uDDDF",
+  "\u57F4\uDB40\uDD04": "\uDB84\uDDE0",
+  "\u5859\uDB40\uDD04": "\uDB84\uDDE1",
+  "\u585A\uDB40\uDD04": "\uDB84\uDDE2",
+  "\u589C\uDB40\uDD04": "\uDB84\uDDE3",
+  "\u58AB\uDB40\uDD04": "\uDB84\uDDE4",
+  "\u5900\uDB40\uDD04": "\uDB84\uDDE5",
+  "\u5951\uDB40\uDD04": "\uDB84\uDDE6",
+  "\u5960\uDB40\uDD04": "\uDB84\uDDE7",
+  "\u59FF\uDB40\uDD04": "\uDB84\uDDE8",
+  "\u5ABE\uDB40\uDD04": "\uDB84\uDDE9",
+  "\u5AC2\uDB40\uDD04": "\uDB84\uDDEA",
+  "\u5BC3\uDB40\uDD04": "\uDB84\uDDEB",
+  "\u5BD7\uDB40\uDD04": "\uDB84\uDDEC",
+  "\u5BDB\uDB40\uDD04": "\uDB84\uDDED",
+  "\u5C06\uDB40\uDD04": "\uDB84\uDDEE",
+  "\u5C07\uDB40\uDD04": "\uDB84\uDDEF",
+  "\u5C0A\uDB40\uDD04": "\uDB84\uDDF0",
+  "\u5C28\uDB40\uDD04": "\uDB84\uDDF1",
+  "\u5DD3\uDB40\uDD04": "\uDB84\uDDF2",
+  "\u5DFD\uDB40\uDD04": "\uDB84\uDDF3",
+  "\u5E2B\uDB40\uDD04": "\uDB84\uDDF4",
+  "\u5E30\uDB40\uDD04": "\uDB84\uDDF5",
+  "\u5E43\uDB40\uDD04": "\uDB84\uDDF6",
+  "\u5E64\uDB40\uDD04": "\uDB84\uDDF7",
+  "\u5E6D\uDB40\uDD04": "\uDB84\uDDF8",
+  "\u5E7E\uDB40\uDD04": "\uDB84\uDDF9",
+  "\u5EAD\uDB40\uDD04": "\uDB84\uDDFA",
+  "\u5ED0\uDB40\uDD04": "\uDB84\uDDFB",
+  "\u5EE3\uDB40\uDD04": "\uDB84\uDDFC",
+  "\u5EF6\uDB40\uDD04": "\uDB84\uDDFD",
+  "\u5EF7\uDB40\uDD04": "\uDB84\uDDFE",
+  "\u5EFA\uDB40\uDD04": "\uDB84\uDDFF",
+  "\u5F45\uDB40\uDD04": "\uDB84\uDE00",
+  "\u5F50\uDB40\uDD04": "\uDB84\uDE01",
+  "\u5F5A\uDB40\uDD04": "\uDB84\uDE02",
+  "\u5FA1\uDB40\uDD04": "\uDB84\uDE03",
+  "\u5FAE\uDB40\uDD04": "\uDB84\uDE04",
+  "\u5FCD\uDB40\uDD04": "\uDB84\uDE05",
+  "\u6097\uDB40\uDD04": "\uDB84\uDE06",
+  "\u60A4\uDB40\uDD04": "\uDB84\uDE07",
+  "\u60D8\uDB40\uDD04": "\uDB84\uDE08",
+  "\u6108\uDB40\uDD04": "\uDB84\uDE09",
+  "\u613C\uDB40\uDD04": "\uDB84\uDE0A",
+  "\u613D\uDB40\uDD04": "\uDB84\uDE0B",
+  "\u6148\uDB40\uDD04": "\uDB84\uDE0C",
+  "\u614C\uDB40\uDD04": "\uDB84\uDE0D",
+  "\u6167\uDB40\uDD04": "\uDB84\uDE0E",
+  "\u6190\uDB40\uDD04": "\uDB84\uDE0F",
+  "\u61A4\uDB40\uDD04": "\uDB84\uDE10",
+  "\u61B2\uDB40\uDD04": "\uDB84\uDE11",
+  "\u623F\uDB40\uDD04": "\uDB84\uDE12",
+  "\u6249\uDB40\uDD04": "\uDB84\uDE13",
+  "\u62D0\uDB40\uDD04": "\uDB84\uDE14",
+  "\u6308\uDB40\uDD04": "\uDB84\uDE15",
+  "\u6428\uDB40\uDD04": "\uDB84\uDE16",
+  "\u64F2\uDB40\uDD04": "\uDB84\uDE17",
+  "\u655D\uDB40\uDD04": "\uDB84\uDE18",
+  "\u6578\uDB40\uDD04": "\uDB84\uDE19",
+  "\u6583\uDB40\uDD04": "\uDB84\uDE1A",
+  "\u6590\uDB40\uDD04": "\uDB84\uDE1B",
+  "\u661E\uDB40\uDD04": "\uDB84\uDE1C",
+  "\u6677\uDB40\uDD04": "\uDB84\uDE1D",
+  "\u66C1\uDB40\uDD04": "\uDB84\uDE1E",
+  "\u66F5\uDB40\uDD04": "\uDB84\uDE1F",
+  "\u66FB\uDB40\uDD04": "\uDB84\uDE20",
+  "\u6715\uDB40\uDD04": "\uDB84\uDE21",
+  "\u671B\uDB40\uDD04": "\uDB84\uDE22",
+  "\u671D\uDB40\uDD04": "\uDB84\uDE23",
+  "\u6840\uDB40\uDD04": "\uDB84\uDE24",
+  "\u6852\uDB40\uDD04": "\uDB84\uDE25",
+  "\u685D\uDB40\uDD04": "\uDB84\uDE26",
+  "\u690D\uDB40\uDD04": "\uDB84\uDE27",
+  "\u693D\uDB40\uDD04": "\uDB84\uDE28",
+  "\u6954\uDB40\uDD04": "\uDB84\uDE29",
+  "\u696F\uDB40\uDD04": "\uDB84\uDE2A",
+  "\u69BA\uDB40\uDD04": "\uDB84\uDE2B",
+  "\u69BB\uDB40\uDD04": "\uDB84\uDE2C",
+  "\u69EA\uDB40\uDD04": "\uDB84\uDE2D",
+  "\u6A73\uDB40\uDD04": "\uDB84\uDE2E",
+  "\u6A9C\uDB40\uDD04": "\uDB84\uDE2F",
+  "\u6AAC\uDB40\uDD04": "\uDB84\uDE30",
+  "\u6ADE\uDB40\uDD04": "\uDB84\uDE31",
+  "\u6B21\uDB40\uDD04": "\uDB84\uDE32",
+  "\u6B4E\uDB40\uDD04": "\uDB84\uDE33",
+  "\u6C08\uDB40\uDD04": "\uDB84\uDE34",
+  "\u6C13\uDB40\uDD04": "\uDB84\uDE35",
+  "\u6CAA\uDB40\uDD04": "\uDB84\uDE36",
+  "\u6CBF\uDB40\uDD04": "\uDB84\uDE37",
+  "\u6CE8\uDB40\uDD04": "\uDB84\uDE38",
+  "\u6D3E\uDB40\uDD04": "\uDB84\uDE39",
+  "\u6DF5\uDB40\uDD04": "\uDB84\uDE3A",
+  "\u6E23\uDB40\uDD04": "\uDB84\uDE3B",
+  "\u6E2F\uDB40\uDD04": "\uDB84\uDE3C",
+  "\u6E5B\uDB40\uDD04": "\uDB84\uDE3D",
+  "\u6E6E\uDB40\uDD04": "\uDB84\uDE3E",
+  "\u6EB2\uDB40\uDD04": "\uDB84\uDE3F",
+  "\u6ECB\uDB40\uDD04": "\uDB84\uDE40",
+  "\u6ED5\uDB40\uDD04": "\uDB84\uDE41",
+  "\u6EFF\uDB40\uDD04": "\uDB84\uDE42",
+  "\u6F11\uDB40\uDD04": "\uDB84\uDE43",
+  "\u6F54\uDB40\uDD04": "\uDB84\uDE44",
+  "\u6F5B\uDB40\uDD04": "\uDB84\uDE45",
+  "\u6FEF\uDB40\uDD04": "\uDB84\uDE46",
+  "\u701B\uDB40\uDD04": "\uDB84\uDE47",
+  "\u701E\uDB40\uDD04": "\uDB84\uDE48",
+  "\u7027\uDB40\uDD04": "\uDB84\uDE49",
+  "\u7152\uDB40\uDD04": "\uDB84\uDE4A",
+  "\u7162\uDB40\uDD04": "\uDB84\uDE4B",
+  "\u717D\uDB40\uDD04": "\uDB84\uDE4C",
+  "\u71C1\uDB40\uDD04": "\uDB84\uDE4D",
+  "\u71D0\uDB40\uDD04": "\uDB84\uDE4E",
+  "\u71E7\uDB40\uDD04": "\uDB84\uDE4F",
+  "\u7228\uDB40\uDD04": "\uDB84\uDE50",
+  "\u7235\uDB40\uDD04": "\uDB84\uDE51",
+  "\u7259\uDB40\uDD04": "\uDB84\uDE52",
+  "\u7336\uDB40\uDD04": "\uDB84\uDE53",
+  "\u7337\uDB40\uDD04": "\uDB84\uDE54",
+  "\u73CA\uDB40\uDD04": "\uDB84\uDE55",
+  "\u7422\uDB40\uDD04": "\uDB84\uDE56",
+  "\u74CA\uDB40\uDD04": "\uDB84\uDE57",
+  "\u74DC\uDB40\uDD04": "\uDB84\uDE58",
+  "\u74E0\uDB40\uDD04": "\uDB84\uDE59",
+  "\u7504\uDB40\uDD04": "\uDB84\uDE5A",
+  "\u750D\uDB40\uDD04": "\uDB84\uDE5B",
+  "\u7515\uDB40\uDD04": "\uDB84\uDE5C",
+  "\u7608\uDB40\uDD04": "\uDB84\uDE5D",
+  "\u7652\uDB40\uDD04": "\uDB84\uDE5E",
+  "\u7662\uDB40\uDD04": "\uDB84\uDE5F",
+  "\u7672\uDB40\uDD04": "\uDB84\uDE60",
+  "\u76CA\uDB40\uDD04": "\uDB84\uDE61",
+  "\u76F4\uDB40\uDD04": "\uDB84\uDE62",
+  "\u771E\uDB40\uDD04": "\uDB84\uDE63",
+  "\u77AC\uDB40\uDD04": "\uDB84\uDE64",
+  "\u78D4\uDB40\uDD04": "\uDB84\uDE65",
+  "\u78EF\uDB40\uDD04": "\uDB84\uDE66",
+  "\u793E\uDB40\uDD04": "\uDB84\uDE67",
+  "\u7940\uDB40\uDD04": "\uDB84\uDE68",
+  "\u7953\uDB40\uDD04": "\uDB84\uDE69",
+  "\u7956\uDB40\uDD04": "\uDB84\uDE6A",
+  "\u7958\uDB40\uDD04": "\uDB84\uDE6B",
+  "\u7962\uDB40\uDD04": "\uDB84\uDE6C",
+  "\u798A\uDB40\uDD04": "\uDB84\uDE6D",
+  "\u798D\uDB40\uDD04": "\uDB84\uDE6E",
+  "\u798F\uDB40\uDD04": "\uDB84\uDE6F",
+  "\u799D\uDB40\uDD04": "\uDB84\uDE70",
+  "\u79AA\uDB40\uDD04": "\uDB84\uDE71",
+  "\u79B0\uDB40\uDD04": "\uDB84\uDE72",
+  "\u7A31\uDB40\uDD04": "\uDB84\uDE73",
+  "\u7A74\uDB40\uDD04": "\uDB84\uDE74",
+  "\u7A7F\uDB40\uDD04": "\uDB84\uDE75",
+  "\u7B51\uDB40\uDD04": "\uDB84\uDE76",
+  "\u7B9E\uDB40\uDD04": "\uDB84\uDE77",
+  "\u7BC0\uDB40\uDD04": "\uDB84\uDE78",
+  "\u7C2A\uDB40\uDD04": "\uDB84\uDE79",
+  "\u7C50\uDB40\uDD04": "\uDB84\uDE7A",
+  "\u7C58\uDB40\uDD04": "\uDB84\uDE7B",
+  "\u7C60\uDB40\uDD04": "\uDB84\uDE7C",
+  "\u7D00\uDB40\uDD04": "\uDB84\uDE7D",
+  "\u7D0D\uDB40\uDD04": "\uDB84\uDE7E",
+  "\u7D5C\uDB40\uDD04": "\uDB84\uDE7F",
+  "\u7D73\uDB40\uDD04": "\uDB84\uDE80",
+  "\u7D9B\uDB40\uDD04": "\uDB84\uDE81",
+  "\u7DB2\uDB40\uDD04": "\uDB84\uDE82",
+  "\u7DEF\uDB40\uDD04": "\uDB84\uDE83",
+  "\u7E22\uDB40\uDD04": "\uDB84\uDE84",
+  "\u7E35\uDB40\uDD04": "\uDB84\uDE85",
+  "\u7E6D\uDB40\uDD04": "\uDB84\uDE86",
+  "\u7FA1\uDB40\uDD04": "\uDB84\uDE87",
+  "\u7FBD\uDB40\uDD04": "\uDB84\uDE88",
+  "\u7FC1\uDB40\uDD04": "\uDB84\uDE89",
+  "\u7FE0\uDB40\uDD04": "\uDB84\uDE8A",
+  "\u7FE1\uDB40\uDD04": "\uDB84\uDE8B",
+  "\u7FE9\uDB40\uDD04": "\uDB84\uDE8C",
+  "\u7FEB\uDB40\uDD04": "\uDB84\uDE8D",
+  "\u7FF0\uDB40\uDD04": "\uDB84\uDE8E",
+  "\u7FFC\uDB40\uDD04": "\uDB84\uDE8F",
+  "\u8056\uDB40\uDD04": "\uDB84\uDE90",
+  "\u8070\uDB40\uDD04": "\uDB84\uDE91",
+  "\u8077\uDB40\uDD04": "\uDB84\uDE92",
+  "\u807E\uDB40\uDD04": "\uDB84\uDE93",
+  "\u8108\uDB40\uDD04": "\uDB84\uDE94",
+  "\u81B5\uDB40\uDD04": "\uDB84\uDE95",
+  "\u8200\uDB40\uDD04": "\uDB84\uDE96",
+  "\u820E\uDB40\uDD04": "\uDB84\uDE97",
+  "\u8218\uDB40\uDD04": "\uDB84\uDE98",
+  "\u821C\uDB40\uDD04": "\uDB84\uDE99",
+  "\u8239\uDB40\uDD04": "\uDB84\uDE9A",
+  "\u8258\uDB40\uDD04": "\uDB84\uDE9B",
+  "\u827E\uDB40\uDD04": "\uDB84\uDE9C",
+  "\u828D\uDB40\uDD04": "\uDB84\uDE9D",
+  "\u8292\uDB40\uDD04": "\uDB84\uDE9E",
+  "\u82A6\uDB40\uDD04": "\uDB84\uDE9F",
+  "\u82B1\uDB40\uDD04": "\uDB84\uDEA0",
+  "\u82BD\uDB40\uDD04": "\uDB84\uDEA1",
+  "\u82D2\uDB40\uDD04": "\uDB84\uDEA2",
+  "\u82E3\uDB40\uDD04": "\uDB84\uDEA3",
+  "\u82F1\uDB40\uDD04": "\uDB84\uDEA4",
+  "\u8323\uDB40\uDD04": "\uDB84\uDEA5",
+  "\u8328\uDB40\uDD04": "\uDB84\uDEA6",
+  "\u8330\uDB40\uDD04": "\uDB84\uDEA7",
+  "\u8343\uDB40\uDD04": "\uDB84\uDEA8",
+  "\u8346\uDB40\uDD04": "\uDB84\uDEA9",
+  "\u834A\uDB40\uDD04": "\uDB84\uDEAA",
+  "\u8352\uDB40\uDD04": "\uDB84\uDEAB",
+  "\u8353\uDB40\uDD04": "\uDB84\uDEAC",
+  "\u8375\uDB40\uDD04": "\uDB84\uDEAD",
+  "\u837F\uDB40\uDD04": "\uDB84\uDEAE",
+  "\u83B5\uDB40\uDD04": "\uDB84\uDEAF",
+  "\u83BD\uDB40\uDD04": "\uDB84\uDEB0",
+  "\u83C1\uDB40\uDD04": "\uDB84\uDEB1",
+  "\u83DC\uDB40\uDD04": "\uDB84\uDEB2",
+  "\u83EF\uDB40\uDD04": "\uDB84\uDEB3",
+  "\u83F1\uDB40\uDD04": "\uDB84\uDEB4",
+  "\u8420\uDB40\uDD04": "\uDB84\uDEB5",
+  "\u8422\uDB40\uDD04": "\uDB84\uDEB6",
+  "\u842C\uDB40\uDD04": "\uDB84\uDEB7",
+  "\u845B\uDB40\uDD04": "\uDB84\uDEB8",
+  "\u8466\uDB40\uDD04": "\uDB84\uDEB9",
+  "\u847A\uDB40\uDD04": "\uDB84\uDEBA",
+  "\u847D\uDB40\uDD04": "\uDB84\uDEBB",
+  "\u8481\uDB40\uDD04": "\uDB84\uDEBC",
+  "\u8499\uDB40\uDD04": "\uDB84\uDEBD",
+  "\u84C8\uDB40\uDD04": "\uDB84\uDEBE",
+  "\u84CA\uDB40\uDD04": "\uDB84\uDEBF",
+  "\u84EC\uDB40\uDD04": "\uDB84\uDEC0",
+  "\u84EE\uDB40\uDD04": "\uDB84\uDEC1",
+  "\u84F4\uDB40\uDD04": "\uDB84\uDEC2",
+  "\u8511\uDB40\uDD04": "\uDB84\uDEC3",
+  "\u8513\uDB40\uDD04": "\uDB84\uDEC4",
+  "\u8517\uDB40\uDD04": "\uDB84\uDEC5",
+  "\u8525\uDB40\uDD04": "\uDB84\uDEC6",
+  "\u8555\uDB40\uDD04": "\uDB84\uDEC7",
+  "\u8556\uDB40\uDD04": "\uDB84\uDEC8",
+  "\u8559\uDB40\uDD04": "\uDB84\uDEC9",
+  "\u855D\uDB40\uDD04": "\uDB84\uDECA",
+  "\u8563\uDB40\uDD04": "\uDB84\uDECB",
+  "\u8584\uDB40\uDD04": "\uDB84\uDECC",
+  "\u8587\uDB40\uDD04": "\uDB84\uDECD",
+  "\u858C\uDB40\uDD04": "\uDB84\uDECE",
+  "\u85A9\uDB40\uDD04": "\uDB84\uDECF",
+  "\u85AF\uDB40\uDD04": "\uDB84\uDED0",
+  "\u85CF\uDB40\uDD04": "\uDB84\uDED1",
+  "\u85D5\uDB40\uDD04": "\uDB84\uDED2",
+  "\u85E4\uDB40\uDD04": "\uDB84\uDED3",
+  "\u85F7\uDB40\uDD04": "\uDB84\uDED4",
+  "\u8607\uDB40\uDD04": "\uDB84\uDED5",
+  "\u8612\uDB40\uDD04": "\uDB84\uDED6",
+  "\u862D\uDB40\uDD04": "\uDB84\uDED7",
+  "\u8641\uDB40\uDD04": "\uDB84\uDED8",
+  "\u8782\uDB40\uDD04": "\uDB84\uDED9",
+  "\u87D2\uDB40\uDD04": "\uDB84\uDEDA",
+  "\u8805\uDB40\uDD04": "\uDB84\uDEDB",
+  "\u880E\uDB40\uDD04": "\uDB84\uDEDC",
+  "\u8836\uDB40\uDD04": "\uDB84\uDEDD",
+  "\u8842\uDB40\uDD04": "\uDB84\uDEDE",
+  "\u8846\uDB40\uDD04": "\uDB84\uDEDF",
+  "\u8853\uDB40\uDD04": "\uDB84\uDEE0",
+  "\u885B\uDB40\uDD04": "\uDB84\uDEE1",
+  "\u8870\uDB40\uDD04": "\uDB84\uDEE2",
+  "\u896A\uDB40\uDD04": "\uDB84\uDEE3",
+  "\u8986\uDB40\uDD04": "\uDB84\uDEE4",
+  "\u89D2\uDB40\uDD04": "\uDB84\uDEE5",
+  "\u8A1D\uDB40\uDD04": "\uDB84\uDEE6",
+  "\u8A3B\uDB40\uDD04": "\uDB84\uDEE7",
+  "\u8A95\uDB40\uDD04": "\uDB84\uDEE8",
+  "\u8AA4\uDB40\uDD04": "\uDB84\uDEE9",
+  "\u8ADB\uDB40\uDD04": "\uDB84\uDEEA",
+  "\u8AED\uDB40\uDD04": "\uDB84\uDEEB",
+  "\u8AEE\uDB40\uDD04": "\uDB84\uDEEC",
+  "\u8B04\uDB40\uDD04": "\uDB84\uDEED",
+  "\u8B0A\uDB40\uDD04": "\uDB84\uDEEE",
+  "\u8B41\uDB40\uDD04": "\uDB84\uDEEF",
+  "\u8B56\uDB40\uDD04": "\uDB84\uDEF0",
+  "\u8C3A\uDB40\uDD04": "\uDB84\uDEF1",
+  "\u8C41\uDB40\uDD04": "\uDB84\uDEF2",
+  "\u8C6A\uDB40\uDD04": "\uDB84\uDEF3",
+  "\u8CA0\uDB40\uDD04": "\uDB84\uDEF4",
+  "\u8CAB\uDB40\uDD04": "\uDB84\uDEF5",
+  "\u8CC7\uDB40\uDD04": "\uDB84\uDEF6",
+  "\u8CCA\uDB40\uDD04": "\uDB84\uDEF7",
+  "\u8CD3\uDB40\uDD04": "\uDB84\uDEF8",
+  "\u8CFC\uDB40\uDD04": "\uDB84\uDEF9",
+  "\u8D0F\uDB40\uDD04": "\uDB84\uDEFA",
+  "\u8DDA\uDB40\uDD04": "\uDB84\uDEFB",
+  "\u8E91\uDB40\uDD04": "\uDB84\uDEFC",
+  "\u8EA1\uDB40\uDD04": "\uDB84\uDEFD",
+  "\u8F44\uDB40\uDD04": "\uDB84\uDEFE",
+  "\u8FB6\uDB40\uDD04": "\uDB84\uDEFF",
+  "\u8FC5\uDB40\uDD04": "\uDB84\uDF00",
+  "\u8FD4\uDB40\uDD04": "\uDB84\uDF01",
+  "\u8FE9\uDB40\uDD04": "\uDB84\uDF02",
+  "\u8FEF\uDB40\uDD04": "\uDB84\uDF03",
+  "\u8FF0\uDB40\uDD04": "\uDB84\uDF04",
+  "\u9003\uDB40\uDD04": "\uDB84\uDF05",
+  "\u900E\uDB40\uDD04": "\uDB84\uDF06",
+  "\u9010\uDB40\uDD04": "\uDB84\uDF07",
+  "\u901E\uDB40\uDD04": "\uDB84\uDF08",
+  "\u9035\uDB40\uDD04": "\uDB84\uDF09",
+  "\u9038\uDB40\uDD04": "\uDB84\uDF0A",
+  "\u9039\uDB40\uDD04": "\uDB84\uDF0B",
+  "\u9042\uDB40\uDD04": "\uDB84\uDF0C",
+  "\u9047\uDB40\uDD04": "\uDB84\uDF0D",
+  "\u904E\uDB40\uDD04": "\uDB84\uDF0E",
+  "\u904F\uDB40\uDD04": "\uDB84\uDF0F",
+  "\u9050\uDB40\uDD04": "\uDB84\uDF10",
+  "\u9052\uDB40\uDD04": "\uDB84\uDF11",
+  "\u9055\uDB40\uDD04": "\uDB84\uDF12",
+  "\u9058\uDB40\uDD04": "\uDB84\uDF13",
+  "\u9060\uDB40\uDD04": "\uDB84\uDF14",
+  "\u9069\uDB40\uDD04": "\uDB84\uDF15",
+  "\u906E\uDB40\uDD04": "\uDB84\uDF16",
+  "\u906F\uDB40\uDD04": "\uDB84\uDF17",
+  "\u9074\uDB40\uDD04": "\uDB84\uDF18",
+  "\u9075\uDB40\uDD04": "\uDB84\uDF19",
+  "\u9078\uDB40\uDD04": "\uDB84\uDF1A",
+  "\u907D\uDB40\uDD04": "\uDB84\uDF1B",
+  "\u9081\uDB40\uDD04": "\uDB84\uDF1C",
+  "\u9083\uDB40\uDD04": "\uDB84\uDF1D",
+  "\u9084\uDB40\uDD04": "\uDB84\uDF1E",
+  "\u9087\uDB40\uDD04": "\uDB84\uDF1F",
+  "\u90A6\uDB40\uDD04": "\uDB84\uDF20",
+  "\u90AA\uDB40\uDD04": "\uDB84\uDF21",
+  "\u9130\uDB40\uDD04": "\uDB84\uDF22",
+  "\u914D\uDB40\uDD04": "\uDB84\uDF23",
+  "\u91C1\uDB40\uDD04": "\uDB84\uDF24",
+  "\u925B\uDB40\uDD04": "\uDB84\uDF25",
+  "\u92E9\uDB40\uDD04": "\uDB84\uDF26",
+  "\u93B9\uDB40\uDD04": "\uDB84\uDF27",
+  "\u9477\uDB40\uDD04": "\uDB84\uDF28",
+  "\u964D\uDB40\uDD04": "\uDB84\uDF29",
+  "\u9686\uDB40\uDD04": "\uDB84\uDF2A",
+  "\u968A\uDB40\uDD04": "\uDB84\uDF2B",
+  "\u9698\uDB40\uDD04": "\uDB84\uDF2C",
+  "\u96A3\uDB40\uDD04": "\uDB84\uDF2D",
+  "\u96A7\uDB40\uDD04": "\uDB84\uDF2E",
+  "\u96C5\uDB40\uDD04": "\uDB84\uDF2F",
+  "\u96D8\uDB40\uDD04": "\uDB84\uDF30",
+  "\u9706\uDB40\uDD04": "\uDB84\uDF31",
+  "\u9721\uDB40\uDD04": "\uDB84\uDF32",
+  "\u9755\uDB40\uDD04": "\uDB84\uDF33",
+  "\u975C\uDB40\uDD04": "\uDB84\uDF34",
+  "\u9760\uDB40\uDD04": "\uDB84\uDF35",
+  "\u976D\uDB40\uDD04": "\uDB84\uDF36",
+  "\u9771\uDB40\uDD04": "\uDB84\uDF37",
+  "\u97C6\uDB40\uDD04": "\uDB84\uDF38",
+  "\u97C8\uDB40\uDD04": "\uDB84\uDF39",
+  "\u97DC\uDB40\uDD04": "\uDB84\uDF3A",
+  "\u97DE\uDB40\uDD04": "\uDB84\uDF3B",
+  "\u985E\uDB40\uDD04": "\uDB84\uDF3C",
+  "\u9873\uDB40\uDD04": "\uDB84\uDF3D",
+  "\u98E2\uDB40\uDD04": "\uDB84\uDF3E",
+  "\u98FD\uDB40\uDD04": "\uDB84\uDF3F",
+  "\u9903\uDB40\uDD04": "\uDB84\uDF40",
+  "\u990A\uDB40\uDD04": "\uDB84\uDF41",
+  "\u990C\uDB40\uDD04": "\uDB84\uDF42",
+  "\u9942\uDB40\uDD04": "\uDB84\uDF43",
+  "\u9945\uDB40\uDD04": "\uDB84\uDF44",
+  "\u9951\uDB40\uDD04": "\uDB84\uDF45",
+  "\u9957\uDB40\uDD04": "\uDB84\uDF46",
+  "\u995B\uDB40\uDD04": "\uDB84\uDF47",
+  "\u9A4A\uDB40\uDD04": "\uDB84\uDF48",
+  "\u9B2D\uDB40\uDD04": "\uDB84\uDF49",
+  "\u9B2E\uDB40\uDD04": "\uDB84\uDF4A",
+  "\u9BDB\uDB40\uDD04": "\uDB84\uDF4B",
+  "\u9C52\uDB40\uDD04": "\uDB84\uDF4C",
+  "\u9D09\uDB40\uDD04": "\uDB84\uDF4D",
+  "\u9DC0\uDB40\uDD04": "\uDB84\uDF4E",
+  "\u9E9F\uDB40\uDD04": "\uDB84\uDF4F",
+  "\u9EAD\uDB40\uDD04": "\uDB84\uDF50",
+  "\u9F08\uDB40\uDD04": "\uDB84\uDF51",
+  "\u9F4B\uDB40\uDD04": "\uDB84\uDF52",
+  "\u9F67\uDB40\uDD04": "\uDB84\uDF53",
+  "\u9F8D\uDB40\uDD04": "\uDB84\uDF54",
+  "\u9F8F\uDB40\uDD04": "\uDB84\uDF55",
+  "\u9F9C\uDB40\uDD04": "\uDB84\uDF56",
+  "\u9F9D\uDB40\uDD04": "\uDB84\uDF57",
+  "\uFA24\uDB40\uDD04": "\uDB84\uDF58",
+  "\uD841\uDD25\uDB40\uDD04": "\uDB84\uDF59",
+  "\uD84D\uDDC4\uDB40\uDD04": "\uDB84\uDF5A",
+  "\uD84F\uDF1B\uDB40\uDD04": "\uDB84\uDF5B",
+  "\uD867\uDE3D\uDB40\uDD04": "\uDB84\uDF5C",
+  "\uD86D\uDF62\uDB40\uDD04": "\uDB84\uDF5D",
+  "\uD875\uDEB6\uDB40\uDD04": "\uDB84\uDF5E",
+  "\uD877\uDCD3\uDB40\uDD04": "\uDB84\uDF5F",
+  "\u51DE\uDB40\uDD05": "\uDB84\uDF60",
+  "\u4EA2\uDB40\uDD05": "\uDB84\uDF61",
+  "\u5049\uDB40\uDD05": "\uDB84\uDF62",
+  "\u5091\uDB40\uDD05": "\uDB84\uDF63",
+  "\u50CA\uDB40\uDD05": "\uDB84\uDF64",
+  "\u5154\uDB40\uDD05": "\uDB84\uDF65",
+  "\u517C\uDB40\uDD05": "\uDB84\uDF66",
+  "\u518D\uDB40\uDD05": "\uDB84\uDF67",
+  "\u5193\uDB40\uDD05": "\uDB84\uDF68",
+  "\u5195\uDB40\uDD05": "\uDB84\uDF69",
+  "\u51A2\uDB40\uDD05": "\uDB84\uDF6A",
+  "\u51A4\uDB40\uDD05": "\uDB84\uDF6B",
+  "\u51B4\uDB40\uDD05": "\uDB84\uDF6C",
+  "\u5271\uDB40\uDD05": "\uDB84\uDF6D",
+  "\u5272\uDB40\uDD05": "\uDB84\uDF6E",
+  "\u52E4\uDB40\uDD05": "\uDB84\uDF6F",
+  "\u535A\uDB40\uDD05": "\uDB84\uDF70",
+  "\u537F\uDB40\uDD05": "\uDB84\uDF71",
+  "\u53DB\uDB40\uDD05": "\uDB84\uDF72",
+  "\u5533\uDB40\uDD05": "\uDB84\uDF73",
+  "\u5544\uDB40\uDD05": "\uDB84\uDF74",
+  "\u5584\uDB40\uDD05": "\uDB84\uDF75",
+  "\u55AB\uDB40\uDD05": "\uDB84\uDF76",
+  "\u55E4\uDB40\uDD05": "\uDB84\uDF77",
+  "\u5605\uDB40\uDD05": "\uDB84\uDF78",
+  "\u5668\uDB40\uDD05": "\uDB84\uDF79",
+  "\u56AE\uDB40\uDD05": "\uDB84\uDF7A",
+  "\u56CE\uDB40\uDD05": "\uDB84\uDF7B",
+  "\u570D\uDB40\uDD05": "\uDB84\uDF7C",
+  "\u5951\uDB40\uDD05": "\uDB84\uDF7D",
+  "\u5960\uDB40\uDD05": "\uDB84\uDF7E",
+  "\u5BB3\uDB40\uDD05": "\uDB84\uDF7F",
+  "\u5C0A\uDB40\uDD05": "\uDB84\uDF80",
+  "\u5ED0\uDB40\uDD05": "\uDB84\uDF81",
+  "\u5EE3\uDB40\uDD05": "\uDB84\uDF82",
+  "\u5EF6\uDB40\uDD05": "\uDB84\uDF83",
+  "\u5FA1\uDB40\uDD05": "\uDB84\uDF84",
+  "\u5FAE\uDB40\uDD05": "\uDB84\uDF85",
+  "\u6062\uDB40\uDD05": "\uDB84\uDF86",
+  "\u6097\uDB40\uDD05": "\uDB84\uDF87",
+  "\u6167\uDB40\uDD05": "\uDB84\uDF88",
+  "\u61B2\uDB40\uDD05": "\uDB84\uDF89",
+  "\u6268\uDB40\uDD05": "\uDB84\uDF8A",
+  "\u64F2\uDB40\uDD05": "\uDB84\uDF8B",
+  "\u651D\uDB40\uDD05": "\uDB84\uDF8C",
+  "\u65E1\uDB40\uDD05": "\uDB84\uDF8D",
+  "\u65E2\uDB40\uDD05": "\uDB84\uDF8E",
+  "\u665F\uDB40\uDD05": "\uDB84\uDF8F",
+  "\u66C1\uDB40\uDD05": "\uDB84\uDF90",
+  "\u6717\uDB40\uDD05": "\uDB84\uDF91",
+  "\u671B\uDB40\uDD05": "\uDB84\uDF92",
+  "\u6756\uDB40\uDD05": "\uDB84\uDF93",
+  "\u6852\uDB40\uDD05": "\uDB84\uDF94",
+  "\u685D\uDB40\uDD05": "\uDB84\uDF95",
+  "\u6962\uDB40\uDD05": "\uDB84\uDF96",
+  "\u6982\uDB40\uDD05": "\uDB84\uDF97",
+  "\u6A9C\uDB40\uDD05": "\uDB84\uDF98",
+  "\u6ADB\uDB40\uDD05": "\uDB84\uDF99",
+  "\u6B72\uDB40\uDD05": "\uDB84\uDF9A",
+  "\u6CBF\uDB40\uDD05": "\uDB84\uDF9B",
+  "\u6EA2\uDB40\uDD05": "\uDB84\uDF9C",
+  "\u6ECB\uDB40\uDD05": "\uDB84\uDF9D",
+  "\u6F11\uDB40\uDD05": "\uDB84\uDF9E",
+  "\u6F54\uDB40\uDD05": "\uDB84\uDF9F",
+  "\u6F5B\uDB40\uDD05": "\uDB84\uDFA0",
+  "\u701B\uDB40\uDD05": "\uDB84\uDFA1",
+  "\u701E\uDB40\uDD05": "\uDB84\uDFA2",
+  "\u7027\uDB40\uDD05": "\uDB84\uDFA3",
+  "\u717D\uDB40\uDD05": "\uDB84\uDFA4",
+  "\u7228\uDB40\uDD05": "\uDB84\uDFA5",
+  "\u7336\uDB40\uDD05": "\uDB84\uDFA6",
+  "\u73CA\uDB40\uDD05": "\uDB84\uDFA7",
+  "\u7504\uDB40\uDD05": "\uDB84\uDFA8",
+  "\u750D\uDB40\uDD05": "\uDB84\uDFA9",
+  "\u7511\uDB40\uDD05": "\uDB84\uDFAA",
+  "\u7515\uDB40\uDD05": "\uDB84\uDFAB",
+  "\u7672\uDB40\uDD05": "\uDB84\uDFAC",
+  "\u76CA\uDB40\uDD05": "\uDB84\uDFAD",
+  "\u76F4\uDB40\uDD05": "\uDB84\uDFAE",
+  "\u771E\uDB40\uDD05": "\uDB84\uDFAF",
+  "\u771F\uDB40\uDD05": "\uDB84\uDFB0",
+  "\u78D4\uDB40\uDD05": "\uDB84\uDFB1",
+  "\u7934\uDB40\uDD05": "\uDB84\uDFB2",
+  "\u7940\uDB40\uDD05": "\uDB84\uDFB3",
+  "\u7962\uDB40\uDD05": "\uDB84\uDFB4",
+  "\u798A\uDB40\uDD05": "\uDB84\uDFB5",
+  "\u7A7F\uDB40\uDD05": "\uDB84\uDFB6",
+  "\u7B08\uDB40\uDD05": "\uDB84\uDFB7",
+  "\u7B75\uDB40\uDD05": "\uDB84\uDFB8",
+  "\u7C3E\uDB40\uDD05": "\uDB84\uDFB9",
+  "\u7C50\uDB40\uDD05": "\uDB84\uDFBA",
+  "\u7C7E\uDB40\uDD05": "\uDB84\uDFBB",
+  "\u7D5C\uDB40\uDD05": "\uDB84\uDFBC",
+  "\u7DB2\uDB40\uDD05": "\uDB84\uDFBD",
+  "\u7E22\uDB40\uDD05": "\uDB84\uDFBE",
+  "\u7E35\uDB40\uDD05": "\uDB84\uDFBF",
+  "\u7FC1\uDB40\uDD05": "\uDB84\uDFC0",
+  "\u7FE9\uDB40\uDD05": "\uDB84\uDFC1",
+  "\u7FFC\uDB40\uDD05": "\uDB84\uDFC2",
+  "\u8108\uDB40\uDD05": "\uDB84\uDFC3",
+  "\u8200\uDB40\uDD05": "\uDB84\uDFC4",
+  "\u8239\uDB40\uDD05": "\uDB84\uDFC5",
+  "\u82A6\uDB40\uDD05": "\uDB84\uDFC6",
+  "\u8323\uDB40\uDD05": "\uDB84\uDFC7",
+  "\u8330\uDB40\uDD05": "\uDB84\uDFC8",
+  "\u8352\uDB40\uDD05": "\uDB84\uDFC9",
+  "\u8375\uDB40\uDD05": "\uDB84\uDFCA",
+  "\u837F\uDB40\uDD05": "\uDB84\uDFCB",
+  "\u83BD\uDB40\uDD05": "\uDB84\uDFCC",
+  "\u83DF\uDB40\uDD05": "\uDB84\uDFCD",
+  "\u83F2\uDB40\uDD05": "\uDB84\uDFCE",
+  "\u845B\uDB40\uDD05": "\uDB84\uDFCF",
+  "\u8466\uDB40\uDD05": "\uDB84\uDFD0",
+  "\u84EC\uDB40\uDD05": "\uDB84\uDFD1",
+  "\u84EE\uDB40\uDD05": "\uDB84\uDFD2",
+  "\u853D\uDB40\uDD05": "\uDB84\uDFD3",
+  "\u8555\uDB40\uDD05": "\uDB84\uDFD4",
+  "\u8563\uDB40\uDD05": "\uDB84\uDFD5",
+  "\u8581\uDB40\uDD05": "\uDB84\uDFD6",
+  "\u8587\uDB40\uDD05": "\uDB84\uDFD7",
+  "\u85A9\uDB40\uDD05": "\uDB84\uDFD8",
+  "\u85CF\uDB40\uDD05": "\uDB84\uDFD9",
+  "\u85E4\uDB40\uDD05": "\uDB84\uDFDA",
+  "\u8782\uDB40\uDD05": "\uDB84\uDFDB",
+  "\u87D2\uDB40\uDD05": "\uDB84\uDFDC",
+  "\u880E\uDB40\uDD05": "\uDB84\uDFDD",
+  "\u8836\uDB40\uDD05": "\uDB84\uDFDE",
+  "\u8846\uDB40\uDD05": "\uDB84\uDFDF",
+  "\u885B\uDB40\uDD05": "\uDB84\uDFE0",
+  "\u896A\uDB40\uDD05": "\uDB84\uDFE1",
+  "\u8A1D\uDB40\uDD05": "\uDB84\uDFE2",
+  "\u8A95\uDB40\uDD05": "\uDB84\uDFE3",
+  "\u8B39\uDB40\uDD05": "\uDB84\uDFE4",
+  "\u8CA0\uDB40\uDD05": "\uDB84\uDFE5",
+  "\u8CFC\uDB40\uDD05": "\uDB84\uDFE6",
+  "\u8D0F\uDB40\uDD05": "\uDB84\uDFE7",
+  "\u8DDA\uDB40\uDD05": "\uDB84\uDFE8",
+  "\u8E91\uDB40\uDD05": "\uDB84\uDFE9",
+  "\u8F44\uDB40\uDD05": "\uDB84\uDFEA",
+  "\u900E\uDB40\uDD05": "\uDB84\uDFEB",
+  "\u901E\uDB40\uDD05": "\uDB84\uDFEC",
+  "\u9038\uDB40\uDD05": "\uDB84\uDFED",
+  "\u9041\uDB40\uDD05": "\uDB84\uDFEE",
+  "\u9042\uDB40\uDD05": "\uDB84\uDFEF",
+  "\u9052\uDB40\uDD05": "\uDB84\uDFF0",
+  "\u9055\uDB40\uDD05": "\uDB84\uDFF1",
+  "\u9058\uDB40\uDD05": "\uDB84\uDFF2",
+  "\u906E\uDB40\uDD05": "\uDB84\uDFF3",
+  "\u906F\uDB40\uDD05": "\uDB84\uDFF4",
+  "\u9075\uDB40\uDD05": "\uDB84\uDFF5",
+  "\u9077\uDB40\uDD05": "\uDB84\uDFF6",
+  "\u907D\uDB40\uDD05": "\uDB84\uDFF7",
+  "\u9081\uDB40\uDD05": "\uDB84\uDFF8",
+  "\u9083\uDB40\uDD05": "\uDB84\uDFF9",
+  "\u90A6\uDB40\uDD05": "\uDB84\uDFFA",
+  "\u90AA\uDB40\uDD05": "\uDB84\uDFFB",
+  "\u9115\uDB40\uDD05": "\uDB84\uDFFC",
+  "\u914B\uDB40\uDD05": "\uDB84\uDFFD",
+  "\u91C1\uDB40\uDD05": "\uDB84\uDFFE",
+  "\u91FC\uDB40\uDD05": "\uDB84\uDFFF",
+  "\u925B\uDB40\uDD05": "\uDB85\uDC00",
+  "\u93A1\uDB40\uDD05": "\uDB85\uDC01",
+  "\u93B9\uDB40\uDD05": "\uDB85\uDC02",
+  "\u9686\uDB40\uDD05": "\uDB85\uDC03",
+  "\u9698\uDB40\uDD05": "\uDB85\uDC04",
+  "\u96A3\uDB40\uDD05": "\uDB85\uDC05",
+  "\u96A7\uDB40\uDD05": "\uDB85\uDC06",
+  "\u96C5\uDB40\uDD05": "\uDB85\uDC07",
+  "\u975C\uDB40\uDD05": "\uDB85\uDC08",
+  "\u9771\uDB40\uDD05": "\uDB85\uDC09",
+  "\u97C6\uDB40\uDD05": "\uDB85\uDC0A",
+  "\u97D3\uDB40\uDD05": "\uDB85\uDC0B",
+  "\u97DE\uDB40\uDD05": "\uDB85\uDC0C",
+  "\u990A\uDB40\uDD05": "\uDB85\uDC0D",
+  "\u9945\uDB40\uDD05": "\uDB85\uDC0E",
+  "\u9B2E\uDB40\uDD05": "\uDB85\uDC0F",
+  "\u9BAB\uDB40\uDD05": "\uDB85\uDC10",
+  "\u9C57\uDB40\uDD05": "\uDB85\uDC11",
+  "\u9DBF\uDB40\uDD05": "\uDB85\uDC12",
+  "\u9DC0\uDB40\uDD05": "\uDB85\uDC13",
+  "\u9E9F\uDB40\uDD05": "\uDB85\uDC14",
+  "\u9F08\uDB40\uDD05": "\uDB85\uDC15",
+  "\u9F4B\uDB40\uDD05": "\uDB85\uDC16",
+  "\u9F8D\uDB40\uDD05": "\uDB85\uDC17",
+  "\u9F9C\uDB40\uDD05": "\uDB85\uDC18",
+  "\u9F9D\uDB40\uDD05": "\uDB85\uDC19",
+  "\uFA24\uDB40\uDD05": "\uDB85\uDC1A",
+  "\uD841\uDD25\uDB40\uDD05": "\uDB85\uDC1B",
+  "\uD84F\uDF1B\uDB40\uDD05": "\uDB85\uDC1C",
+  "\uD875\uDEB6\uDB40\uDD05": "\uDB85\uDC1D",
+  "\uD86D\uDF8E\uDB40\uDD05": "\uDB85\uDC1E",
+  "\u51DE\uDB40\uDD06": "\uDB85\uDC1F",
+  "\u4E55\uDB40\uDD06": "\uDB85\uDC20",
+  "\u50CA\uDB40\uDD06": "\uDB85\uDC21",
+  "\u517C\uDB40\uDD06": "\uDB85\uDC22",
+  "\u5195\uDB40\uDD06": "\uDB85\uDC23",
+  "\u51A4\uDB40\uDD06": "\uDB85\uDC24",
+  "\u51B4\uDB40\uDD06": "\uDB85\uDC25",
+  "\u535A\uDB40\uDD06": "\uDB85\uDC26",
+  "\u5377\uDB40\uDD06": "\uDB85\uDC27",
+  "\u537F\uDB40\uDD06": "\uDB85\uDC28",
+  "\u53A9\uDB40\uDD06": "\uDB85\uDC29",
+  "\u53DB\uDB40\uDD06": "\uDB85\uDC2A",
+  "\u5544\uDB40\uDD06": "\uDB85\uDC2B",
+  "\u5584\uDB40\uDD06": "\uDB85\uDC2C",
+  "\u55AB\uDB40\uDD06": "\uDB85\uDC2D",
+  "\u56AE\uDB40\uDD06": "\uDB85\uDC2E",
+  "\u585A\uDB40\uDD06": "\uDB85\uDC2F",
+  "\u5951\uDB40\uDD06": "\uDB85\uDC30",
+  "\u5BB3\uDB40\uDD06": "\uDB85\uDC31",
+  "\u5ED0\uDB40\uDD06": "\uDB85\uDC32",
+  "\u61B2\uDB40\uDD06": "\uDB85\uDC33",
+  "\u61F2\uDB40\uDD06": "\uDB85\uDC34",
+  "\u6249\uDB40\uDD06": "\uDB85\uDC35",
+  "\u66C1\uDB40\uDD06": "\uDB85\uDC36",
+  "\u671B\uDB40\uDD06": "\uDB85\uDC37",
+  "\u6ADB\uDB40\uDD06": "\uDB85\uDC38",
+  "\u6C08\uDB40\uDD06": "\uDB85\uDC39",
+  "\u6ECB\uDB40\uDD06": "\uDB85\uDC3A",
+  "\u6F11\uDB40\uDD06": "\uDB85\uDC3B",
+  "\u6F5B\uDB40\uDD06": "\uDB85\uDC3C",
+  "\u701B\uDB40\uDD06": "\uDB85\uDC3D",
+  "\u701E\uDB40\uDD06": "\uDB85\uDC3E",
+  "\u7027\uDB40\uDD06": "\uDB85\uDC3F",
+  "\u7336\uDB40\uDD06": "\uDB85\uDC40",
+  "\u73CA\uDB40\uDD06": "\uDB85\uDC41",
+  "\u7511\uDB40\uDD06": "\uDB85\uDC42",
+  "\u771E\uDB40\uDD06": "\uDB85\uDC43",
+  "\u7953\uDB40\uDD06": "\uDB85\uDC44",
+  "\u7962\uDB40\uDD06": "\uDB85\uDC45",
+  "\u7DB2\uDB40\uDD06": "\uDB85\uDC46",
+  "\u7FE1\uDB40\uDD06": "\uDB85\uDC47",
+  "\u7FFC\uDB40\uDD06": "\uDB85\uDC48",
+  "\u821B\uDB40\uDD06": "\uDB85\uDC49",
+  "\u82A6\uDB40\uDD06": "\uDB85\uDC4A",
+  "\u82B1\uDB40\uDD06": "\uDB85\uDC4B",
+  "\u82BD\uDB40\uDD06": "\uDB85\uDC4C",
+  "\u8323\uDB40\uDD06": "\uDB85\uDC4D",
+  "\u8352\uDB40\uDD06": "\uDB85\uDC4E",
+  "\u83BD\uDB40\uDD06": "\uDB85\uDC4F",
+  "\u83DF\uDB40\uDD06": "\uDB85\uDC50",
+  "\u845B\uDB40\uDD06": "\uDB85\uDC51",
+  "\u8466\uDB40\uDD06": "\uDB85\uDC52",
+  "\u84EC\uDB40\uDD06": "\uDB85\uDC53",
+  "\u84EE\uDB40\uDD06": "\uDB85\uDC54",
+  "\u8511\uDB40\uDD06": "\uDB85\uDC55",
+  "\u8563\uDB40\uDD06": "\uDB85\uDC56",
+  "\u8587\uDB40\uDD06": "\uDB85\uDC57",
+  "\u85E4\uDB40\uDD06": "\uDB85\uDC58",
+  "\u8612\uDB40\uDD06": "\uDB85\uDC59",
+  "\u87D2\uDB40\uDD06": "\uDB85\uDC5A",
+  "\u8A1D\uDB40\uDD06": "\uDB85\uDC5B",
+  "\u8B44\uDB40\uDD06": "\uDB85\uDC5C",
+  "\u9038\uDB40\uDD06": "\uDB85\uDC5D",
+  "\u9039\uDB40\uDD06": "\uDB85\uDC5E",
+  "\u9042\uDB40\uDD06": "\uDB85\uDC5F",
+  "\u9052\uDB40\uDD06": "\uDB85\uDC60",
+  "\u9055\uDB40\uDD06": "\uDB85\uDC61",
+  "\u9077\uDB40\uDD06": "\uDB85\uDC62",
+  "\u90A6\uDB40\uDD06": "\uDB85\uDC63",
+  "\u914D\uDB40\uDD06": "\uDB85\uDC64",
+  "\u91C1\uDB40\uDD06": "\uDB85\uDC65",
+  "\u9698\uDB40\uDD06": "\uDB85\uDC66",
+  "\u9760\uDB40\uDD06": "\uDB85\uDC67",
+  "\u97FF\uDB40\uDD06": "\uDB85\uDC68",
+  "\u990C\uDB40\uDD06": "\uDB85\uDC69",
+  "\u9957\uDB40\uDD06": "\uDB85\uDC6A",
+  "\u9B2E\uDB40\uDD06": "\uDB85\uDC6B",
+  "\u9F08\uDB40\uDD06": "\uDB85\uDC6C",
+  "\u9F4B\uDB40\uDD06": "\uDB85\uDC6D",
+  "\u9F8D\uDB40\uDD06": "\uDB85\uDC6E",
+  "\u9F9C\uDB40\uDD06": "\uDB85\uDC6F",
+  "\uFA24\uDB40\uDD06": "\uDB85\uDC70",
+  "\u537F\uDB40\uDD07": "\uDB85\uDC71",
+  "\u56AE\uDB40\uDD07": "\uDB85\uDC72",
+  "\u5ED0\uDB40\uDD07": "\uDB85\uDC73",
+  "\u6168\uDB40\uDD07": "\uDB85\uDC74",
+  "\u61F2\uDB40\uDD07": "\uDB85\uDC75",
+  "\u6249\uDB40\uDD07": "\uDB85\uDC76",
+  "\u671B\uDB40\uDD07": "\uDB85\uDC77",
+  "\u6F11\uDB40\uDD07": "\uDB85\uDC78",
+  "\u6F22\uDB40\uDD07": "\uDB85\uDC79",
+  "\u6F5B\uDB40\uDD07": "\uDB85\uDC7A",
+  "\u7027\uDB40\uDD07": "\uDB85\uDC7B",
+  "\u7511\uDB40\uDD07": "\uDB85\uDC7C",
+  "\u771F\uDB40\uDD07": "\uDB85\uDC7D",
+  "\u7995\uDB40\uDD07": "\uDB85\uDC7E",
+  "\u821B\uDB40\uDD07": "\uDB85\uDC7F",
+  "\u82A6\uDB40\uDD07": "\uDB85\uDC80",
+  "\u8352\uDB40\uDD07": "\uDB85\uDC81",
+  "\u83BD\uDB40\uDD07": "\uDB85\uDC82",
+  "\u83DF\uDB40\uDD07": "\uDB85\uDC83",
+  "\u845B\uDB40\uDD07": "\uDB85\uDC84",
+  "\u8612\uDB40\uDD07": "\uDB85\uDC85",
+  "\u9052\uDB40\uDD07": "\uDB85\uDC86",
+  "\u9055\uDB40\uDD07": "\uDB85\uDC87",
+  "\u9077\uDB40\uDD07": "\uDB85\uDC88",
+  "\u9083\uDB40\uDD07": "\uDB85\uDC89",
+  "\u9760\uDB40\uDD07": "\uDB85\uDC8A",
+  "\u97FF\uDB40\uDD07": "\uDB85\uDC8B",
+  "\u990C\uDB40\uDD07": "\uDB85\uDC8C",
+  "\u9957\uDB40\uDD07": "\uDB85\uDC8D",
+  "\u9F08\uDB40\uDD07": "\uDB85\uDC8E",
+  "\u9F8D\uDB40\uDD07": "\uDB85\uDC8F",
+  "\uFA24\uDB40\uDD07": "\uDB85\uDC90",
+  "\u51DE\uDB40\uDD08": "\uDB85\uDC91",
+  "\u53A9\uDB40\uDD08": "\uDB85\uDC92",
+  "\u6F11\uDB40\uDD08": "\uDB85\uDC93",
+  "\u76F4\uDB40\uDD08": "\uDB85\uDC94",
+  "\u7995\uDB40\uDD08": "\uDB85\uDC95",
+  "\u82A6\uDB40\uDD08": "\uDB85\uDC96",
+  "\u8352\uDB40\uDD08": "\uDB85\uDC97",
+  "\u83DF\uDB40\uDD08": "\uDB85\uDC98",
+  "\u845B\uDB40\uDD08": "\uDB85\uDC99",
+  "\u8612\uDB40\uDD08": "\uDB85\uDC9A",
+  "\u864E\uDB40\uDD08": "\uDB85\uDC9B",
+  "\u9077\uDB40\uDD08": "\uDB85\uDC9C",
+  "\u9083\uDB40\uDD08": "\uDB85\uDC9D",
+  "\u90A6\uDB40\uDD08": "\uDB85\uDC9E",
+  "\u96E3\uDB40\uDD08": "\uDB85\uDC9F",
+  "\u990C\uDB40\uDD08": "\uDB85\uDCA0",
+  "\u9957\uDB40\uDD08": "\uDB85\uDCA1",
+  "\u51DE\uDB40\uDD09": "\uDB85\uDCA2",
+  "\u53A9\uDB40\uDD09": "\uDB85\uDCA3",
+  "\u6168\uDB40\uDD09": "\uDB85\uDCA4",
+  "\u6F11\uDB40\uDD09": "\uDB85\uDCA5",
+  "\u76F4\uDB40\uDD09": "\uDB85\uDCA6",
+  "\u82A6\uDB40\uDD09": "\uDB85\uDCA7",
+  "\u83DF\uDB40\uDD09": "\uDB85\uDCA8",
+  "\u8612\uDB40\uDD09": "\uDB85\uDCA9",
+  "\u9077\uDB40\uDD09": "\uDB85\uDCAA",
+  "\u908A\uDB40\uDD09": "\uDB85\uDCAB",
+  "\u97FF\uDB40\uDD09": "\uDB85\uDCAC",
+  "\u990C\uDB40\uDD09": "\uDB85\uDCAD",
+  "\u9957\uDB40\uDD09": "\uDB85\uDCAE",
+  "\u9F9C\uDB40\uDD09": "\uDB85\uDCAF",
+  "\u535A\uDB40\uDD0A": "\uDB85\uDCB0",
+  "\u53A9\uDB40\uDD0A": "\uDB85\uDCB1",
+  "\u6168\uDB40\uDD0A": "\uDB85\uDCB2",
+  "\u671B\uDB40\uDD0A": "\uDB85\uDCB3",
+  "\u83DF\uDB40\uDD0A": "\uDB85\uDCB4",
+  "\u8612\uDB40\uDD0A": "\uDB85\uDCB5",
+  "\u9077\uDB40\uDD0A": "\uDB85\uDCB6",
+  "\u908A\uDB40\uDD0A": "\uDB85\uDCB7",
+  "\u97FF\uDB40\uDD0A": "\uDB85\uDCB8",
+  "\u9957\uDB40\uDD0A": "\uDB85\uDCB9",
+  "\u51DE\uDB40\uDD0B": "\uDB85\uDCBA",
+  "\u53A9\uDB40\uDD0B": "\uDB85\uDCBB",
+  "\u6168\uDB40\uDD0B": "\uDB85\uDCBC",
+  "\u83DF\uDB40\uDD0B": "\uDB85\uDCBD",
+  "\u908A\uDB40\uDD0B": "\uDB85\uDCBE",
+  "\u53A9\uDB40\uDD0C": "\uDB85\uDCBF",
+  "\u5EE3\uDB40\uDD0C": "\uDB85\uDCC0",
+  "\u83DF\uDB40\uDD0C": "\uDB85\uDCC1",
+  "\u908A\uDB40\uDD0C": "\uDB85\uDCC2",
+  "\u53A9\uDB40\uDD0D": "\uDB85\uDCC3",
+  "\u6168\uDB40\uDD0D": "\uDB85\uDCC4",
+  "\u908A\uDB40\uDD0D": "\uDB85\uDCC5",
+  "\u6168\uDB40\uDD0E": "\uDB85\uDCC6",
+  "\u908A\uDB40\uDD0E": "\uDB85\uDCC7",
+  "\u9F8D\uDB40\uDD0E": "\uDB85\uDCC8",
+  "\u6168\uDB40\uDD0F": "\uDB85\uDCC9",
+  "\u908A\uDB40\uDD0F": "\uDB85\uDCCA",
+  "\u9089\uDB40\uDD10": "\uDB85\uDCCB",
+  "\u908A\uDB40\uDD10": "\uDB85\uDCCC",
+  "\u9089\uDB40\uDD12": "\uDB85\uDCCD",
+  "\u908A\uDB40\uDD12": "\uDB85\uDCCE",
+  "\u9089\uDB40\uDD11": "\uDB85\uDCCF",
+  "\u908A\uDB40\uDD11": "\uDB85\uDCD0",
+  "\u9089\uDB40\uDD19": "\uDB85\uDCD1",
+  "\u9089\uDB40\uDD1B": "\uDB85\uDCD2",
+  "\u9089\uDB40\uDD1F": "\uDB85\uDCD3",
+  "\u9089\uDB40\uDD1A": "\uDB85\uDCD4",
+  "\u9089\uDB40\uDD1C": "\uDB85\uDCD5",
+  "\u9089\uDB40\uDD1D": "\uDB85\uDCD6",
+  "\u9089\uDB40\uDD17": "\uDB85\uDCD7",
+  "\u9089\uDB40\uDD16": "\uDB85\uDCD8",
+  "\u9089\uDB40\uDD15": "\uDB85\uDCD9",
+  "\u9089\uDB40\uDD14": "\uDB85\uDCDA",
+  "\u9089\uDB40\uDD18": "\uDB85\uDCDB",
+  "\u9089\uDB40\uDD13": "\uDB85\uDCDC"
 };
 
 export const baseCharFallbackToExternalMap = {
-  '\uD848\uDC34': '\uDB83\uDC82',
-  '\uD84F\uDD60': '\uDB83\uDCD9',
-  '\uD853\uDD38': '\uDB83\uDCFB',
-  '\uD878\uDD52': '\uDB83\uDD1C',
-  '\uD86D\uDFCB': '\uDB83\uDD36',
-  '\uD85A\uDF0A': '\uDB83\uDD3C',
-  '\uD85A\uDFA0': '\uDB83\uDD40',
-  '\uD86D\uDFCF': '\uE914',
-  '\uD871\uDFD3': '\uDB83\uDD59',
-  '\uD863\uDCDD': '\uDB80\uDDAA',
-  '\uD850\uDEEE': '\uEE88',
-  '\uD840\uDC00': '\uDB83\uDDC6',
-  '\uD840\uDC0B': '\uDB80\uDF16',
-  '\uD840\uDC41': '\uDB83\uDDC7',
-  '\uD840\uDCA2': '\uEE8B',
-  '\uD840\uDCE4': '\uDB83\uDDC8',
-  '\uD840\uDD0C': '\uDB83\uDDC9',
-  '\uD840\uDD22': '\uDB83\uDDCA',
-  '\uD840\uDD5E': '\uDB83\uDDCB',
-  '\uD840\uDDBB': '\uDB83\uDDCC',
-  '\uD840\uDDFE': '\uDB83\uDDCD',
-  '\uD840\uDE37': '\uDB83\uDDCE',
-  '\uD840\uDE55': '\uDB83\uDDCF',
-  '\uD840\uDEEC': '\uDB83\uDDD0',
-  '\uD840\uDF18': '\uDB83\uDDD1',
-  '\uD840\uDF2B': '\uEE8C',
-  '\uD840\uDFB9': '\uDB83\uDDD2',
-  '\uD840\uDFF9': '\uDB80\uDF24',
-  '\uD841\uDC57': '\uDB83\uDDD3',
-  '\uD841\uDC96': '\uDB83\uDDD4',
-  '\uD841\uDD09': '\uEE8E',
-  '\uD841\uDD25': '\uDB83\uDDD5',
-  '\uD841\uDD40': '\uDB83\uDDD6',
-  '\uD841\uDD4B': '\uDB83\uDDD7',
-  '\uD841\uDE2F': '\uDB83\uDDD8',
-  '\uD841\uDEA3': '\uDB83\uDDD9',
-  '\uD841\uDEC9': '\uDB83\uDDDA',
-  '\uD841\uDEEE': '\uDB83\uDDDB',
-  '\uD841\uDEF9': '\uDB83\uDDDC',
-  '\uD842\uDC07': '\uDB80\uDF30',
-  '\uD842\uDCE5': '\uDB83\uDDDD',
-  '\uD842\uDD84': '\uDB80\uDF32',
-  '\uD842\uDE27': '\uDB83\uDDDE',
-  '\uD842\uDED3': '\uEE93',
-  '\uD842\uDEE4': '\uDB83\uDDDF',
-  '\uD842\uDF63': '\uDB83\uDDE0',
-  '\uD842\uDF6F': '\uDB83\uDDE1',
-  '\uD842\uDF93': '\uDB83\uDDE2',
-  '\uD842\uDFB1': '\uDB83\uDDE3',
-  '\uD842\uDFCC': '\uDB83\uDDE4',
-  '\uD843\uDC50': '\uDB83\uDDE5',
-  '\uD843\uDD45': '\uEE94',
-  '\uD843\uDD4A': '\uDB83\uDDE6',
-  '\uD843\uDDAE': '\uDB83\uDDE7',
-  '\uD843\uDDB7': '\uDB83\uDDE8',
-  '\uD843\uDDB8': '\uDB83\uDDE9',
-  '\uD843\uDDD4': '\uDB83\uDDEA',
-  '\uD843\uDEDB': '\uDB83\uDDEB',
-  '\uD843\uDFCB': '\uDB83\uDDEC',
-  '\uD843\uDFD5': '\uDB83\uDDED',
-  '\uD844\uDD3B': '\uDB83\uDDEE',
-  '\uD844\uDE74': '\uDB80\uDF46',
-  '\uD844\uDE75': '\uDB83\uDDEF',
-  '\uD844\uDE8F': '\uDB83\uDDF0',
-  '\uD844\uDEA5': '\uDB83\uDDF1',
-  '\uD844\uDEF3': '\uDB83\uDDF2',
-  '\uD844\uDF1B': '\uDB80\uDF4B',
-  '\uD844\uDF28': '\uDB83\uDDF3',
-  '\uD844\uDF69': '\uDB83\uDDF4',
-  '\uD844\uDF6E': '\uDB83\uDDF5',
-  '\uD845\uDC5E': '\uDB83\uDDF6',
-  '\uD845\uDC5F': '\uDB83\uDDF7',
-  '\uD845\uDC6D': '\uEE97',
-  '\uD845\uDCE4': '\uDB83\uDDF8',
-  '\uD845\uDD52': '\uDB83\uDDF9',
-  '\uD845\uDD56': '\uDB83\uDDFA',
-  '\uD845\uDD69': '\uDB83\uDDFB',
-  '\uD845\uDDD2': '\uDB83\uDDFC',
-  '\uD845\uDE06': '\uDB83\uDDFD',
-  '\uD845\uDF06': '\uEE98',
-  '\uD845\uDF64': '\uDB83\uDDFE',
-  '\uD846\uDC98': '\uDB83\uDDFF',
-  '\uD846\uDCEA': '\uDB83\uDE00',
-  '\uD846\uDDC8': '\uDB83\uDE01',
-  '\uD846\uDDF1': '\uDB83\uDE02',
-  '\uD846\uDE0B': '\uDB83\uDE03',
-  '\uD846\uDEA2': '\uDB83\uDE04',
-  '\uD846\uDF4E': '\uDB83\uDE05',
-  '\uD846\uDFED': '\uDB83\uDE06',
-  '\uD847\uDC12': '\uDB83\uDE07',
-  '\uD847\uDC31': '\uDB83\uDE08',
-  '\uD847\uDDA1': '\uEE9A',
-  '\uD847\uDDE4': '\uDB83\uDE09',
-  '\uD847\uDDE6': '\uDB83\uDE0A',
-  '\uD847\uDF19': '\uDB83\uDE0B',
-  '\uD847\uDF76': '\uEE9B',
-  '\uD847\uDFD6': '\uDB83\uDE0C',
-  '\uD847\uDFE7': '\uDB83\uDE0D',
-  '\uD847\uDFE9': '\uDB83\uDE0E',
-  '\uD847\uDFEE': '\uDB83\uDE10',
-  '\uD848\uDC29': '\uDB83\uDE11',
-  '\uD848\uDC37': '\uDB83\uDE12',
-  '\uD848\uDD9F': '\uDB83\uDE13',
-  '\uD848\uDDB0': '\uDB83\uDE14',
-  '\uD848\uDE3B': '\uDB83\uDE15',
-  '\uD848\uDE56': '\uDB83\uDE16',
-  '\uD848\uDEF1': '\uDB83\uDE17',
-  '\uD848\uDEFF': '\uDB83\uDE18',
-  '\uD848\uDF1B': '\uDB83\uDE19',
-  '\uD848\uDF31': '\uDB83\uDE1A',
-  '\uD848\uDF41': '\uDB83\uDE1B',
-  '\uD849\uDCED': '\uDB83\uDE1C',
-  '\uD849\uDD37': '\uDB83\uDE1D',
-  '\uD849\uDD52': '\uDB83\uDE1E',
-  '\uD849\uDED4': '\uDB83\uDE1F',
-  '\uD849\uDFFA': '\uDB83\uDE20',
-  '\uD84A\uDC35': '\uDB83\uDE21',
-  '\uD84A\uDC43': '\uDB83\uDE22',
-  '\uD84A\uDC5A': '\uDB83\uDE23',
-  '\uD84A\uDC94': '\uDB83\uDE24',
-  '\uD84A\uDD26': '\uDB83\uDE25',
-  '\uD84A\uDD85': '\uDB83\uDE26',
-  '\uD84A\uDFF1': '\uDB83\uDE27',
-  '\uD84B\uDC1D': '\uDB80\uDF85',
-  '\uD84B\uDC72': '\uDB83\uDE28',
-  '\uD84B\uDD3C': '\uDB83\uDE29',
-  '\uD84B\uDD8A': '\uDB83\uDE2A',
-  '\uD84B\uDDD0': '\uDB83\uDE2B',
-  '\uD84B\uDE09': '\uDB83\uDE2C',
-  '\uD84B\uDE2D': '\uDB83\uDE2D',
-  '\uD84B\uDEEC': '\uDB83\uDE2E',
-  '\uD84B\uDF22': '\uDB83\uDE2F',
-  '\uD84B\uDFCC': '\uDB83\uDE30',
-  '\uD84B\uDFD8': '\uDB83\uDE31',
-  '\uD84B\uDFD9': '\uDB83\uDE32',
-  '\uD84B\uDFE0': '\uDB83\uDE33',
-  '\uD84C\uDC5D': '\uDB83\uDE34',
-  '\uD84C\uDCB0': '\uDB83\uDE35',
-  '\uD84C\uDCD4': '\uDB83\uDE36',
-  '\uD84C\uDD06': '\uDB83\uDE37',
-  '\uD84C\uDD1E': '\uDB83\uDE38',
-  '\uD84C\uDD22': '\uDB83\uDE39',
-  '\uD84C\uDD4D': '\uDB83\uDE3A',
-  '\uD84C\uDEB8': '\uDB83\uDE3B',
-  '\uD84C\uDF5F': '\uDB83\uDE3C',
-  '\uD84C\uDF6E': '\uDB83\uDE3D',
-  '\uD84C\uDFB5': '\uDB83\uDE3E',
-  '\uD84C\uDFD2': '\uEE9F',
-  '\uD84C\uDFE0': '\uDB83\uDE3F',
-  '\uD84D\uDC6D': '\uDB83\uDE40',
-  '\uD84D\uDCC9': '\uDB83\uDE41',
-  '\uD84D\uDD31': '\uDB83\uDE42',
-  '\uD84D\uDD5A': '\uDB80\uDFA2',
-  '\uD84D\uDDC4': '\uEEA1',
-  '\uD84D\uDE26': '\uDB83\uDE43',
-  '\uD84D\uDE38': '\uEEA2',
-  '\uD84D\uDEA3': '\uDB83\uDE44',
-  '\uD84D\uDF1C': '\uDB80\uDFA6',
-  '\uD84D\uDF3F': '\uDB80\uDFA7',
-  '\uD84D\uDF4B': '\uDB83\uDE45',
-  '\uD84D\uDF64': '\uDB80\uDFA9',
-  '\uD84D\uDF80': '\uDB83\uDE46',
-  '\uD84D\uDFE7': '\uEEA6',
-  '\uD84D\uDFF3': '\uDB83\uDE47',
-  '\uD84E\uDCA7': '\uDB83\uDE48',
-  '\uD84E\uDD69': '\uDB83\uDE49',
-  '\uD84E\uDE63': '\uDB83\uDE4A',
-  '\uD84E\uDE74': '\uDB83\uDE4B',
-  '\uD84E\uDE8D': '\uDB83\uDE4C',
-  '\uD84E\uDFAC': '\uDB83\uDE4D',
-  '\uD84F\uDC10': '\uDB83\uDE4E',
-  '\uD84F\uDC75': '\uDB83\uDE4F',
-  '\uD84F\uDCA8': '\uDB83\uDE50',
-  '\uD84F\uDCFE': '\uDB80\uDFB6',
-  '\uD84F\uDD7D': '\uDB83\uDE51',
-  '\uD84F\uDDF9': '\uDB80\uDFB8',
-  '\uD84F\uDE32': '\uDB83\uDE52',
-  '\uD84F\uDF1B': '\uDB83\uDE53',
-  '\uD850\uDCA3': '\uDB83\uDE54',
-  '\uD850\uDD38': '\uDB83\uDE55',
-  '\uD850\uDE63': '\uDB83\uDE56',
-  '\uD850\uDE85': '\uDB83\uDE57',
-  '\uD850\uDFC1': '\uDB83\uDE58',
-  '\uD851\uDD10': '\uDB83\uDE59',
-  '\uD851\uDD14': '\uDB83\uDE5A',
-  '\uD851\uDD64': '\uDB83\uDE5B',
-  '\uD851\uDD68': '\uDB83\uDE5C',
-  '\uD851\uDF35': '\uDB83\uDE5D',
-  '\uD853\uDC1E': '\uDB83\uDE5E',
-  '\uD853\uDC6B': '\uDB83\uDE5F',
-  '\uD853\uDC83': '\uDB83\uDE60',
-  '\uD853\uDCFF': '\uDB83\uDE61',
-  '\uD853\uDD21': '\uDB83\uDE62',
-  '\uD853\uDE84': '\uDB83\uDE63',
-  '\uD854\uDC44': '\uDB83\uDE64',
-  '\uD854\uDCF2': '\uDB83\uDE65',
-  '\uD854\uDCF3': '\uDB83\uDE66',
-  '\uD854\uDD02': '\uDB83\uDE67',
-  '\uD854\uDD92': '\uDB83\uDE68',
-  '\uD854\uDE4C': '\uDB80\uDFD0',
-  '\uD854\uDE4F': '\uDB83\uDE69',
-  '\uD855\uDE07': '\uDB83\uDE6A',
-  '\uD855\uDE26': '\uDB83\uDE6B',
-  '\uD855\uDE2C': '\uDB83\uDE6C',
-  '\uD855\uDE30': '\uDB83\uDE6D',
-  '\uD855\uDE6E': '\uDB83\uDE6E',
-  '\uD855\uDEC6': '\uDB83\uDE6F',
-  '\uD855\uDED9': '\uDB83\uDE70',
-  '\uD855\uDEDC': '\uDB83\uDE71',
-  '\uD855\uDEF2': '\uDB83\uDE72',
-  '\uD855\uDF05': '\uDB83\uDE73',
-  '\uD855\uDF12': '\uDB83\uDE74',
-  '\uD855\uDF26': '\uDB83\uDE75',
-  '\uD855\uDFA9': '\uEEB4',
-  '\uD855\uDFB4': '\uEEB5',
-  '\uD856\uDC35': '\uDB83\uDE76',
-  '\uD856\uDE2B': '\uDB83\uDE77',
-  '\uD856\uDEA7': '\uDB83\uDE78',
-  '\uD856\uDED4': '\uDB83\uDE79',
-  '\uD856\uDEE1': '\uDB83\uDE7A',
-  '\uD856\uDF5F': '\uDB83\uDE7B',
-  '\uD856\uDFAB': '\uDB83\uDE7C',
-  '\uD856\uDFFF': '\uDB83\uDE7D',
-  '\uD857\uDC4B': '\uDB80\uDFE8',
-  '\uD857\uDC80': '\uDB83\uDE7E',
-  '\uD857\uDE4F': '\uDB83\uDE7F',
-  '\uD857\uDE9B': '\uDB83\uDE80',
-  '\uD857\uDF86': '\uDB83\uDE81',
-  '\uD857\uDF9E': '\uDB83\uDE82',
-  '\uD858\uDCC8': '\uDB83\uDE83',
-  '\uD858\uDDA2': '\uDB83\uDE84',
-  '\uD858\uDDD7': '\uDB83\uDE85',
-  '\uD858\uDDDA': '\uDB83\uDE86',
-  '\uD858\uDE22': '\uEEB7',
-  '\uD858\uDE28': '\uDB83\uDE87',
-  '\uD858\uDE47': '\uDB83\uDE88',
-  '\uD858\uDE73': '\uDB83\uDE89',
-  '\uD858\uDE8B': '\uDB83\uDE8A',
-  '\uD858\uDED9': '\uDB83\uDE8B',
-  '\uD858\uDFB1': '\uDB83\uDE8C',
-  '\uD858\uDFC1': '\uDB83\uDE8D',
-  '\uD859\uDC07': '\uDB83\uDE8E',
-  '\uD859\uDC08': '\uDB83\uDE8F',
-  '\uD859\uDC62': '\uDB83\uDE90',
-  '\uD859\uDCB3': '\uDB83\uDE91',
-  '\uD859\uDD18': '\uDB83\uDE92',
-  '\uD859\uDDA2': '\uDB83\uDE93',
-  '\uD859\uDEA8': '\uDB83\uDE94',
-  '\uD859\uDEAF': '\uDB83\uDE95',
-  '\uD859\uDF6B': '\uDB83\uDE96',
-  '\uD85A\uDC73': '\uDB83\uDE97',
-  '\uD85A\uDCAA': '\uDB83\uDE98',
-  '\uD85A\uDCAB': '\uDB83\uDE99',
-  '\uD85A\uDCBC': '\uDB83\uDE9A',
-  '\uD85A\uDD1D': '\uDB83\uDE9B',
-  '\uD85A\uDD3C': '\uDB83\uDE9C',
-  '\uD85A\uDD5B': '\uDB83\uDE9D',
-  '\uD85A\uDD73': '\uDB83\uDE9E',
-  '\uD85A\uDD77': '\uDB83\uDE9F',
-  '\uD85A\uDDE0': '\uDB83\uDEA0',
-  '\uD85A\uDEAD': '\uDB83\uDEA1',
-  '\uD85A\uDF1E': '\uDB83\uDEA2',
-  '\uD85A\uDF20': '\uDB83\uDEA3',
-  '\uD85A\uDFCC': '\uDB83\uDEA4',
-  '\uD85B\uDC29': '\uDB81\uDC11',
-  '\uD85B\uDC64': '\uDB83\uDEA5',
-  '\uD85B\uDC73': '\uEEBB',
-  '\uD85B\uDCDD': '\uDB81\uDC14',
-  '\uD85B\uDE11': '\uDB83\uDEA6',
-  '\uD85B\uDE40': '\uDB81\uDC16',
-  '\uD85B\uDE47': '\uDB83\uDEA7',
-  '\uD85B\uDF2C': '\uDB83\uDEA8',
-  '\uD85B\uDF2F': '\uDB83\uDEA9',
-  '\uD85B\uDF8F': '\uDB83\uDEAA',
-  '\uD85B\uDF94': '\uEEBF',
-  '\uD85B\uDFB1': '\uDB83\uDEAB',
-  '\uD85B\uDFD4': '\uDB83\uDEAC',
-  '\uD85B\uDFF8': '\uDB81\uDC1E',
-  '\uD85C\uDC39': '\uDB83\uDEAD',
-  '\uD85C\uDCF4': '\uEEC1',
-  '\uD85C\uDD0D': '\uDB81\uDC21',
-  '\uD85C\uDD39': '\uDB81\uDC22',
-  '\uD85C\uDD71': '\uDB83\uDEAE',
-  '\uD85C\uDDFD': '\uDB83\uDEAF',
-  '\uD85C\uDE2A': '\uDB83\uDEB0',
-  '\uD85C\uDE9C': '\uDB83\uDEB1',
-  '\uD85C\uDEB7': '\uDB83\uDEB2',
-  '\uD85C\uDEDD': '\uDB83\uDEB3',
-  '\uD85C\uDF0A': '\uDB83\uDEB4',
-  '\uD85C\uDF69': '\uDB83\uDEB5',
-  '\uD85C\uDFCA': '\uDB83\uDEB6',
-  '\uD85C\uDFFE': '\uDB81\uDC2C',
-  '\uD85D\uDC02': '\uDB83\uDEB7',
-  '\uD85D\uDD25': '\uDB83\uDEB8',
-  '\uD85D\uDE02': '\uDB83\uDEB9',
-  '\uD85D\uDE0E': '\uDB83\uDEBA',
-  '\uD85D\uDE19': '\uDB83\uDEBB',
-  '\uD85D\uDE67': '\uDB83\uDEBC',
-  '\uD85D\uDED4': '\uDB83\uDEBD',
-  '\uD85D\uDF01': '\uDB83\uDEBE',
-  '\uD85D\uDF05': '\uDB83\uDEBF',
-  '\uD85D\uDF0F': '\uDB83\uDEC0',
-  '\uD85D\uDF53': '\uDB83\uDEC1',
-  '\uD85D\uDF71': '\uDB83\uDEC2',
-  '\uD85D\uDFAA': '\uDB83\uDEC3',
-  '\uD85D\uDFB8': '\uDB83\uDEC4',
-  '\uD85D\uDFE8': '\uDB83\uDEC5',
-  '\uD85E\uDD66': '\uDB83\uDEC6',
-  '\uD85E\uDDDA': '\uDB83\uDEC7',
-  '\uD85E\uDE6E': '\uDB83\uDEC8',
-  '\uD85E\uDE7B': '\uDB83\uDEC9',
-  '\uD85E\uDEAE': '\uDB83\uDECA',
-  '\uD85E\uDEE2': '\uDB83\uDECB',
-  '\uD85E\uDF2F': '\uDB83\uDECC',
-  '\uD85E\uDF87': '\uDB83\uDECD',
-  '\uD85E\uDFC6': '\uDB83\uDECE',
-  '\uD85E\uDFCC': '\uDB83\uDECF',
-  '\uD85E\uDFFE': '\uDB83\uDED0',
-  '\uD85F\uDCA8': '\uDB83\uDED1',
-  '\uD85F\uDD2A': '\uDB83\uDED2',
-  '\uD85F\uDD4D': '\uDB83\uDED3',
-  '\uD85F\uDE19': '\uDB83\uDED4',
-  '\uD85F\uDE3D': '\uDB83\uDED5',
-  '\uD85F\uDE79': '\uDB83\uDED6',
-  '\uD85F\uDFA8': '\uDB83\uDED7',
-  '\uD85F\uDFC0': '\uDB83\uDED8',
-  '\uD860\uDD19': '\uDB83\uDED9',
-  '\uD860\uDF8A': '\uDB83\uDEDA',
-  '\uD861\uDC32': '\uDB83\uDEDB',
-  '\uD861\uDC4D': '\uDB83\uDEDC',
-  '\uD861\uDC52': '\uDB83\uDEDD',
-  '\uD861\uDC55': '\uEEC5',
-  '\uD861\uDC6D': '\uDB83\uDEDE',
-  '\uD861\uDC89': '\uDB83\uDEDF',
-  '\uD861\uDC8C': '\uDB83\uDEE0',
-  '\uD861\uDCAD': '\uDB83\uDEE1',
-  '\uD861\uDCB0': '\uDB83\uDEE2',
-  '\uD861\uDCC5': '\uDB83\uDEE3',
-  '\uD861\uDCCD': '\uDB83\uDEE4',
-  '\uD861\uDCE4': '\uDB83\uDEE5',
-  '\uD861\uDCF1': '\uDB83\uDEE6',
-  '\uD861\uDCF5': '\uDB83\uDEE7',
-  '\uD861\uDD1D': '\uDB83\uDEE8',
-  '\uD861\uDD1F': '\uDB83\uDEE9',
-  '\uD861\uDD27': '\uDB83\uDEEA',
-  '\uD861\uDD2B': '\uDB83\uDEEB',
-  '\uD861\uDD2F': '\uDB83\uDEEC',
-  '\uD861\uDD30': '\uDB83\uDEED',
-  '\uD861\uDD60': '\uDB83\uDEEE',
-  '\uD861\uDD63': '\uDB83\uDEEF',
-  '\uD861\uDD65': '\uDB83\uDEF0',
-  '\uD861\uDD6B': '\uEEC7',
-  '\uD861\uDD88': '\uDB83\uDEF1',
-  '\uD861\uDD8A': '\uDB83\uDEF2',
-  '\uD861\uDDB9': '\uDB83\uDEF3',
-  '\uD861\uDDBB': '\uDB83\uDEF4',
-  '\uD861\uDDBF': '\uDB83\uDEF5',
-  '\uD861\uDDC9': '\uEEC8',
-  '\uD861\uDDED': '\uDB83\uDEF6',
-  '\uD861\uDDF1': '\uDB83\uDEF7',
-  '\uD861\uDE22': '\uDB83\uDEF8',
-  '\uD861\uDE37': '\uDB83\uDEF9',
-  '\uD861\uDE42': '\uDB83\uDEFA',
-  '\uD861\uDE55': '\uDB83\uDEFB',
-  '\uD861\uDE59': '\uDB83\uDEFC',
-  '\uD861\uDE5A': '\uDB83\uDEFD',
-  '\uD861\uDE5F': '\uDB83\uDEFE',
-  '\uD861\uDF63': '\uDB83\uDEFF',
-  '\uD862\uDC0B': '\uDB83\uDF00',
-  '\uD862\uDD45': '\uDB83\uDF01',
-  '\uD862\uDE71': '\uDB81\uDC7B',
-  '\uD862\uDFEF': '\uDB81\uDC7C',
-  '\uD863\uDD84': '\uDB83\uDF02',
-  '\uD863\uDF41': '\uDB83\uDF03',
-  '\uD863\uDFE4': '\uDB83\uDF04',
-  '\uD864\uDC31': '\uDB83\uDF05',
-  '\uD864\uDD2E': '\uDB83\uDF06',
-  '\uD864\uDD5E': '\uDB83\uDF07',
-  '\uD864\uDD7E': '\uDB83\uDF08',
-  '\uD864\uDDD5': '\uDB83\uDF09',
-  '\uD864\uDE1A': '\uDB83\uDF0A',
-  '\uD864\uDE5E': '\uDB83\uDF0B',
-  '\uD864\uDE93': '\uDB83\uDF0C',
-  '\uD864\uDF56': '\uDB83\uDF0D',
-  '\uD864\uDF79': '\uDB83\uDF0E',
-  '\uD865\uDC1A': '\uDB83\uDF0F',
-  '\uD865\uDC1F': '\uDB83\uDF10',
-  '\uD865\uDC20': '\uDB83\uDF11',
-  '\uD865\uDC22': '\uDB83\uDF12',
-  '\uD865\uDC27': '\uDB83\uDF13',
-  '\uD865\uDC3F': '\uDB83\uDF14',
-  '\uD865\uDD24': '\uDB83\uDF15',
-  '\uD865\uDD3A': '\uDB83\uDF16',
-  '\uD865\uDD48': '\uDB83\uDF17',
-  '\uD865\uDDB6': '\uDB83\uDF18',
-  '\uD865\uDE38': '\uDB83\uDF19',
-  '\uD865\uDE5E': '\uDB83\uDF1A',
-  '\uD865\uDE7A': '\uDB83\uDF1B',
-  '\uD865\uDE82': '\uDB83\uDF1C',
-  '\uD865\uDE85': '\uDB83\uDF1D',
-  '\uD865\uDE88': '\uDB83\uDF1E',
-  '\uD865\uDE95': '\uDB83\uDF1F',
-  '\uD865\uDE96': '\uDB83\uDF20',
-  '\uD865\uDEA9': '\uDB83\uDF21',
-  '\uD865\uDEB9': '\uDB83\uDF22',
-  '\uD865\uDEC6': '\uDB83\uDF23',
-  '\uD865\uDEDE': '\uDB83\uDF24',
-  '\uD865\uDEE5': '\uDB83\uDF25',
-  '\uD865\uDEFA': '\uDB83\uDF26',
-  '\uD865\uDF06': '\uDB83\uDF27',
-  '\uD865\uDF08': '\uDB83\uDF28',
-  '\uD865\uDF0B': '\uDB83\uDF29',
-  '\uD865\uDF0F': '\uDB83\uDF2A',
-  '\uD865\uDF15': '\uDB83\uDF2B',
-  '\uD865\uDF17': '\uDB83\uDF2C',
-  '\uD865\uDF19': '\uDB81\uDCA8',
-  '\uD865\uDF2F': '\uDB83\uDF2D',
-  '\uD865\uDF34': '\uDB83\uDF2E',
-  '\uD865\uDF39': '\uDB83\uDF2F',
-  '\uD865\uDF3F': '\uDB83\uDF30',
-  '\uD865\uDF59': '\uDB83\uDF31',
-  '\uD865\uDF5D': '\uDB83\uDF32',
-  '\uD865\uDF80': '\uDB83\uDF33',
-  '\uD865\uDF83': '\uDB83\uDF34',
-  '\uD865\uDF8D': '\uDB83\uDF35',
-  '\uD865\uDF8F': '\uDB83\uDF36',
-  '\uD865\uDF91': '\uDB83\uDF37',
-  '\uD865\uDFA1': '\uDB83\uDF38',
-  '\uD865\uDFA5': '\uDB83\uDF39',
-  '\uD865\uDFA7': '\uDB83\uDF3A',
-  '\uD865\uDFAB': '\uDB83\uDF3B',
-  '\uD865\uDFAD': '\uDB83\uDF3C',
-  '\uD865\uDFB7': '\uDB83\uDF3D',
-  '\uD865\uDFC4': '\uDB83\uDF3E',
-  '\uD865\uDFCB': '\uDB83\uDF3F',
-  '\uD865\uDFF1': '\uDB83\uDF40',
-  '\uD865\uDFFD': '\uDB83\uDF41',
-  '\uD866\uDC94': '\uDB83\uDF42',
-  '\uD866\uDC9D': '\uDB83\uDF43',
-  '\uD866\uDD00': '\uDB83\uDF44',
-  '\uD866\uDD18': '\uDB83\uDF45',
-  '\uD866\uDE59': '\uDB83\uDF46',
-  '\uD866\uDEB7': '\uDB83\uDF47',
-  '\uD866\uDFBA': '\uDB83\uDF48',
-  '\uD867\uDC13': '\uDB83\uDF49',
-  '\uD867\uDC7F': '\uDB83\uDF4A',
-  '\uD867\uDD34': '\uDB83\uDF4B',
-  '\uD867\uDD49': '\uDB83\uDF4C',
-  '\uD867\uDDF8': '\uDB83\uDF4D',
-  '\uD867\uDE3D': '\uDB82\uDF56',
-  '\uD867\uDE77': '\uDB83\uDF4E',
-  '\uD867\uDE7A': '\uDB83\uDF4F',
-  '\uD867\uDE8A': '\uEED5',
-  '\uD867\uDEDB': '\uEED6',
-  '\uD867\uDEE0': '\uDB83\uDF50',
-  '\uD867\uDEE1': '\uDB83\uDF51',
-  '\uD868\uDC2F': '\uDB81\uDCD0',
-  '\uD868\uDC4B': '\uDB83\uDF52',
-  '\uD868\uDC61': '\uDB83\uDF53',
-  '\uD868\uDCC8': '\uDB83\uDF54',
-  '\uD868\uDCF9': '\uDB81\uDCD4',
-  '\uD868\uDDF4': '\uDB83\uDF55',
-  '\uD868\uDE91': '\uDB83\uDF56',
-  '\uD868\uDE96': '\uDB83\uDF57',
-  '\uD868\uDEA8': '\uDB83\uDF58',
-  '\uD868\uDF01': '\uDB83\uDF59',
-  '\uD868\uDF08': '\uDB83\uDF5A',
-  '\uD868\uDF33': '\uDB83\uDF5B',
-  '\uD868\uDF47': '\uDB83\uDF5C',
-  '\uD868\uDF52': '\uDB83\uDF5D',
-  '\uD868\uDF6A': '\uDB83\uDF5E',
-  '\uD868\uDF92': '\uDB83\uDF5F',
-  '\uD868\uDFB0': '\uDB83\uDF60',
-  '\uD869\uDC72': '\uDB83\uDF61',
-  '\uD869\uDD02': '\uDB83\uDF62',
-  '\uD869\uDD04': '\uDB83\uDF63',
-  '\uD869\uDD08': '\uDB83\uDF64',
-  '\uD869\uDD0D': '\uDB83\uDF65',
-  '\uD869\uDD4D': '\uDB83\uDF66',
-  '\uD869\uDD64': '\uDB83\uDF67',
-  '\uD869\uDD6F': '\uDB83\uDF68',
-  '\uD869\uDD85': '\uDB83\uDF69',
-  '\uD869\uDDC7': '\uDB83\uDF6A',
-  '\uD869\uDE00': '\uDB83\uDF6B',
-  '\uD869\uDE95': '\uDB83\uDF6C',
-  '\uD869\uDE96': '\uDB83\uDF6D',
-  '\uD869\uDE99': '\uDB83\uDF6E',
-  '\uD86D\uDF41': '\uDB83\uDF6F',
-  '\uD86D\uDF42': '\uDB83\uDF70',
-  '\uD873\uDED0': '\uDB83\uDF71',
-  '\uD873\uDEDC': '\uDB83\uDF72',
-  '\uD873\uDF4C': '\uDB83\uDF73',
-  '\uD86D\uDF46': '\uDB81\uDCF4',
-  '\uD869\uDF46': '\uDB83\uDF74',
-  '\uD877\uDD48': '\uDB83\uDF75',
-  '\uD874\uDC20': '\uDB83\uDF76',
-  '\uD86D\uDF4C': '\uDB83\uDF77',
-  '\uD874\uDDA2': '\uDB83\uDF78',
-  '\uD877\uDD44': '\uDB83\uDF79',
-  '\uD840\uDC4A': '\uDB83\uDF7A',
-  '\uD874\uDC6B': '\uDB83\uDF7B',
-  '\uD874\uDC6F': '\uDB83\uDF7C',
-  '\uD874\uDC77': '\uDB83\uDF7D',
-  '\uD86E\uDD7B': '\uDB83\uDF7E',
-  '\uD874\uDCDA': '\uDB83\uDF7F',
-  '\uD86D\uDF51': '\uDB81\uDD01',
-  '\uD86D\uDF62': '\uDB83\uDF80',
-  '\uD874\uDD69': '\uDB83\uDF81',
-  '\uD874\uDD86': '\uDB83\uDF82',
-  '\uD874\uDD8F': '\uDB83\uDF83',
-  '\uD874\uDD99': '\uDB83\uDF84',
-  '\uD843\uDDF0': '\uDB83\uDF85',
-  '\uD874\uDDAB': '\uDB83\uDF86',
-  '\uD874\uDE39': '\uDB83\uDF87',
-  '\uD874\uDEDB': '\uDB83\uDF88',
-  '\uD86D\uDF5D': '\uDB83\uDF89',
-  '\uD844\uDE99': '\uDB83\uDF8A',
-  '\uD874\uDFDB': '\uDB83\uDF8B',
-  '\uD875\uDC23': '\uDB83\uDF8C',
-  '\uD86D\uDF63': '\uDB83\uDF8D',
-  '\uD875\uDC33': '\uDB83\uDF8E',
-  '\uD875\uDC45': '\uDB83\uDF8F',
-  '\uD875\uDC55': '\uDB83\uDF90',
-  '\uD86D\uDF6F': '\uDB83\uDF91',
-  '\uD875\uDCE9': '\uDB83\uDF92',
-  '\uD846\uDF36': '\uDB83\uDF93',
-  '\uD875\uDE3E': '\uDB83\uDF94',
-  '\uD875\uDE4C': '\uDB83\uDF95',
-  '\uD86D\uDF77': '\uEEE3',
-  '\uD86D\uDF76': '\uDB81\uDD19',
-  '\uD861\uDC82': '\uDB83\uDF96',
-  '\uD875\uDE98': '\uDB83\uDF97',
-  '\uD875\uDEB6': '\uDB83\uDF98',
-  '\uD86D\uDF78': '\uDB83\uDF99',
-  '\uD875\uDF33': '\uDB83\uDF9B',
-  '\uD86B\uDDC2': '\uDB83\uDF9C',
-  '\uD86F\uDEDB': '\uDB83\uDF9D',
-  '\uD876\uDC05': '\uDB83\uDF9E',
-  '\uD876\uDC86': '\uDB83\uDF9F',
-  '\uD86D\uDF80': '\uDB83\uDFA0',
-  '\uD876\uDD97': '\uDB83\uDFA1',
-  '\uD86D\uDF89': '\uDB81\uDD26',
-  '\uD876\uDE99': '\uDB83\uDFA2',
-  '\uD870\uDCFE': '\uDB83\uDFA3',
-  '\uD86D\uDF8E': '\uDB81\uDD29',
-  '\uD870\uDD55': '\uDB83\uDFA4',
-  '\uD876\uDF4B': '\uDB83\uDFA5',
-  '\uD876\uDF4E': '\uDB83\uDFA6',
-  '\uD873\uDF18': '\uDB83\uDFA7',
-  '\uD86D\uDF93': '\uDB83\uDFA8',
-  '\uD86B\uDD89': '\uDB83\uDFA9',
-  '\uD86D\uDF9C': '\uDB83\uDFAA',
-  '\uD877\uDEBE': '\uDB83\uDFAB',
-  '\uD877\uDF3D': '\uDB83\uDFAC',
-  '\uD877\uDF41': '\uDB83\uDFAD',
-  '\uD86B\uDFB2': '\uDB83\uDFAF',
-  '\uD877\uDFF5': '\uDB83\uDFB0',
-  '\uD86C\uDC03': '\uDB83\uDFB1',
-  '\uD878\uDC68': '\uDB83\uDFB2',
-  '\uD86C\uDC48': '\uDB83\uDFB3',
-  '\uD86D\uDFB9': '\uDB83\uDFB4',
-  '\uD878\uDE84': '\uDB83\uDFB5',
-  '\uD86D\uDFC8': '\uDB83\uDFB6',
-  '\uD878\uDEAB': '\uDB83\uDFB7',
-  '\uD878\uDF06': '\uDB83\uDFB8',
-  '\uD878\uDF07': '\uDB83\uDFB9',
-  '\uD874\uDC48': '\uDB83\uDFBA',
-  '\uD86D\uDFCD': '\uDB83\uDFBB',
-  '\uD878\uDFB0': '\uDB83\uDFBC',
-  '\uD871\uDF37': '\uDB83\uDFBD',
-  '\uD878\uDFC0': '\uDB83\uDFBE',
-  '\uD871\uDF3B': '\uDB83\uDFBF',
-  '\uD86D\uDFD2': '\uDB81\uDD46',
-  '\uD879\uDC3C': '\uDB83\uDFC0',
-  '\uD879\uDCD9': '\uDB83\uDFC1',
-  '\uD879\uDCDC': '\uDB83\uDFC2',
-  '\uD840\uDC45': '\uDB83\uDFC3',
-  '\uD879\uDD09': '\uDB83\uDFC4',
-  '\uD86D\uDFD8': '\uDB81\uDD4C',
-  '\uD879\uDDE8': '\uDB83\uDFC5',
-  '\uD86D\uDF55': '\uDB83\uDFC6',
-  '\uD86D\uDFEA': '\uDB83\uDFC8',
-  '\uD86D\uDCBC': '\uDB83\uDFC9',
-  '\uD87A\uDDCA': '\uDB83\uDFCB',
-  '\uD87A\uDDD3': '\uDB83\uDFCC',
-  '\uD87A\uDDF0': '\uDB83\uDFCD',
-  '\uD873\uDD6B': '\uDB83\uDFCE',
-  '\uD87A\uDF71': '\uDB83\uDFCF',
-  '\uD87A\uDF79': '\uDB83\uDFD0',
-  '\uD873\uDECE': '\uDB83\uDFD1',
-  '\uD874\uDC28': '\uDB83\uDFD2',
-  '\uD86E\uDD30': '\uDB83\uDFD3',
-  '\uD874\uDCB2': '\uDB83\uDFD4',
-  '\uD874\uDE60': '\uDB83\uDFD6',
-  '\uD874\uDF80': '\uDB83\uDFD7',
-  '\uD86E\uDFF1': '\uDB83\uDFD8',
-  '\uD875\uDCF1': '\uDB83\uDFD9',
-  '\uD86A\uDDE8': '\uDB83\uDFDA',
-  '\uD875\uDDD5': '\uDB83\uDFDB',
-  '\uD875\uDEDD': '\uDB83\uDFDC',
-  '\uD875\uDF10': '\uDB83\uDFDD',
-  '\uD875\uDF2E': '\uDB83\uDFDE',
-  '\uD875\uDFBE': '\uDB83\uDFDF',
-  '\uD875\uDFF1': '\uDB83\uDFE0',
-  '\uD876\uDD18': '\uDB83\uDFE1',
-  '\uD876\uDD16': '\uDB83\uDFE2',
-  '\uD876\uDD67': '\uDB83\uDFE3',
-  '\uD86B\uDD03': '\uDB83\uDFE4',
-  '\uD877\uDC7D': '\uDB83\uDFE5',
-  '\uD877\uDC9E': '\uDB83\uDFE6',
-  '\uD877\uDCD3': '\uDB83\uDFE7',
-  '\uD877\uDCEF': '\uDB83\uDFE8',
-  '\uD842\uDD24': '\uDB83\uDFE9',
-  '\uD878\uDCBA': '\uDB83\uDFEA',
-  '\uD878\uDCEC': '\uDB83\uDFEB',
-  '\uD878\uDD70': '\uDB83\uDFEC',
-  '\uD879\uDF89': '\uDB83\uDFED',
-  '\uD879\uDFD0': '\uDB83\uDFEE',
-  '\uD86D\uDC68': '\uDB83\uDFEF',
-  '\uD87A\uDDC0': '\uDB83\uDFF0',
-  '\uD87A\uDDF2': '\uDB83\uDFF1',
-  '\uD87A\uDE41': '\uDB83\uDFF2'
-};
-
-// 配置統計（段階的PUA戦略）
-export const puaAllocationStats = {
-    strategy: 'staged_pua_allocation',
-    bmpPUA: {
-        allocated: 6400,
-        capacity: 6400,
-        range: '0xE000-0xF8FF'
-    },
-    smpPUA: {
-        allocated: 4982,
-        capacity: 65534,
-        range: '0xF0000-0xF1375'
-    },
-    totalCharacters: 11382
+  "\u00A0": "\u0020",
+  "\u2012": "\u002D",
+  "\u2011": "\u002D",
+  "\u2010": "\u002D",
+  "\u0332": "\u005F",
+  "\u0300": "\u0060",
+  "\u0303": "\u02DC",
+  "\u2019": "\u02BC",
+  "\u2018": "\u02BB",
+  "\u223C": "\u007E",
+  "\u2219": "\u00B7",
+  "\u0301": "\u00B4",
+  "\u0302": "\u02C6",
+  "\u0304": "\u00AF",
+  "\u0308": "\u00A8",
+  "\u030A": "\u02DA",
+  "\u0327": "\u00B8",
+  "\u2014": "\u0336",
+  "\u2212": "\u00AD",
+  "\u203E": "\u0305",
+  "\u3000": "\u2003",
+  "\uFF5E": "\u301C",
+  "\uFE19": "\u205D",
+  "\uFE30": "\u205A",
+  "\uD879\uDFDD": "\u3C08",
+  "\u67A9": "\u6730",
+  "\u6B04": "\uF91D",
+  "\u5ECA": "\uF928",
+  "\u6717": "\uF929",
+  "\u865C": "\uF936",
+  "\u6BBA": "\uF970",
+  "\u985E": "\uF9D0",
+  "\u9686": "\uF9DC",
+  "\u585A": "\uFA10",
+  "\u6674": "\uFA12",
+  "\u51DE": "\uFA15",
+  "\u732A": "\uFA16",
+  "\u76CA": "\uFA17",
+  "\u793C": "\uFA18",
+  "\u795E": "\uFA19",
+  "\u7965": "\uFA1A",
+  "\u798F": "\uFA1B",
+  "\u9756": "\uFA1C",
+  "\u7CBE": "\uFA1D",
+  "\u7FBD": "\uFA1E",
+  "\u8612": "\uFA20",
+  "\u8AF8": "\uFA22",
+  "\u9038": "\uFA67",
+  "\u90FD": "\uFA26",
+  "\u98EF": "\uFA2A",
+  "\u98FC": "\uFA2B",
+  "\u9928": "\uFA2C",
+  "\u9DB4": "\uFA2D",
+  "\u4FAE": "\uFA30",
+  "\u50E7": "\uFA31",
+  "\u514D": "\uFA32",
+  "\u52C9": "\uFA33",
+  "\u52E4": "\uFA34",
+  "\u5351": "\uFA35",
+  "\u559D": "\uFA36",
+  "\u5606": "\uFA37",
+  "\u5668": "\uFA38",
+  "\u5840": "\uFA39",
+  "\u58A8": "\uFA3A",
+  "\u5C64": "\uFA3B",
+  "\u5C6E": "\uFA3C",
+  "\u6094": "\uFA3D",
+  "\u6168": "\uFA3E",
+  "\u618E": "\uFA3F",
+  "\u61F2": "\uFA40",
+  "\u654F": "\uFA41",
+  "\u65E2": "\uFA42",
+  "\u6691": "\uFA43",
+  "\u6885": "\uFA44",
+  "\u6D77": "\uFA45",
+  "\u6E1A": "\uFA46",
+  "\u6F22": "\uFA47",
+  "\u716E": "\uFA48",
+  "\u722B": "\uFA49",
+  "\u7422": "\uFA4A",
+  "\u7891": "\uFA4B",
+  "\u793E": "\uFA4C",
+  "\u7949": "\uFA4D",
+  "\u7948": "\uFA4E",
+  "\u7950": "\uFA4F",
+  "\u7956": "\uFA50",
+  "\u795D": "\uFA51",
+  "\u798D": "\uFA52",
+  "\u798E": "\uFA53",
+  "\u7A40": "\uFA54",
+  "\u7A81": "\uFA55",
+  "\u7BC0": "\uFA56",
+  "\u7DF4": "\uFA57",
+  "\u7E09": "\uFA58",
+  "\u7E41": "\uFA59",
+  "\u7F72": "\uFA5A",
+  "\u8005": "\uFA5B",
+  "\u81ED": "\uFA5C",
+  "\u8279": "\uFA5E",
+  "\u8457": "\uFA5F",
+  "\u8910": "\uFA60",
+  "\u8996": "\uFA61",
+  "\u8B01": "\uFA62",
+  "\u8B39": "\uFA63",
+  "\u8CD3": "\uFA64",
+  "\u8D08": "\uFA65",
+  "\u8FB6": "\uFA66",
+  "\u96E3": "\uFA68",
+  "\u97FF": "\uFA69",
+  "\u983B": "\uFA6A",
+  "\u6075": "\uFA6B",
+  "\uD850\uDEEE": "\uFA6C",
+  "\u8218": "\uFA6D",
+  "\uD879\uDFC0": "\uD861\uDDC7",
+  "\u535A": "\uD86E\uDDE4"
 };

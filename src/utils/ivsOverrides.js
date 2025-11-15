@@ -3,50 +3,8 @@
 // - Add temporary or environment-specific patches here.
 // - Entries here override generated ones in ivsCharacterMap.js.
 
-// Example:
-// export const ivsToExternalCharMap = {
-//   '\uD86E\uDDE4\uDB40\uDD00': '\uXXXX' // 2B9E4_E0100 → your temporary PUA
-// };
-
 export const ivsToExternalCharMap = {
-  // U+2B9E4 U+E0100 (𫧤󠄀) → provisional PUA for MJ059399
-  // NOTE: Font needs regeneration to embed MJ059399 glyph at this PUA.
-  //'\uD86E\uDDE4\uDB40\uDD00': '\uEEF0',
 };
 
 export const baseCharFallbackToExternalMap = {
-  // PDF whitelist: apply base→PUA fallback only for specific needed codepoints.
-  // Use this together with convertIVSToExternal(text, { enableBaseFallback: true }) on PDF path.
-  // 𫟋 (MJ021335)
-  '\uD86D\uDFCB': '\uE821',
-  // 𬟓 (MJ023164)
-  '\uD871\uDFD3': '\uF8AF',
-  // 𠆻 (MJ030550)
-  '\uD840\uDDBB': '\uDB80\uDF1C',
-  // 𠒖 (MJ030927)
-  '\uD841\uDC96': '\uDB80\uDF26',
-  // 𠔉 (MJ030984)
-  '\uD841\uDD09': '\uDB80\uDF27',
-  // 𠮓 (MJ032098)
-  '\uD842\uDF93': '\uDB80\uDF38',
-
-  // Compatibility ideograph → PUA (PDF-only): 艹 (U+FA5D) → PUA for target MJ
-  // Reason: normalizeCJKCompat maps U+FA5D → U+8279, which is not present in the external font.
-  // Mapping directly to the PUA ensures the glyph is available in 'IPA-IVS-External' for PDF output.
-  '\uFA5D': '\uDB84\uDE47',
-
-  // ----- Additional PDF whitelist -----
-  // MJ042964..MJ043092 block (SMP base codepoints)
-  '\uD855\uDE07': '\uDB80\uDFD2', // MJ042964
-  '\uD855\uDE26': '\uDB80\uDFD3', // MJ042970
-  '\uD855\uDE2C': '\uDB80\uDFD4', // MJ042975
-  '\uD855\uDE30': '\uDB80\uDFD5', // MJ042980
-  '\uD855\uDE6E': '\uDB80\uDFD6', // MJ043007
-  '\uD855\uDEC6': '\uDB80\uDFD7', // MJ043035
-  '\uD855\uDED9': '\uDB80\uDFD8', // MJ043047
-  '\uD855\uDEDC': '\uDB80\uDFD9', // MJ043051
-  '\uD855\uDEF2': '\uDB80\uDFDA', // MJ043063
-  '\uD855\uDF05': '\uDB80\uDFDB', // MJ043075
-  '\uD855\uDF26': '\uDB80\uDFDD', // MJ043092
-
 };

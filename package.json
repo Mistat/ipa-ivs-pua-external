@@ -27,17 +27,7 @@
   },
   "scripts": {
     "build": "node scripts/build.js",
-    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --color --testPathPattern=__tests__",
-    "test:unit": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --color --testPathPattern=__tests__",
-    "test:e2e": "RUN_E2E=1 node --experimental-vm-modules ./node_modules/jest/bin/jest.js --color __tests__/metrics-check.e2e.test.js",
-    "install-fonts": "node scripts/install-fonts.cjs",
-    "generate:fonts": "fontforge -script scripts/extract_ivs_glyphs_mj_based.py",
-    "snapshot:maps": "node scripts/snapshot-maps.cjs",
-    "diff:maps": "node scripts/diff-maps.cjs",
-    "backup:map": "node scripts/backup-generated-map.cjs",
-    "generate:test": "python3 scripts/generate_static_font_test.py",
-    "setup": "npm run parse && npm run generate:fonts",
-    "parse": "python3 scripts/parse_excel_with_f_column.py && python3 scripts/reverse_c_f_mapping.py && python3 scripts/derive_base_mj_from_font.py"
+    "setup": "fontforge -script scripts/generate.py"
   },
   "keywords": [
     "ivs",
@@ -52,7 +42,7 @@
     "typography",
     "web-fonts"
   ],
-  "author": "Your Name",
+  "author": "Misato Takahashi",
   "license": "MIT",
   "repository": {
     "type": "git",
