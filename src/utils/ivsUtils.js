@@ -1,54 +1,20 @@
 // IVS文字変換ユーティリティ関数（段階的PUA配置対応）
 // BMP PUA: 0xE000-0xF8FF (6,400文字) - 高頻度VS優先
 // SMP PUA: 0xF0000- (65,534文字) - 残りのVS
-
 import * as ivsMap from './ivsCharacterMap.js';
-// Always import overrides (file exists in repo; exports empty objects by default)
-import * as overrides from './ivsOverrides.js';
-const ivsOverrides = overrides.ivsToExternalCharMap || {};
-const baseFallbackOverrides = overrides.baseCharFallbackToExternalMap || {};
 
 // Merge maps with overrides taking precedence
-const ivsToExternalCharMap = { ...(ivsMap.ivsToExternalCharMap || {}), ...ivsOverrides };
+const ivsToExternalCharMap = ivsMap.ivsToExternalCharMap;
 // Merge generated fallback with overrides (overrides take precedence)
-const baseCharFallbackToExternalMap = { ...(ivsMap.baseCharFallbackToExternalMap || {}), ...baseFallbackOverrides };
-export const puaAllocationStats = ivsMap.puaAllocationStats || {};
+const baseCharFallbackToExternalMap = ivsMap.baseCharFallbackToExternalMap;
 
-// Normalize CJK Compatibility Ideographs to their unified code points.
-// - U+F900–U+FAFF (CJK Compatibility Ideographs)
-// - U+2F800–U+2FA1F (CJK Compatibility Ideographs Supplement)
-function normalizeCJKCompatibilityIdeographs(text, overrideMap) {
-  const out = [];
-  const compatMap = ivsMap.cjkCompatibilityMap || {};
-  const merged = overrideMap ? { ...compatMap, ...overrideMap } : compatMap;
-  for (const ch of text) {
-    const cp = ch.codePointAt(0);
-    if ((cp >= 0xF900 && cp <= 0xFAFF) || (cp >= 0x2F800 && cp <= 0x2FA1F)) {
-      // First, use generated map (with user overrides if provided)
-      const mapped = merged[ch];
-      if (mapped) {
-        out.push(mapped);
-        continue;
-      }
-      // Then, fallback to NFKC for those that do fold (e.g., U+F929 → U+6717)
-      const nfkc = ch.normalize('NFKC');
-      out.push(nfkc);
-    } else {
-      out.push(ch);
-    }
-  }
-  return out.join('');
-}
-
-
-export function convertIVSToExternal(text, { enableBaseFallback = true } = {}) {
+export function convertIVSToExternal(text, { enableBaseFallback = false } = {}) {
   let result = text;
-
   // 1) IVS → PUA
   Object.entries(ivsToExternalCharMap).forEach(([ivs, external]) => {
     result = result.replace(new RegExp(ivs, 'g'), external);
   });
-  // 2) 任意: 基本文字フォールバック（B_value 既定異体）
+  // 2) 任意: 基本文字フォールバック
   if (enableBaseFallback) {
     Object.entries(baseCharFallbackToExternalMap).forEach(([baseChar, external]) => {
       // 負荷の低い防御: 直後に VS (U+DB40..DB7F + U+DC00..DFFF) が続く場合は置換しない
@@ -59,11 +25,9 @@ export function convertIVSToExternal(text, { enableBaseFallback = true } = {}) {
   return result;
 }
 
-
 export function hasIVSCharacters(text) {
   return Object.keys(ivsToExternalCharMap).some(ivs => text.includes(ivs));
 }
-
 
 export function countIVSCharacters(text) {
   let count = 0;
