@@ -18,7 +18,15 @@ export function convertIVSToExternal(text, { enableBaseFallback = false } = {}) 
   if (enableBaseFallback) {
     Object.entries(baseCharFallbackToExternalMap).forEach(([baseChar, external]) => {
       // 負荷の低い防御: 直後に VS (U+DB40..DB7F + U+DC00..DFFF) が続く場合は置換しない
-      const pattern = new RegExp(`${baseChar}(?![\uDB40-\uDB7F][\uDC00-\uDFFF])`, 'g');
+      //const pattern = new RegExp(`${baseChar}(?![\uDB40-\uDB7F][\uDC00-\uDFFF])`, 'g');
+      //const baseChar = String.fromCodePoint(0x8279);
+      const vsStart = String.fromCodePoint(0xE0100);
+      const vsEnd   = String.fromCodePoint(0xE01EF);
+
+      const pattern = new RegExp(
+        baseChar + `(?![${vsStart}-${vsEnd}])`,
+        'gu'
+      );
       result = result.replace(pattern, external);
     });
   }

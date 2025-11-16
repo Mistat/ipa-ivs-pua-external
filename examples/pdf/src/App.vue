@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <h1>Hello</h1>
-    <input type="text" v-model="textValue" placeholder="テキストを入力してください（IVS文字対応）" />
+    <textarea v-model="textValue" placeholder="テキストを入力してください（IVS文字対応）" />
     <div class="preview" v-if="textValue">
       <div class="preview-label">プレビュー（変換後）:</div>
       <div class="preview-text">{{ displayText }}</div>
@@ -39,7 +39,7 @@ export default {
   name: 'App',
   data() {
     return {
-      textValue:  '\u4FAE \u6AC2\uDB40\uDD01 \u7027\uDB40\uDD07 \u6406\uDB40\uDD03 \u3404\uDB40\uDD00 - \u3404\uDB40\uDD01 - \u3404\uDB40\uDD02 - \u3732\udb40\udd01 - \u4672\udb40\udd00'
+      textValue: '侮櫂󠄁瀧󠄇搆󠄃㐄󠄀㐄󠄁㐄󠄂㜲󠄁䙲󠄀※①φ𡭚欄𫧤󠄀侮艹艹𫑨欄欄︀Aa1ⅴ㎜あア「」┨'
     }
   },
   computed: {
