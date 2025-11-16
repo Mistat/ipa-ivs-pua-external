@@ -5,6 +5,7 @@ import os
 import json
 import sys
 import time
+import argparse
 
 DEBUG = False
 ROOT_DIR = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -153,80 +154,105 @@ def analyze_vs_distribution(vs_distribution):
 def build_pua_mapping(glyphs_proceeded, pua_strategy):
     pua_map = dict()
     bmp_pua_start = 0xE000
-    bmp_pua_end = 0xF8FF
     smp_pua_start = 0xF0000
     current_bmp_used = 0
 
+    # glyph_name -> assigned PUA codepoint
     pua_glyph_map = dict()
 
     __vs = dict()
+
     def cnt(vsname):
+        if vsname is None:
+            return
         if vsname not in __vs:
             __vs[vsname] = 0
         __vs[vsname] += 1
 
-    def add_pua_mapping(cp, vs, pua_cp, glyph):
+    # Returns True if this call created a NEW PUA assignment for the glyph
+    def add_pua_mapping(cp, vs, candidate_pua_cp, glyph):
         base_cp = ord(cp)
-        if (base_cp, vs) not in pua_map:
-            if glyph not in pua_glyph_map:
-                pua_glyph_map[glyph] = pua_cp
-                pua_map[(base_cp, vs)] = pua_cp
-            else:
-                pua_map[(base_cp, vs)] = pua_glyph_map[glyph]
+        if glyph not in pua_glyph_map:
+            # New glyph assignment
+            pua_glyph_map[glyph] = candidate_pua_cp
+            pua_map[(base_cp, vs)] = candidate_pua_cp
             cnt(get_vs_name(vs))
+            return True
+        else:
+            # Reuse existing glyph assignment
+            pua_map[(base_cp, vs)] = pua_glyph_map[glyph]
+            cnt(get_vs_name(vs))
+            return False
 
+    # Helper to collect all IVS sequences of a glyph for a specific vs_name
+    def iter_seqs_for_vsname(info, vs_name):
+        if info.get("vs_name") == vs_name:
+            yield info["char"][0], info["vs"]
+        for ch in info.get("chars", []):
+            if ch.get("vs_name") == vs_name:
+                yield ch["char"][0], ch["vs"]
+
+    # BMP allocation: assign new PUA only when a glyph first appears; increment pointer only then
     for vs_name, count, allocation_type in pua_strategy['bmp_allocation']:
         if allocation_type == "full":
             for glyph_name, info in glyphs_proceeded.items():
-                has_pua = False
-                if info.get("vs_name") == vs_name:
-                    add_pua_mapping(info["char"][0], info["vs"], bmp_pua_start + current_bmp_used, glyph_name)
-                    has_pua = True
-                for char in info.get("chars",[]):
-                    if char.get("vs_name") == vs_name:
-                        add_pua_mapping(char["char"][0], char["vs"], bmp_pua_start + current_bmp_used, glyph_name)
-                if has_pua:
+                # Gather sequences for this vs_name
+                seqs = list(iter_seqs_for_vsname(info, vs_name))
+                if not seqs:
+                    continue
+                created = False
+                for cp0, vs in seqs:
+                    created |= add_pua_mapping(cp0, vs, bmp_pua_start + current_bmp_used, glyph_name)
+                if created:
                     current_bmp_used += 1
         elif allocation_type == "partial":
-            portion = count
+            remaining_slots = count
             for glyph_name, info in glyphs_proceeded.items():
-                if current_bmp_used <= bmp_pua_end:
-                    has_pua = False
-                    if info.get("vs_name") == vs_name:
-                        if portion <= 0:
-                            break
-                        add_pua_mapping(info["char"][0], info["vs"], bmp_pua_start + current_bmp_used, glyph_name)
-                        has_pua = True
-                    for char in info.get("chars",[]):
-                        if char.get("vs_name") == vs_name:
-                            add_pua_mapping(char["char"][0], char["vs"], bmp_pua_start + current_bmp_used, glyph_name)
-                            has_pua = True
-                    if has_pua:
-                        current_bmp_used += 1
-                        portion -= 1
+                seqs = list(iter_seqs_for_vsname(info, vs_name))
+                if not seqs:
+                    continue
+                if glyph_name in pua_glyph_map:
+                    # Already assigned elsewhere: just map sequences
+                    for cp0, vs in seqs:
+                        add_pua_mapping(cp0, vs, pua_glyph_map[glyph_name], glyph_name)
+                    continue
+                if remaining_slots <= 0:
+                    # No BMP slots left for new glyphs; defer mapping to SMP phase
+                    continue
+                # Assign a new BMP PUA slot to this glyph and map all its sequences
+                created = False
+                for cp0, vs in seqs:
+                    created |= add_pua_mapping(cp0, vs, bmp_pua_start + current_bmp_used, glyph_name)
+                if created:
+                    current_bmp_used += 1
+                    remaining_slots -= 1
     if DEBUG:
         print(f"PUAマッピング内訳1:")
-        for vs_name, used in __vs.items():
-            print(f"  {vs_name}: {used:,}文字")
+        for _vs_name, used in __vs.items():
+            print(f"  {_vs_name}: {used:,}文字")
 
     __vs = dict()
+    # SMP allocation: only create new assignment for glyphs without one; otherwise reuse
     for vs_name, count, allocation_type in pua_strategy['smp_allocation']:
         if allocation_type in ["full", "remaining"]:
             for glyph_name, info in glyphs_proceeded.items():
-                has_pua = False
-                if info.get("vs_name") == vs_name:
-                    add_pua_mapping(info["char"][0], info["vs"], smp_pua_start, glyph_name)
-                    has_pua = True
-                for char in info.get("chars",[]):
-                    if char.get("vs_name") == vs_name:
-                        add_pua_mapping(char["char"][0], char["vs"], smp_pua_start, glyph_name)
-                        has_pua = True
-                if has_pua:
-                    smp_pua_start += 1
+                seqs = list(iter_seqs_for_vsname(info, vs_name))
+                if not seqs:
+                    continue
+                if glyph_name in pua_glyph_map:
+                    # Reuse existing assignment
+                    for cp0, vs in seqs:
+                        add_pua_mapping(cp0, vs, pua_glyph_map[glyph_name], glyph_name)
+                else:
+                    created = False
+                    for cp0, vs in seqs:
+                        created |= add_pua_mapping(cp0, vs, smp_pua_start, glyph_name)
+                    if created:
+                        smp_pua_start += 1
     if DEBUG:
         print(f"PUAマッピング内訳:")
-        for vs_name, used in __vs.items():
-            print(f"  {vs_name}: {used:,}文字")
+        for _vs_name, used in __vs.items():
+            print(f"  {_vs_name}: {used:,}文字")
 
     return pua_map
 
@@ -328,9 +354,190 @@ def copy_glyph(original_font, external_font, glyph_name, dist_code):
         external_font[glyph_name].vwidth = original_font[glyph_name].vwidth
     external_font[glyph_name].unicode = dist_code
 
+def setup_glyph_metrics(original_font, external_font):
+    try:
+        # FontForge の font には boundingBox() が無い環境があるため、各グリフから集計
+        ymin, ymax = None, None
+        try:
+            for gname in external_font:
+                try:
+                    g = external_font[gname]
+                    bb = g.boundingBox()
+                    if not bb:
+                        continue
+                    _, gymin, _, gymax = bb
+                    if ymin is None or gymin < ymin:
+                        ymin = gymin
+                    if ymax is None or gymax > ymax:
+                        ymax = gymax
+                except Exception:
+                    # 個別グリフの bbox 取得失敗は無視
+                    pass
+        except Exception:
+            pass
+
+        # フォールバック（万一 bbox が取れなかった場合）
+        if ymin is None or ymax is None:
+            ymin, ymax = -getattr(original_font, 'os2_windescent', 0), getattr(original_font, 'os2_winascent', 0)
+
+        # OS/2 Win metrics は「見切れ防止のために必要最小限」に引き上げる（過大にしない）
+        if hasattr(external_font, 'os2_winascent'):
+            try:
+                orig_win_asc = getattr(original_font, 'os2_winascent', 0) or 0
+                external_font.os2_winascent = int(max(orig_win_asc, ymax))
+            except Exception:
+                pass
+        if hasattr(external_font, 'os2_windescent'):
+            try:
+                orig_win_des = abs(getattr(original_font, 'os2_windescent', 0) or 0)
+                external_font.os2_windescent = int(max(orig_win_des, abs(ymin)))
+            except Exception:
+                pass
+
+        # Typo メトリクス（行送り基準）を元フォント値に固定し、UseTypoMetrics を有効化
+        if hasattr(original_font, 'os2_typoascent') and hasattr(external_font, 'os2_typoascent'):
+            try:
+                external_font.os2_typoascent = int(original_font.os2_typoascent)
+            except Exception:
+                pass
+        if hasattr(original_font, 'os2_typodescent') and hasattr(external_font, 'os2_typodescent'):
+            try:
+                # sTypoDescender は負の値を維持
+                external_font.os2_typodescent = int(original_font.os2_typodescent)
+            except Exception:
+                pass
+        if hasattr(external_font, 'os2_use_typo_metrics'):
+            try:
+                external_font.os2_use_typo_metrics = True
+            except Exception:
+                pass
+        if hasattr(external_font, 'os2_typolinegap'):
+            try:
+                override = os.getenv('METRICS_TYPO_LINEGAP', '').lower()
+                if override in ('keep', 'orig', 'original') and hasattr(original_font, 'os2_typolinegap'):
+                    external_font.os2_typolinegap = original_font.os2_typolinegap
+                else:
+                    external_font.os2_typolinegap = 0
+            except Exception:
+                pass
+
+        # hhea を Typo に同期（descender は負で設定）、LineGap は 0
+        try:
+            typo_asc = getattr(original_font, 'os2_typoascent', getattr(original_font, 'ascent', None))
+            typo_des = getattr(original_font, 'os2_typodescent', getattr(original_font, 'descent', None))
+            if typo_asc is not None and hasattr(external_font, 'hhea_ascent'):
+                external_font.hhea_ascent = int(typo_asc)
+            if typo_des is not None and hasattr(external_font, 'hhea_descent'):
+                # hhea.descender は負値
+                d = int(typo_des)
+                if d > 0:
+                    d = -d
+                external_font.hhea_descent = d
+            if hasattr(external_font, 'hhea_linegap'):
+                external_font.hhea_linegap = 0
+        except Exception:
+            pass
+
+        # FontForge の font.ascent/descent も整合のため更新
+        try:
+            if hasattr(original_font, 'ascent') and hasattr(external_font, 'ascent'):
+                external_font.ascent = int(original_font.ascent)
+            if hasattr(original_font, 'descent') and hasattr(external_font, 'descent'):
+                external_font.descent = int(original_font.descent)
+        except Exception:
+            pass
+    except Exception:
+        # いずれかの処理に失敗しても生成自体は継続
+        pass
+
+def optimize_glyph_metrics(original_font, output_ttf_path, output_woff2_path):
+    # 生成直後に FontForge が内部再計算で hhea/OS2 Typo を肥大化させる場合がある。
+    # 一度書き出したTTFを開き直し、最終メトリクスを確実に上書きしてから再保存する。
+    try:
+        fix = fontforge.open(output_ttf_path)
+        # 元フォント由来の Typo 値を適用
+        try:
+            if hasattr(fix, 'os2_typoascent') and hasattr(original_font, 'os2_typoascent'):
+                fix.os2_typoascent = int(original_font.os2_typoascent)
+            if hasattr(fix, 'os2_typodescent') and hasattr(original_font, 'os2_typodescent'):
+                fix.os2_typodescent = int(original_font.os2_typodescent)
+            if hasattr(fix, 'os2_use_typo_metrics'):
+                fix.os2_use_typo_metrics = True
+            if hasattr(fix, 'os2_typolinegap'):
+                fix.os2_typolinegap = 0
+        except Exception:
+            print("OS/2 Typoメトリクス最適化に失敗しました。")
+
+        # 全グリフ bbox から WinAscent/Descent の下限を算出し、過大化しないように調整
+        ymin2, ymax2 = None, None
+        for gname in fix:
+            try:
+                g = fix[gname]
+                bb = g.boundingBox()
+                if not bb:
+                    continue
+                _, y0, _, y1 = bb
+                if ymin2 is None or y0 < ymin2:
+                    ymin2 = y0
+                if ymax2 is None or y1 > ymax2:
+                    ymax2 = y1
+            except Exception:
+                print("グリフのbbox取得に失敗しました。")
+        if ymin2 is None or ymax2 is None:
+            ymin2, ymax2 = -abs(getattr(original_font, 'os2_windescent', 0) or 0), getattr(original_font, 'os2_winascent', 0) or 0
+        try:
+            if hasattr(fix, 'os2_winascent'):
+                fix.os2_winascent = int(max(getattr(original_font, 'os2_winascent', 0) or 0, ymax2))
+            if hasattr(fix, 'os2_windescent'):
+                fix.os2_windescent = int(max(abs(getattr(original_font, 'os2_windescent', 0) or 0), abs(ymin2)))
+        except Exception:
+            print("Winメトリクス最適化に失敗しました。")
+
+        # hhea を Typo に同期し、LineGap を 0 に固定
+        try:
+            if hasattr(fix, 'hhea_ascent'):
+                fix.hhea_ascent = int(getattr(original_font, 'os2_typoascent', original_font.ascent))
+            if hasattr(fix, 'hhea_descent'):
+                d = int(getattr(original_font, 'os2_typodescent', -abs(original_font.descent)))
+                if d > 0:
+                    d = -d
+                fix.hhea_descent = d
+            if hasattr(fix, 'hhea_linegap'):
+                fix.hhea_linegap = 0
+        except Exception:
+            print("hheaメトリクス最適化に失敗しました。")
+
+        # FontForge の ascent/descent も同期
+        try:
+            fix.ascent = int(original_font.ascent)
+            fix.descent = int(original_font.descent)
+        except Exception:
+            print("フォント最適化中のascent/descent設定に失敗しました。")
+
+        # 再保存（上書き）
+        try:
+            fix.generate(output_ttf_path)
+        except Exception:
+            print("フォント最適化後のTTF保存に失敗しました。")
+        try:
+            fix.generate(output_woff2_path)
+        except Exception:
+            print("フォント最適化後のWOFF2保存に失敗しました。")
+        try:
+            fix.close()
+        except Exception:
+            print("フォント最適化後のフォントクローズに失敗しました。")
+    except Exception:
+        print("フォント最適化中にエラーが発生しましたが、処理を継続します。")
+
 def generate_character_map(ivsMap, basemap):
     js_content  = "\nexport const ivsToExternalCharMap = {\n" + ",\n".join([f"  \"{key}\": \"{value}\"" for key, value in ivsMap.items()]) + "\n};\n"
-    js_content += "\nexport const baseCharFallbackToExternalMap = {\n" + "\n".join([f"  \"{key}\": \"{value.get("char", "")}\", // {value.get("from", "")}" for key, value in basemap.items()]) + "\n};\n"
+    base_lines = []
+    for key, value in basemap.items():
+        ch = value.get('char', "")
+        frm = value.get('from', "")
+        base_lines.append(f"  \"{key}\": \"{ch}\", // {frm}")
+    js_content += "\nexport const baseCharFallbackToExternalMap = {\n" + ",\n".join(base_lines) + "\n};\n"
     return js_content
 
 class ProgressBar:
@@ -390,12 +597,24 @@ class ProgressBar:
             self.current = self.total
             self._display()
 
-def verify(external_font, glyphs, no_unicode_mapped):
-    for glyph in external_font.glyphs():
-        if glyph.glyphname not in glyphs and glyph.glyphname not in no_unicode_mapped:
-            print(f"検証エラー: グリフ {glyph.glyphname} がフォントに存在しますが、グリフリストに存在しません。")
+class NoOpProgressBar:
+    def __init__(self, total=0, desc="", bar_length=0):
+        self.total = total
+        self.desc = desc
+    def update(self, n=1):
+        pass
+    def close(self):
+        pass
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Generate external PUA-mapped font and mapping table.")
+    parser.add_argument("--dry-run", "-n", action="store_true", help="Analyze only; do not write any files.")
+    # accept both --no-progress and --no-progressw for convenience/typo tolerance
+    parser.add_argument("--no-progress", "--no-progressw", dest="no_progress", action="store_true", help="Disable progress bar output.")
+    return parser.parse_args()
 
 def main():
+    args = parse_args()
     src_font = fontforge.open(FONT_PATH)
     covered_codepoints, glyphs_proceeded = list_glyphs(src_font)
     plan_total_glyphs = len(glyphs_proceeded) + len(no_unicode_mapped)
@@ -413,23 +632,38 @@ def main():
     pua_strategy = analyze_vs_distribution(vs_distribution)
     pua_map = build_pua_mapping(glyphs_proceeded, pua_strategy)
 
+    # 1) 変体シーケンスの総数とPUAマッピング件数
     if len(pua_map) != (pua_strategy.get("smp_used", 0) + pua_strategy.get("bmp_used", 0)):
-       raise ValueError(f"PUA mapping count does not match the used PUA count. Mapped: {len(pua_map)}, Used: {pua_strategy.get('smp_used', 0) + pua_strategy.get('bmp_used', 0)} {pua_strategy.get('smp_used', 0) + pua_strategy.get('bmp_used', 0)-len(pua_map)}")
+        raise ValueError(
+            f"PUA mapping count does not match the used PUA count. "
+            f"Mapped: {len(pua_map)}, Used: {pua_strategy.get('smp_used', 0) + pua_strategy.get('bmp_used', 0)}"
+        )
     print(f"  PUAマッピング数: {len(pua_map):,}文字")
 
-    if total != len(covered_codepoints)+ivs_chars:
-        raise ValueError(f"Total codepoints count does not match the length of covered_codepoints. Total: {total}, Covered: {len(covered_codepoints)}")
+    # 2) covered_codepoints に格納したエントリ総数と total の一致
+    covered_total = sum(len(v) for v in covered_codepoints.values())
+    if total != covered_total:
+        raise ValueError(
+            f"Covered entries mismatch. total={total}, covered_total={covered_total}"
+        )
+
+    # 3) IVS件数の自己整合: ivs_chars と covered_codepointsから再計算した件数
+    computed_ivs = sum(
+        1 for lst in covered_codepoints.values() for x in lst if x.get("vs", -1) > 0
+    )
+    if ivs_chars != computed_ivs:
+        raise ValueError(
+            f"IVS count mismatch. ivs_chars={ivs_chars}, computed_ivs={computed_ivs}"
+        )
 
     ivs_processed = 0
     copyed = dict()
-    dryrun = False
+    dryrun = bool(args.dry_run)
 
     new_font = create_new_font_from_original_font_metrics(src_font)
-    pbar = ProgressBar(total=plan_total_glyphs, desc="グリフコピー中")
+    pbar = NoOpProgressBar(total=plan_total_glyphs, desc="グリフコピー中") if args.no_progress else ProgressBar(total=plan_total_glyphs, desc="グリフコピー中")
     for glyph_name, info in glyphs_proceeded.items():
         c = info.get("char")
-        if f"U+{ord(c[0]):04X}" == "U+F91D":
-            print(f"Debug: Found glyph {glyph_name} {info} for codepoint U+F91D")
         vs = info.get("vs", -1)
         if vs != -1:
             if (ord(c[0]), vs) in pua_map:
@@ -461,8 +695,6 @@ def main():
             copyed[glyph_name] = dist_code
             pbar.update(1)
         else:
-            if glyph_name == 'mj059399':
-                print(f"Glyph {glyph_name} already copied to codepoint U+{copyed[glyph_name]:04X} U+{ord(c[0]):04X} {format_codepoint_literal(copyed[glyph_name])}")
             base_char_map[format_codepoint_literal(ord(c[0]))] = {
                 "char": format_codepoint_literal(copyed[glyph_name]),
                 "from": glyph_name
@@ -474,19 +706,23 @@ def main():
         pbar.update(1)
     pbar.close()
 
+    if not dryrun:
+        print(f"メトリクス設定中...")
+        setup_glyph_metrics(src_font, new_font)
 
     pua_literal_map = convert_pua_mapping_to_literal_map(pua_map)
     js = generate_character_map(pua_literal_map, base_char_map)
 
     mapping_file_path = os.path.join(ROOT_DIR, 'src', 'utils', 'ivsCharacterMap.js')
-    with open(mapping_file_path, 'w', encoding='utf-8') as f:
-        f.write(js)
-    print(f"Mapファイルを書き出しました: {mapping_file_path}")
+    if not dryrun:
+        with open(mapping_file_path, 'w', encoding='utf-8') as f:
+            f.write(js)
+        print(f"Mapファイルを書き出しました: {mapping_file_path}")
+    else:
+        print("[dry-run] Mapファイル出力をスキップしました")
 
     output_woff2_path = os.path.join(ROOT_DIR, 'fonts', 'ipa-ivs-external.woff2')
     output_ttf_path = os.path.join(ROOT_DIR, 'fonts', 'ipa-ivs-external.ttf')
-
-    #verify(new_font, output_ttf_path, no_unicode_mapped)
 
     if not dryrun:
         print("TrueType形式で保存中...")
@@ -494,6 +730,14 @@ def main():
 
         print("WebFont形式で保存中...")
         new_font.generate(output_woff2_path)
+
+        print("フォント最適化中...")
+        optimize_glyph_metrics(src_font, output_ttf_path, output_woff2_path)
+
+        src_font.close()
+        new_font.close()
+    else:
+        print("[dry-run] フォント出力をスキップしました")
 
     output = {
         "plan_total_glyphs": plan_total_glyphs,
@@ -506,16 +750,17 @@ def main():
         "strategy": pua_strategy,
     }
 
-
     print(f"  IVS文字数: {ivs_processed:,}文字")
     print(f"　ベースマッピング数: {len(base_char_map):,}文字")
 
     output_path = os.path.join(ROOT_DIR, 'tmp', 'covered_codepoints.json')
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(output, f, ensure_ascii=False, indent=2)
-
-    print(f"詳細情報を書き出しました: {output_path}")
+    if not dryrun:
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(output, f, ensure_ascii=False, indent=2)
+        print(f"詳細情報を書き出しました: {output_path}")
+    else:
+        print("[dry-run] 詳細情報の書き出しをスキップしました")
 
 
 if __name__ == "__main__":
