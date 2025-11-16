@@ -14,7 +14,6 @@ base_char_map = dict()
 no_unicode_mapped = []
 total_glyphs = 0
 ivs_chars = 0
-skip = 0
 total = 0
 
 def get_vs_name(vs_codepoint):
@@ -29,13 +28,12 @@ def get_vs_name(vs_codepoint):
         return None
 
 def process_glyphs(glyphs):
-    global skip, no_unicode_mapped, total_glyphs
+    global no_unicode_mapped, total_glyphs
+    nu = 0
     for glyph in glyphs:
         total_glyphs += 1
         if glyph.unicode != -1:
             yield glyph.glyphname, glyph.unicode, 0
-        else:
-            skip += 1
 
         if glyph.altuni:
             for unicode_val, vs, _ in glyph.altuni:
@@ -45,8 +43,10 @@ def process_glyphs(glyphs):
                     raise ValueError(f"Duplicate base unicode mapping found in glyph {glyph.glyphname} for unicode {unicode_val:04X}")
                 yield glyph.glyphname, unicode_val, vs
 
-        if glyph.unicode == -1 and not glyph.altuni:
+        if glyph.unicode == -1 and (not glyph.altuni or len(glyph.altuni) == 0):
             no_unicode_mapped.append(glyph.glyphname)
+            nu += 1
+    print(f"ユニコードを持たないグリフ数: {nu}")
 
 
 def list_glyphs(font):
@@ -79,25 +79,14 @@ def list_glyphs(font):
             if proceeded.get("base", False):
                 if unicode_val == ord(proceeded.get("char", "")):
                     continue
-                try :
-                    kk = ''.join(format_codepoint_literal(ord(ch)) for ch in info["char"])
-                    base_char_map[kk] = {
-                        "char": format_codepoint_literal(ord(proceeded.get("char", ""))),
-                        "from": glyph_name
-                    }
-                except:
-                    print(f"Error processing glyph {glyph_name} for base char map. {info}")
-                    raise
+                kk = ''.join(format_codepoint_literal(ord(ch)) for ch in info["char"])
+                base_char_map[kk] = {
+                    "char": format_codepoint_literal(ord(proceeded.get("char", ""))),
+                    "from": glyph_name
+                }
                 continue
             elif info.get("base", False):
                 raise ValueError(f"Glyph {glyph_name} has already been assigned to IVS variant, cannot assign base glyph.")
-                print(f"Replacing glyph {glyph_name} with base glyph.")
-                glyphs_proceeded[glyph_name] = info
-                for u in covered_codepoints[unicode_val]:
-                    if u["glyph"] == glyph_name:
-                        print(f"Updating covered codepoint U+{unicode_val:04X} to base glyph.")
-                        base_char_map[format_codepoint_literal(ord(proceeded.get("char", "")))] = format_codepoint_literal(unicode_val)
-                        covered_codepoints[unicode_val].remove(u)
         glyphs_proceeded[glyph_name] = info
         if unicode_val not in covered_codepoints:
             covered_codepoints[unicode_val] = []
@@ -110,9 +99,9 @@ def list_glyphs(font):
         if len(covered_codepoints[codepoint]) == 0:
             print(f"Codepoint U+{codepoint:04X}({codepoint}) has no glyphs.")
         if not codepoint in has_base_glyph:
-            print(f"Codepoint U+{codepoint:04X}({codepoint})  has no base glyph but has IVS variants.")
+            print(f"Codepoint U+{codepoint:04X}({codepoint}) has no base glyph but has IVS variants.")
         if len(covered_codepoints[codepoint]) > 1:
-            if len(list(filter(lambda x: x.get("base", True), covered_codepoints[codepoint]))) == 0:
+            if len(list(filter(lambda x: x.get("base", False), covered_codepoints[codepoint]))) == 0:
                 print(f"Codepoint U+{codepoint:04X} has multiple IVS variants but no base glyph.")
 
     print(f"has_base_glyph count: {len(has_base_glyph)}")
@@ -272,31 +261,24 @@ def create_new_font_from_original_font_metrics(original_font):
     return external_font
 
 def copy_glyph(original_font, external_font, glyph_name, dist_code):
-    external_font.createChar(dist_code)
-    external_font[dist_code].clear()
+    external_font.createChar(-1, glyph_name)
+    external_font[glyph_name].clear()
 
-    # # スペース文字は特別処理
-    # if code in [0x0020, 0x3000]:  # 半角スペース、全角スペース
-    #     external_font[dist_code].width = original_font[glyph_name].width
-    #     if hasattr(original_font[glyph_name], 'vwidth'):
-    #         external_font[dist_code].vwidth = original_font[glyph_name].vwidth
-    # else:
-    # 通常の文字はグリフをコピー
     original_font.selection.select(glyph_name)
     original_font.copy()
-    external_font.selection.select(dist_code)
+    external_font.selection.select(glyph_name)
     external_font.paste()
     if glyph_name not in original_font:
         raise ValueError(f"Glyph for codepoint {glyph_name} not found in original font.")
-    external_font[dist_code].width = original_font[glyph_name].width
+    external_font[glyph_name].width = original_font[glyph_name].width
     if hasattr(original_font[glyph_name], 'vwidth'):
-        external_font[dist_code].vwidth = original_font[glyph_name].vwidth
+        external_font[glyph_name].vwidth = original_font[glyph_name].vwidth
+    external_font[glyph_name].unicode = dist_code
 
 def generate_character_map(ivsMap, basemap):
     js_content  = "\nexport const ivsToExternalCharMap = {\n" + ",\n".join([f"  \"{key}\": \"{value}\"" for key, value in ivsMap.items()]) + "\n};\n"
     js_content += "\nexport const baseCharFallbackToExternalMap = {\n" + "\n".join([f"  \"{key}\": \"{value.get("char", "")}\", // {value.get("from", "")}" for key, value in basemap.items()]) + "\n};\n"
     return js_content
-
 
 class ProgressBar:
     def __init__(self, total, desc="Progress", bar_length=40):
@@ -355,7 +337,7 @@ class ProgressBar:
             self.current = self.total
             self._display()
 
-if __name__ == "__main__":
+def main():
     src_font = fontforge.open(FONT_PATH)
     covered_codepoints = list_glyphs(src_font)
     pua_strategy = analyze_vs_distribution(vs_distribution, total)
@@ -364,21 +346,20 @@ if __name__ == "__main__":
         "covered_codepoints": covered_codepoints,
         "vs_distribution": vs_distribution,
         "base_char_map": base_char_map,
+        "base_glyphs_without_unicode": no_unicode_mapped,
         "ivs_chars": ivs_chars,
-        "skip": skip,
         "total_covered": total,
-        "diff": 61360 - (total + len(base_char_map)),
+        "diff": total_glyphs - total,
         "strategy": pua_strategy,
     }
 
-    print(f"Total glyphs processed: {total_glyphs}")
+    print(f"元のグリフ数: {total_glyphs}")
     print(f"作成予定のグリフ数: {total}")
     print(f"　ベース: {len(covered_codepoints)}")
     print(f"　IVS文字: {ivs_chars}")
     print(f"　ベースマッピング: {len(base_char_map)}")
     print(f"　差分： {total_glyphs - total}")
-    print(f"　処理をスキップ： {skip}")
-    print(f"　ユニコードを持たない文字（対象外） {len(no_unicode_mapped)}")
+    print(f"　ユニコードを持たない文字 {len(no_unicode_mapped)}")
 
     output_path = os.path.join(ROOT_DIR, 'tmp', 'covered_codepoints.json')
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -396,7 +377,7 @@ if __name__ == "__main__":
     print(f"IVS to PUA character map written to {mapping_file_path}")
 
     new_font = create_new_font_from_original_font_metrics(src_font)
-    pbar = ProgressBar(total=total, desc="グリフコピー中")
+    pbar = ProgressBar(total=total + len(no_unicode_mapped), desc="グリフコピー中")
     for codepoint, glyphs in covered_codepoints.items():
         for glyph_info in glyphs:
             glyph_name = glyph_info.get("glyph", "")
@@ -406,9 +387,13 @@ if __name__ == "__main__":
                 vs = glyph_info.get("vs", -1)
                 if vs == -1:
                     raise ValueError(f"Invalid VS -1 for IVS glyph {glyph_info['glyph']}")
-                ivs_sequence = chr(codepoint) + chr(vs)
                 copy_glyph(src_font, new_font, glyph_name, pua_map.get((codepoint, vs)))
             pbar.update(1)
+    for codepoint in no_unicode_mapped:
+        glyph_name = codepoint
+        copy_glyph(src_font, new_font, glyph_name, -1)
+        pbar.update(1)
+    pbar.close()
 
     output_woff2_path = os.path.join(ROOT_DIR, 'fonts', 'ipa-ivs-external.woff2')
     output_ttf_path = os.path.join(ROOT_DIR, 'fonts', 'ipa-ivs-external.ttf')
@@ -417,3 +402,6 @@ if __name__ == "__main__":
     new_font.generate(output_woff2_path)
     print("TrueType形式で保存中...")
     new_font.generate(output_ttf_path)
+
+if __name__ == "__main__":
+    main()
