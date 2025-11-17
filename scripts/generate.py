@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import fontforge
 import os
 import json
@@ -17,6 +16,14 @@ no_unicode_mapped = []
 total_glyphs = 0
 ivs_chars = 0
 total = 0
+
+SPACE_CODEPOINTS = {
+    0x0020, 0x00A0, 0x1680,
+    0x2000, 0x2001, 0x2002, 0x2003, 0x2004,
+    0x2005, 0x2006, 0x2007, 0x2008, 0x2009,
+    0x200A, 0x202F, 0x205F, 0x3000,
+    0x0009
+}
 
 def get_vs_name(vs_codepoint):
     """Variation SelectorのコードポイントからVS名を取得"""
@@ -48,29 +55,34 @@ def process_glyphs(glyphs):
             no_unicode_mapped.append(glyph.glyphname)
 
 def list_glyphs(font):
+    """Collect glyph information into glyphs_proceeded and update global stats.
+
+    Returns:
+        dict: glyphs_proceeded mapping glyph_name -> info
+    """
     global total, ivs_chars, vs_distribution, base_char_map
-    covered_codepoints = dict()
-    has_base_glyph = set()
     glyphs_proceeded = dict()
+
     for glyph_name, unicode_val, vs in process_glyphs(font.glyphs()):
         info = {
             "glyph": glyph_name,
             "chars": []
         }
         if vs == 0 or vs == -1:
-            has_base_glyph.add(unicode_val)
+            # Base mapping
             m = chr(unicode_val)
             info["char"] = m
             if vs == 0:
                 info["base"] = True
         else:
+            # IVS mapping
             ivs_sequence = chr(unicode_val) + chr(vs)
             vs_name = get_vs_name(vs)
             if vs_name not in vs_distribution:
                 vs_distribution[vs_name] = 0
             vs_distribution[vs_name] += 1
             info["vs"] = vs
-            info["vs_name"]= vs_name
+            info["vs_name"] = vs_name
             info["char"] = ivs_sequence
             info["sequence"] = f"U+{unicode_val:04X} U+{vs:04X}"
 
@@ -79,38 +91,57 @@ def list_glyphs(font):
             if proceeded.get("base", False):
                 kk = ''.join(format_codepoint_literal(ord(ch)) for ch in info["char"])
                 if info.get("vs", -1) == -1:
-                    base_char_map[kk] = {
-                        "char": format_codepoint_literal(ord(proceeded.get("char", ""))),
-                        "from": glyph_name
-                    }
-                    continue
-                else:
-                    pass
+                    if ord(info["char"]) not in SPACE_CODEPOINTS:
+                        base_char_map[kk] = {
+                            "char": format_codepoint_literal(ord(proceeded.get("char", ""))),
+                            "from": glyph_name
+                        }
+                        continue
             elif info.get("base", False):
                 raise ValueError(f"Glyph {glyph_name} has already been assigned to IVS variant, cannot assign base glyph.")
             glyphs_proceeded[glyph_name]["chars"].append(info)
-
-        if glyph_name not in glyphs_proceeded:
+        else:
             glyphs_proceeded[glyph_name] = info
-        if unicode_val not in covered_codepoints:
-            covered_codepoints[unicode_val] = []
-
-        covered_codepoints[unicode_val].append(info)
 
         if vs > 0:
             ivs_chars += 1
         total += 1
 
-    for codepoint in covered_codepoints:
-        if len(covered_codepoints[codepoint]) == 0:
-            print(f"Codepoint U+{codepoint:04X}({codepoint}) has no glyphs.")
-        if not codepoint in has_base_glyph:
-            print(f"Codepoint U+{codepoint:04X}({codepoint}) has no base glyph but has IVS variants.")
-        if len(covered_codepoints[codepoint]) > 1:
-            if len(list(filter(lambda x: x.get("base", False), covered_codepoints[codepoint]))) == 0:
-                print(f"Codepoint U+{codepoint:04X} has multiple IVS variants but no base glyph.")
+    return glyphs_proceeded
 
-    return covered_codepoints, glyphs_proceeded
+def _iter_all_entries(glyphs_proceeded):
+    """Yield all entry dicts from glyphs_proceeded (main + chars)."""
+    for info in glyphs_proceeded.values():
+        yield info
+        for ch in info.get("chars", []):
+            yield ch
+
+def validate_from_glyphs(glyphs_proceeded):
+    """Perform consistency checks without covered_codepoints structure."""
+    # 1) total entries consistency
+    entries_total = sum(1 + len(info.get("chars", [])) for info in glyphs_proceeded.values())
+    if total != entries_total:
+        raise ValueError(f"Covered entries mismatch. total={total}, computed_total={entries_total}")
+
+    # 2) IVS count consistency
+    computed_ivs = sum(1 for e in _iter_all_entries(glyphs_proceeded) if e.get("vs", -1) > 0)
+    if ivs_chars != computed_ivs:
+        raise ValueError(f"IVS count mismatch. ivs_chars={ivs_chars}, computed_ivs={computed_ivs}")
+
+    # 3) Base coverage diagnostics per base codepoint
+    by_base = {}
+    for e in _iter_all_entries(glyphs_proceeded):
+        ch0 = e.get("char", "")
+        if not ch0:
+            continue
+        base_cp = ord(ch0[0])
+        by_base.setdefault(base_cp, []).append(e)
+
+    for base_cp, entries in by_base.items():
+        has_base = any(x.get("base", False) for x in entries)
+        has_ivs = any(x.get("vs", -1) > 0 for x in entries)
+        if not has_base and has_ivs:
+            print(f"Codepoint U+{base_cp:04X}({base_cp}) has no base glyph but has IVS variants.")
 
 def analyze_vs_distribution(vs_distribution):
     print("VS分布解析中...")
@@ -170,27 +201,38 @@ def build_pua_mapping(glyphs_proceeded, pua_strategy):
         __vs[vsname] += 1
 
     # Returns True if this call created a NEW PUA assignment for the glyph
-    def add_pua_mapping(cp, vs, candidate_pua_cp, glyph):
+    def add_pua_mapping(cp, vs, candidate_pua_cp, glyph, pua):
         base_cp = ord(cp)
         if glyph not in pua_glyph_map:
             # New glyph assignment
-            pua_glyph_map[glyph] = candidate_pua_cp
-            pua_map[(base_cp, vs)] = candidate_pua_cp
-            cnt(get_vs_name(vs))
-            return True
+            if pua:
+                # map to IVS glyph
+                pua_glyph_map[glyph] = candidate_pua_cp
+                pua_map[(base_cp, vs)] = candidate_pua_cp
+                cnt(get_vs_name(vs))
+                return True
+            else:
+                # map to base glyph
+                pua_map[(base_cp, vs)] = base_cp
+                pua_glyph_map[glyph] = base_cp
+                return False
         else:
             # Reuse existing glyph assignment
-            pua_map[(base_cp, vs)] = pua_glyph_map[glyph]
-            cnt(get_vs_name(vs))
-            return False
+            if pua:
+                pua_map[(base_cp, vs)] = pua_glyph_map[glyph]
+                cnt(get_vs_name(vs))
+                return False
+            else:
+                pua_map[(base_cp, vs)] = base_cp
+                return False
 
     # Helper to collect all IVS sequences of a glyph for a specific vs_name
     def iter_seqs_for_vsname(info, vs_name):
         if info.get("vs_name") == vs_name:
-            yield info["char"][0], info["vs"]
+            yield info["char"][0], info["vs"], info.get('vs', -1) != -1
         for ch in info.get("chars", []):
             if ch.get("vs_name") == vs_name:
-                yield ch["char"][0], ch["vs"]
+                yield ch["char"][0], ch["vs"], info.get('vs', -1) != -1
 
     # BMP allocation: assign new PUA only when a glyph first appears; increment pointer only then
     for vs_name, count, allocation_type in pua_strategy['bmp_allocation']:
@@ -201,8 +243,8 @@ def build_pua_mapping(glyphs_proceeded, pua_strategy):
                 if not seqs:
                     continue
                 created = False
-                for cp0, vs in seqs:
-                    created |= add_pua_mapping(cp0, vs, bmp_pua_start + current_bmp_used, glyph_name)
+                for cp0, vs, pua in seqs:
+                    created |= add_pua_mapping(cp0, vs, bmp_pua_start + current_bmp_used, glyph_name, pua)
                 if created:
                     current_bmp_used += 1
         elif allocation_type == "partial":
@@ -213,16 +255,16 @@ def build_pua_mapping(glyphs_proceeded, pua_strategy):
                     continue
                 if glyph_name in pua_glyph_map:
                     # Already assigned elsewhere: just map sequences
-                    for cp0, vs in seqs:
-                        add_pua_mapping(cp0, vs, pua_glyph_map[glyph_name], glyph_name)
+                    for cp0, vs, pua in seqs:
+                        add_pua_mapping(cp0, vs, pua_glyph_map[glyph_name], glyph_name, pua)
                     continue
                 if remaining_slots <= 0:
                     # No BMP slots left for new glyphs; defer mapping to SMP phase
                     continue
                 # Assign a new BMP PUA slot to this glyph and map all its sequences
                 created = False
-                for cp0, vs in seqs:
-                    created |= add_pua_mapping(cp0, vs, bmp_pua_start + current_bmp_used, glyph_name)
+                for cp0, vs, pua in seqs:
+                    created |= add_pua_mapping(cp0, vs, bmp_pua_start + current_bmp_used, glyph_name, pua)
                 if created:
                     current_bmp_used += 1
                     remaining_slots -= 1
@@ -241,12 +283,12 @@ def build_pua_mapping(glyphs_proceeded, pua_strategy):
                     continue
                 if glyph_name in pua_glyph_map:
                     # Reuse existing assignment
-                    for cp0, vs in seqs:
-                        add_pua_mapping(cp0, vs, pua_glyph_map[glyph_name], glyph_name)
+                    for cp0, vs, pua in seqs:
+                        add_pua_mapping(cp0, vs, pua_glyph_map[glyph_name], glyph_name, pua)
                 else:
                     created = False
-                    for cp0, vs in seqs:
-                        created |= add_pua_mapping(cp0, vs, smp_pua_start, glyph_name)
+                    for cp0, vs, pua in seqs:
+                        created |= add_pua_mapping(cp0, vs, smp_pua_start, glyph_name, pua)
                     if created:
                         smp_pua_start += 1
     if DEBUG:
@@ -274,9 +316,14 @@ def format_codepoint_literal(c):
 def convert_pua_mapping_to_literal_map(pua_mapping):
     literal_map = {}
     for (base_cp, vs), pua_cp in pua_mapping.items():
-        ivs_str = format_codepoint_literal(base_cp) + format_codepoint_literal(vs)
-        pua_str = format_codepoint_literal(pua_cp)
-        literal_map[ivs_str] = pua_str
+        if vs != -1:
+            ivs_str = format_codepoint_literal(base_cp) + format_codepoint_literal(vs)
+            pua_str = format_codepoint_literal(pua_cp)
+            literal_map[ivs_str] = pua_str
+        else:
+            base_str = format_codepoint_literal(base_cp)
+            pua_str = format_codepoint_literal(pua_cp)
+            literal_map[base_str] = pua_str
     return literal_map
 
 def create_new_font_from_original_font_metrics(original_font):
@@ -304,42 +351,42 @@ def create_new_font_from_original_font_metrics(original_font):
             try:
                 setattr(external_font, attr, getattr(original_font, attr))
             except Exception:
-                pass
+                print(f"{attr}のコピーに失敗しました。")
     # hhea / vhea
     for attr in ('hhea_ascent','hhea_descent','hhea_linegap'):
         if hasattr(original_font, attr) and hasattr(external_font, attr):
             try:
                 setattr(external_font, attr, getattr(original_font, attr))
             except Exception:
-                pass
+                print(f"{attr}のコピーに失敗しました。")
     for attr in ('vhea_ascent','vhea_descent','vhea_linegap'):
         if hasattr(original_font, attr) and hasattr(external_font, attr):
             try:
                 setattr(external_font, attr, getattr(original_font, attr))
             except Exception:
-                pass
+                print(f"{attr}のコピーに失敗しました。")
     # 下線位置/太さ
     for attr in ('upos','uwidth'):
         if hasattr(original_font, attr) and hasattr(external_font, attr):
             try:
                 setattr(external_font, attr, getattr(original_font, attr))
             except Exception:
-                pass
+                print(f"{attr}のコピーに失敗しました。")
     # 縦組メトリクス有効化
     if hasattr(external_font, 'hasvmetrics'):
         try:
             external_font.hasvmetrics = True
         except Exception:
-            pass
+            print("縦組メトリクス有効化に失敗しました。")
     # gasp（ヒンティング閾値）
     if hasattr(original_font, 'gasp') and hasattr(external_font, 'gasp'):
         try:
             external_font.gasp = original_font.gasp
         except Exception:
-            pass
+            print("gaspテーブルコピーに失敗しました。")
     return external_font
 
-def copy_glyph(original_font, external_font, glyph_name, dist_code):
+def copy_glyph(original_font, external_font, glyph_name, dist_code, full=False):
     external_font.createChar(-1, glyph_name)
     external_font[glyph_name].clear()
 
@@ -347,12 +394,15 @@ def copy_glyph(original_font, external_font, glyph_name, dist_code):
     original_font.copy()
     external_font.selection.select(glyph_name)
     external_font.paste()
-    if glyph_name not in original_font:
-        raise ValueError(f"Glyph for codepoint {glyph_name} not found in original font.")
     external_font[glyph_name].width = original_font[glyph_name].width
     if hasattr(original_font[glyph_name], 'vwidth'):
         external_font[glyph_name].vwidth = original_font[glyph_name].vwidth
     external_font[glyph_name].unicode = dist_code
+    if full:
+        if not glyph_name.startswith("aj"):
+            return
+        if hasattr(original_font[glyph_name], "altuni") and original_font[glyph_name].altuni:
+            external_font[glyph_name].altuni = list(original_font[glyph_name].altuni)
 
 def setup_glyph_metrics(original_font, external_font):
     try:
@@ -535,6 +585,10 @@ def generate_character_map(ivsMap, basemap):
     base_lines = []
     for key, value in basemap.items():
         ch = value.get('char', "")
+        if ch in SPACE_CODEPOINTS:
+            continue
+        if key in SPACE_CODEPOINTS:
+            continue
         frm = value.get('from', "")
         base_lines.append(f"  \"{key}\": \"{ch}\", // {frm}")
     js_content += "\nexport const baseCharFallbackToExternalMap = {\n" + ",\n".join(base_lines) + "\n};\n"
@@ -616,13 +670,15 @@ def parse_args():
 def main():
     args = parse_args()
     src_font = fontforge.open(FONT_PATH)
-    covered_codepoints, glyphs_proceeded = list_glyphs(src_font)
+    glyphs_proceeded = list_glyphs(src_font)
     plan_total_glyphs = len(glyphs_proceeded) + len(no_unicode_mapped)
 
     print(f"プラン:")
     print(f"  元のグリフ数: {total_glyphs:,}グリフ")
     print(f"  総コードポイント数: {total:,}コード")
-    print(f"　ベース文字: {len(covered_codepoints):,}文字")
+    # Unique base codepoints observed
+    unique_base_count = len({ord(e.get('char','')[0]) for e in _iter_all_entries(glyphs_proceeded) if e.get('char')})
+    print(f"　ベース文字: {unique_base_count:,}文字")
     print(f"　IVS文字(PUA文字数): {ivs_chars:,}文字")
     print(f"　ベースマッピング数: {len(base_char_map):,}文字")
     print(f"　ユニコードあり: {len(glyphs_proceeded):,}文字")
@@ -640,21 +696,8 @@ def main():
         )
     print(f"  PUAマッピング数: {len(pua_map):,}文字")
 
-    # 2) covered_codepoints に格納したエントリ総数と total の一致
-    covered_total = sum(len(v) for v in covered_codepoints.values())
-    if total != covered_total:
-        raise ValueError(
-            f"Covered entries mismatch. total={total}, covered_total={covered_total}"
-        )
-
-    # 3) IVS件数の自己整合: ivs_chars と covered_codepointsから再計算した件数
-    computed_ivs = sum(
-        1 for lst in covered_codepoints.values() for x in lst if x.get("vs", -1) > 0
-    )
-    if ivs_chars != computed_ivs:
-        raise ValueError(
-            f"IVS count mismatch. ivs_chars={ivs_chars}, computed_ivs={computed_ivs}"
-        )
+    # 2) Consistency checks derived from glyphs_proceeded only
+    validate_from_glyphs(glyphs_proceeded)
 
     ivs_processed = 0
     copyed = dict()
@@ -669,10 +712,17 @@ def main():
             if (ord(c[0]), vs) in pua_map:
                 dist_code = pua_map[(ord(c[0]), vs)]
                 if not dryrun:
-                    copy_glyph(src_font, new_font, glyph_name, dist_code)
+                    copy_glyph(src_font, new_font, glyph_name, dist_code, True)
                 copyed[glyph_name] = dist_code
                 pbar.update(1)
                 ivs_processed += 1
+            else:
+                dist_code = ord(c[0])
+                if not dryrun:
+                    copy_glyph(src_font, new_font, glyph_name, dist_code, True)
+                copyed[glyph_name] = dist_code
+                pbar.update(1)
+                continue
 
         chars = info.get("chars", [])
         if len(chars) != 0:
@@ -691,7 +741,7 @@ def main():
         if glyph_name not in copyed:
             dist_code = ord(c[0])
             if not dryrun:
-                copy_glyph(src_font, new_font, glyph_name, dist_code)
+                copy_glyph(src_font, new_font, glyph_name, dist_code, True)
             copyed[glyph_name] = dist_code
             pbar.update(1)
         else:
@@ -703,10 +753,9 @@ def main():
                     "char": format_codepoint_literal(copyed[glyph_name]),
                     "from": glyph_name
                 }
-
     for glyph_name in no_unicode_mapped:
         if not dryrun:
-            copy_glyph(src_font, new_font, glyph_name, -1)
+            copy_glyph(src_font, new_font, glyph_name, -1, True)
         pbar.update(1)
     pbar.close()
 
@@ -718,6 +767,8 @@ def main():
     js = generate_character_map(pua_literal_map, base_char_map)
 
     mapping_file_path = os.path.join(ROOT_DIR, 'src', 'utils', 'ivsCharacterMap.js')
+    with open(mapping_file_path, 'w', encoding='utf-8') as f:
+        f.write(js)
     if not dryrun:
         with open(mapping_file_path, 'w', encoding='utf-8') as f:
             f.write(js)
@@ -734,18 +785,19 @@ def main():
 
         print("WebFont形式で保存中...")
         new_font.generate(output_woff2_path)
+        new_font.close()
 
         print("フォント最適化中...")
         optimize_glyph_metrics(src_font, output_ttf_path, output_woff2_path)
-
         src_font.close()
-        new_font.close()
+
     else:
         print("[dry-run] フォント出力をスキップしました")
 
     output = {
         "plan_total_glyphs": plan_total_glyphs,
-        "covered_codepoints": covered_codepoints,
+        "entries_total": sum(1 + len(info.get("chars", [])) for info in glyphs_proceeded.values()),
+        "unique_base_count": unique_base_count,
         "vs_distribution": vs_distribution,
         "base_char_map": base_char_map,
         "base_glyphs_without_unicode": no_unicode_mapped,
@@ -757,7 +809,7 @@ def main():
     print(f"  IVS文字数: {ivs_processed:,}文字")
     print(f"　ベースマッピング数: {len(base_char_map):,}文字")
 
-    output_path = os.path.join(ROOT_DIR, 'tmp', 'covered_codepoints.json')
+    output_path = os.path.join(ROOT_DIR, 'tmp', 'coverage_stats.json')
     if not dryrun:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         with open(output_path, 'w', encoding='utf-8') as f:

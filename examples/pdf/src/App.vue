@@ -39,7 +39,7 @@ export default {
   name: 'App',
   data() {
     return {
-      textValue: '学平全㐪㐪󠄁侮侮櫂󠄁瀧󠄇搆󠄃㐄󠄀㐄󠄁㐄󠄂㜲󠄁䙲󠄀※①φ𡭚欄𫧤󠄀侮艹艹𫑨欄欄︀𠫜𠫓Aa1ⅴⅤ㎜あアヴ「┨",”/＞>○'
+      textValue: '学平全㐪㐪󠄁侮侮ﾊﾝｶｸ 全　櫂󠄁\t瀧￥󠄇搆󠄃㐄󠄀㐄󠄁㐄󠄂㜲󠄁䙲󠄀※①φ𡭚欄𫧤󠄀侮艹艹𫑨欄欄︀𠫜𠫓Aa1ⅴⅤ㎜あアヴ「┨",”/＞>○'
     }
   },
   computed: {
@@ -95,8 +95,8 @@ export default {
             ReportItems: [
               {
                 Type: "textbox",
-                Name: "HelloTextBox",
-                Value: "Hello",
+                Name: "IVS文字",
+                Value: "IVS文字テスト",
                 Style: {
                   FontFamily: "IPA明朝",
                   FontSize: "24pt",
@@ -110,19 +110,49 @@ export default {
               },
               {
                 Type: "textbox",
-                Name: "UserInputTextBox",
-                Value: convertedText,
+                Name: "UserInputTextBox1",
+                Value: "IVS(変換後):\n" + convertedText,
                 Style: {
                   FontFamily: "IPA-IVS-External",
                   FontSize: "18pt",
                   Color: "#000000",
-                  TextAlign: "Center"
+                  TextAlign: "Left"
                 },
-                Top: "2in",
+                Top: "1.5in",
                 Left: "2in",
                 Width: "4in",
                 Height: "10.5in"
-              }
+              },
+              {
+                Type: "textbox",
+                Name: "UserInputTextBox2",
+                Value: "IPA明朝:\n" + this.textValue,
+                Style: {
+                  FontFamily: "IPA明朝",
+                  FontSize: "18pt",
+                  Color: "#000000",
+                  TextAlign: "Left"
+                },
+                Top: "3in",
+                Left: "2in",
+                Width: "4in",
+                Height: "10.5in"
+              },
+              {
+                Type: "textbox",
+                Name: "UserInputTextBox3",
+                Value: "IPA(変換前):\n" + this.textValue,
+                Style: {
+                  FontFamily: "IPA-IVS-External",
+                  FontSize: "18pt",
+                  Color: "#000000",
+                  TextAlign: "Left"
+                },
+                Top: "4.5in",
+                Left: "2in",
+                Width: "4in",
+                Height: "10.5in"
+              },
             ]
           },
           PageSettings: {
