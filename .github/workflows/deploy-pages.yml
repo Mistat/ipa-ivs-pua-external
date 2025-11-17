@@ -66,7 +66,6 @@ jobs:
       - name: Create docs directory structure
         run: |
           mkdir -p docs/fonts
-          mkdir -p docs/font-test
         
       - name: Create landing page
         run: |
@@ -180,12 +179,6 @@ jobs:
                   
                   <div class="demo-links">
                       <div class="demo-card">
-                          <h3>🔤 フォントテストビュー</h3>
-                          <p>IVS文字とPUA文字のマッピング表示とフォント表示テスト</p>
-                          <a href="./font-test/" class="demo-link">フォントテストを開く</a>
-                      </div>
-                      
-                      <div class="demo-card">
                           <h3>📄 PDF生成アプリ</h3>
                           <p>IVS文字を含むPDFドキュメントの生成とActiveReports連携デモ</p>
                           <a href="./pdf/" class="demo-link">PDFアプリを開く</a>
@@ -211,12 +204,6 @@ jobs:
       - name: Copy fonts
         run: |
           cp fonts/* docs/fonts/
-        
-      - name: Copy font test
-        run: |
-          cp examples/font-test/font-test-static.html docs/font-test/index.html
-          # Fix font paths
-          sed -i 's|../../fonts/|../fonts/|g' docs/font-test/index.html
         
       - name: Download build artifacts
         uses: actions/download-artifact@v4
