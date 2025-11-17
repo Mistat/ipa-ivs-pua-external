@@ -11,14 +11,8 @@
     "README.md"
   ],
   "exports": {
-    ".": {
-      "import": "./src/utils/ivsUtils.js",
-      "require": "./src/utils/ivsUtils.js"
-    },
-    "./mapping": {
-      "import": "./src/utils/ivsCharacterMap.js",
-      "require": "./src/utils/ivsCharacterMap.js"
-    },
+    ".": "./src/utils/ivsUtils.js",
+    "./mapping": "./src/utils/ivsCharacterMap.js",
     "./fonts": "./fonts/",
     "./scripts": "./scripts/"
   },
@@ -26,8 +20,8 @@
     "install-ivs-fonts": "./scripts/install-fonts.cjs"
   },
   "scripts": {
-    "build": "node scripts/build.js",
-    "setup": "fontforge -script scripts/generate.py"
+    "setup": "fontforge -script scripts/generate.py",
+    "test": "echo 'No unit tests yet' && exit 0"
   },
   "keywords": [
     "ivs",
@@ -55,8 +49,5 @@
   "engines": {
     "node": ">=14.0.0"
   },
-  "devDependencies": {
-    "jest": "^29.0.0",
-    "puppeteer": "^24.27.0"
-  }
+  "devDependencies": {}
 }
