@@ -695,10 +695,14 @@ def main():
             copyed[glyph_name] = dist_code
             pbar.update(1)
         else:
-            base_char_map[format_codepoint_literal(ord(c[0]))] = {
-                "char": format_codepoint_literal(copyed[glyph_name]),
-                "from": glyph_name
-            }
+            k = format_codepoint_literal(ord(c[0]))
+            if k in base_char_map and info.get("base", False):
+                raise ValueError(f"Duplicate base unicode mapping found for glyph {glyph_name} for unicode {ord(c[0]):04X}")
+            if info.get("base", False):
+                base_char_map[k] = {
+                    "char": format_codepoint_literal(copyed[glyph_name]),
+                    "from": glyph_name
+                }
 
     for glyph_name in no_unicode_mapped:
         if not dryrun:

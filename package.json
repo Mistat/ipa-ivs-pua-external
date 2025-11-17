@@ -6,7 +6,8 @@
   "type": "module",
   "files": [
     "src/utils/",
-    "fonts/",
+    "fonts/ipa-ivs-external.ttf",
+    "fonts/ipa-ivs-external.woff2",
     "scripts/",
     "README.md"
   ],
