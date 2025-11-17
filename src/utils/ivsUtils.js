@@ -8,39 +8,49 @@ const ivsToExternalCharMap = ivsMap.ivsToExternalCharMap;
 // Merge generated fallback with overrides (overrides take precedence)
 const baseCharFallbackToExternalMap = ivsMap.baseCharFallbackToExternalMap;
 
+// VS ranges (for negative lookahead when applying base fallback)
+const VS_ASTRAL_RANGE = '\\u{E0100}-\\u{E01EF}';
+const VS_BMP_RANGE = '\\uFE00-\\uFE0F';
+
+// Quick presence check: VS17+ high surrogate
+const hasVS = (s) => s.includes('\uDB40');
+
+// Safe regex escape for dynamic literals
+const escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
+
 export function convertIVSToExternal(text, { enableBaseFallback = false } = {}) {
   let result = text;
-  // 1) IVS → PUA
-  Object.entries(ivsToExternalCharMap).forEach(([ivs, external]) => {
-    result = result.replace(new RegExp(ivs, 'g'), external);
-  });
-  // 2) 任意: 基本文字フォールバック
-  if (enableBaseFallback) {
-    Object.entries(baseCharFallbackToExternalMap).forEach(([baseChar, external]) => {
-      // 負荷の低い防御: 直後に VS (U+DB40..DB7F + U+DC00..DFFF) が続く場合は置換しない
-      //const pattern = new RegExp(`${baseChar}(?![\uDB40-\uDB7F][\uDC00-\uDFFF])`, 'g');
-      //const baseChar = String.fromCodePoint(0x8279);
-      const vsStart = String.fromCodePoint(0xE0100);
-      const vsEnd   = String.fromCodePoint(0xE01EF);
 
-      const pattern = new RegExp(
-        baseChar + `(?![${vsStart}-${vsEnd}])`,
+  // 1) IVS → PUA（VSが無ければスキップ）
+  if (hasVS(result)) {
+    for (const [ivs, external] of Object.entries(ivsToExternalCharMap)) {
+      const re = new RegExp(escapeRegExp(ivs), 'gu');
+      result = result.replace(re, external);
+    }
+  }
+
+  // 2) 任意: 基本文字フォールバック（直後がVSのときは除外）
+  if (enableBaseFallback) {
+    for (const [baseChar, external] of Object.entries(baseCharFallbackToExternalMap)) {
+      const re = new RegExp(
+        escapeRegExp(baseChar) + `(?![${VS_BMP_RANGE}${VS_ASTRAL_RANGE}])`,
         'gu'
       );
-      result = result.replace(pattern, external);
-    });
+      result = result.replace(re, external);
+    }
   }
+
   return result;
 }
 
 export function hasIVSCharacters(text) {
-  return Object.keys(ivsToExternalCharMap).some(ivs => text.includes(ivs));
+  return hasVS(text) && Object.keys(ivsToExternalCharMap).some(ivs => text.includes(ivs));
 }
 
 export function countIVSCharacters(text) {
   let count = 0;
   Object.keys(ivsToExternalCharMap).forEach(ivs => {
-    const matches = text.match(new RegExp(ivs, 'g'));
+    const matches = text.match(new RegExp(escapeRegExp(ivs), 'gu'));
     if (matches) {
       count += matches.length;
     }
@@ -51,7 +61,7 @@ export function countIVSCharacters(text) {
 export function getIVSCharacterDetails(text) {
   const details = [];
   Object.entries(ivsToExternalCharMap).forEach(([ivs, external]) => {
-    const matches = text.match(new RegExp(ivs, 'g'));
+    const matches = text.match(new RegExp(escapeRegExp(ivs), 'gu'));
     if (matches) {
       // IVS文字の文字コードを取得
       const ivsCodePoints = [];
@@ -86,7 +96,8 @@ export function getIVSCharacterDetails(text) {
 export function applyBaseCharFallback(text) {
   let result = text;
   Object.entries(baseCharFallbackToExternalMap).forEach(([baseChar, external]) => {
-    result = result.replace(new RegExp(baseChar, 'g'), external);
+    result = result.replace(new RegExp(escapeRegExp(baseChar), 'gu'), external);
   });
   return result;
 }
+
