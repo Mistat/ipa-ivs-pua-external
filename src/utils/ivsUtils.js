@@ -1,55 +1,56 @@
 // IVS文字変換ユーティリティ関数（段階的PUA配置対応）
 // BMP PUA: 0xE000-0xF8FF (6,400文字) - 高頻度VS優先
 // SMP PUA: 0xF0000- (65,534文字) - 残りのVS
+import * as ivsMap from './ivsCharacterMap.js';
 
-import { ivsToExternalCharMap, baseCharFallbackToExternalMap, puaAllocationStats } from './ivsCharacterMap.js';
+// Merge maps with overrides taking precedence
+const ivsToExternalCharMap = ivsMap.ivsToExternalCharMap;
+// Merge generated fallback with overrides (overrides take precedence)
+const baseCharFallbackToExternalMap = ivsMap.baseCharFallbackToExternalMap;
 
-// Normalize CJK Compatibility Ideographs to their unified code points.
-// - U+F900–U+FAFF (CJK Compatibility Ideographs)
-// - U+2F800–U+2FA1F (CJK Compatibility Ideographs Supplement)
-function normalizeCJKCompatibilityIdeographs(text) {
-  const out = [];
-  for (const ch of text) {
-    const cp = ch.codePointAt(0);
-    if ((cp >= 0xF900 && cp <= 0xFAFF) || (cp >= 0x2F800 && cp <= 0x2FA1F)) {
-      out.push(ch.normalize('NFKC'));
-    } else {
-      out.push(ch);
+// VS ranges (for negative lookahead when applying base fallback)
+const VS_ASTRAL_RANGE = '\\u{E0100}-\\u{E01EF}';
+const VS_BMP_RANGE = '\\uFE00-\\uFE0F';
+
+// Quick presence check: VS17+ high surrogate
+const hasVS = (s) => s.includes('\uDB40');
+
+// Safe regex escape for dynamic literals
+const escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
+
+export function convertIVSToExternal(text, { enableBaseFallback = false } = {}) {
+  let result = text;
+
+  // 1) IVS → PUA（VSが無ければスキップ）
+  if (hasVS(result)) {
+    for (const [ivs, external] of Object.entries(ivsToExternalCharMap)) {
+      const re = new RegExp(escapeRegExp(ivs), 'gu');
+      result = result.replace(re, external);
     }
   }
-  return out.join('');
-}
 
-
-export function convertIVSToExternal(text, { enableBaseFallback = true, normalizeCJKCompat = true } = {}) {
-  let result = text;
-  // 0) Compatibility Ideographs → Unified CJK
-  if (normalizeCJKCompat) {
-    result = normalizeCJKCompatibilityIdeographs(result);
-  }
-  // 1) IVS → PUA
-  Object.entries(ivsToExternalCharMap).forEach(([ivs, external]) => {
-    result = result.replace(new RegExp(ivs, 'g'), external);
-  });
-  // 2) 任意: 基本文字フォールバック（B_value 既定異体）
+  // 2) 任意: 基本文字フォールバック（直後がVSのときは除外）
   if (enableBaseFallback) {
-    Object.entries(baseCharFallbackToExternalMap).forEach(([baseChar, external]) => {
-      result = result.replace(new RegExp(baseChar, 'g'), external);
-    });
+    for (const [baseChar, external] of Object.entries(baseCharFallbackToExternalMap)) {
+      const re = new RegExp(
+        escapeRegExp(baseChar) + `(?![${VS_BMP_RANGE}${VS_ASTRAL_RANGE}])`,
+        'gu'
+      );
+      result = result.replace(re, external);
+    }
   }
+
   return result;
 }
 
-
 export function hasIVSCharacters(text) {
-  return Object.keys(ivsToExternalCharMap).some(ivs => text.includes(ivs));
+  return hasVS(text) && Object.keys(ivsToExternalCharMap).some(ivs => text.includes(ivs));
 }
-
 
 export function countIVSCharacters(text) {
   let count = 0;
   Object.keys(ivsToExternalCharMap).forEach(ivs => {
-    const matches = text.match(new RegExp(ivs, 'g'));
+    const matches = text.match(new RegExp(escapeRegExp(ivs), 'gu'));
     if (matches) {
       count += matches.length;
     }
@@ -60,7 +61,7 @@ export function countIVSCharacters(text) {
 export function getIVSCharacterDetails(text) {
   const details = [];
   Object.entries(ivsToExternalCharMap).forEach(([ivs, external]) => {
-    const matches = text.match(new RegExp(ivs, 'g'));
+    const matches = text.match(new RegExp(escapeRegExp(ivs), 'gu'));
     if (matches) {
       // IVS文字の文字コードを取得
       const ivsCodePoints = [];
@@ -95,7 +96,8 @@ export function getIVSCharacterDetails(text) {
 export function applyBaseCharFallback(text) {
   let result = text;
   Object.entries(baseCharFallbackToExternalMap).forEach(([baseChar, external]) => {
-    result = result.replace(new RegExp(baseChar, 'g'), external);
+    result = result.replace(new RegExp(escapeRegExp(baseChar), 'gu'), external);
   });
   return result;
 }
+

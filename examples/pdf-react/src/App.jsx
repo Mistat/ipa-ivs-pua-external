@@ -52,6 +52,7 @@ const App = () => {
         return;
       }
       // 変換されたテキストを確認
+      // 既存のIVS→PUA変換を適用（baseFallbackは設定に依存）
       const convertedText = convertIVSToExternal(textValue) || "（未入力）";
       console.log('元のテキスト:', textValue);
       console.log('変換後のテキスト:', convertedText);

@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <h1>Hello</h1>
-    <input type="text" v-model="textValue" placeholder="テキストを入力してください（IVS文字対応）" />
+    <textarea v-model="textValue" placeholder="テキストを入力してください（IVS文字対応）" />
     <div class="preview" v-if="textValue">
       <div class="preview-label">プレビュー（変換後）:</div>
       <div class="preview-text">{{ displayText }}</div>
@@ -34,16 +34,17 @@
 import { Core, PdfExport, XlsxExport } from '@grapecity/activereports'
 import { convertIVSToExternal, hasIVSCharacters, countIVSCharacters, getIVSCharacterDetails } from 'ivs-font-processor'
 
+const op = {enableBaseFallback: true};
 export default {
   name: 'App',
   data() {
     return {
-      textValue:  '\u6AC2\uDB40\uDD01 \u7027\uDB40\uDD07 \u6406\uDB40\uDD03 \u3404\uDB40\uDD00 - \u3404\uDB40\uDD01 - \u3404\uDB40\uDD02 - \u3732\udb40\udd01 - \u4672\udb40\udd00'
+      textValue: '学平全㐪㐪󠄁侮侮櫂󠄁瀧󠄇搆󠄃㐄󠄀㐄󠄁㐄󠄂㜲󠄁䙲󠄀※①φ𡭚欄𫧤󠄀侮艹艹𫑨欄欄︀𠫜𠫓Aa1ⅴⅤ㎜あアヴ「┨",”/＞>○'
     }
   },
   computed: {
     displayText() {
-      return convertIVSToExternal(this.textValue)
+      return convertIVSToExternal(this.textValue, op)
     },
     hasIVS() {
       return hasIVSCharacters(this.textValue)
@@ -58,6 +59,7 @@ export default {
   methods: {
     async generatePDF() {
       try {
+        // 必要に応じてここで前処理を行う
         // フォントの登録（相対パス）
         const ipaFont = {
           name: "IPA明朝",
@@ -78,8 +80,8 @@ export default {
         const registeredFonts = Core.FontStore.getFonts()
         console.log('登録されたフォント:', registeredFonts)
         
-        // 変換されたテキストを確認
-        const convertedText = convertIVSToExternal(this.textValue) || "（未入力）"
+        // 変換されたテキストを確認（従来のIVS→PUA変換）
+        const convertedText = convertIVSToExternal(this.textValue, op) || "（未入力）"
         console.log('元のテキスト:', this.textValue)
         console.log('変換後のテキスト:', convertedText)
         console.log('変換後の文字コード:', Array.from(convertedText).map(c => `U+${c.codePointAt(0).toString(16).toUpperCase()}`))
@@ -119,7 +121,7 @@ export default {
                 Top: "2in",
                 Left: "2in",
                 Width: "4in",
-                Height: "0.5in"
+                Height: "10.5in"
               }
             ]
           },

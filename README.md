@@ -3,16 +3,16 @@
 [![npm version](https://badge.fury.io/js/ivs-font-processor.svg)](https://badge.fury.io/js/ivs-font-processor)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A JavaScript/TypeScript library for processing IVS (Ideographic Variation Sequence) characters with PUA (Private Use Area) mapped fonts for reliable web display.
+A JavaScript library for processing IVS (Ideographic Variation Sequence) characters with PUA (Private Use Area) mapped fonts for reliable web display.
 
 ## 概要
 
-PDF生成ライブラリやその他の文書生成ライブラリでは、異体字（IVS文字）の表示がサポートされていないケースが多くあります。本ライブラリは、そうしたライブラリに対して異体字を確実に表示するため、異体字をPUA（Private Use Area）領域にマッピングした専用フォントと、IVS文字をPUA文字コードに変換するJavaScript/TypeScriptライブラリを提供します。
+PDF生成ライブラリやその他の文書生成ライブラリでは、異体字（IVS文字）の表示がサポートされていないケースが多くあります。本ライブラリは、そうしたライブラリに対して異体字を確実に表示するため、異体字をPUA（Private Use Area）領域にマッピングした専用フォントと、IVS文字をPUA文字コードに変換するJavaScriptライブラリを提供します。
 
 ## Features
 
 - 🚀 **簡単インストール**: `npx install-ivs-fonts`でフォント配置
-- 🔧 **TypeScript対応**: 完全な型定義
+<!-- TypeScriptの型定義は同梱していないため、記述を削除 -->
 - 📱 **クロスブラウザ対応**: Chrome, Firefox, Safari, Edge
 - ⚡ **軽量**: 必要な機能のみを提供
 - 🎯 **11,380文字対応**: 包括的なIVS→PUAマッピング
@@ -43,7 +43,7 @@ npx install-ivs-fonts
 npx install-ivs-fonts ./assets/fonts/
 ```
 
-### 3. JavaScript/TypeScriptでの使用
+### 3. JavaScriptでの使用
 
 ```javascript
 import { 
@@ -84,11 +84,14 @@ const count = countIVSCharacters(text);
 
 ### Core Functions
 
-#### `convertIVSToExternal(text: string): string`
-IVS文字をPUA文字に変換します。
+#### `convertIVSToExternal(text: string, options?: { enableBaseFallback?: boolean }): string`
+IVS文字をPUA文字に変換します。`options.enableBaseFallback` を `true` にすると、直後にVSが続かない基底文字を既定異体のPUAへフォールバックします。
 
 ```javascript
 const result = convertIVSToExternal("漢字󠄀");  // IVS文字 → PUA文字
+
+// 基本文字フォールバックを有効化（直後にVSが続く箇所は除外）
+const resultWithFallback = convertIVSToExternal("邉", { enableBaseFallback: true });
 ```
 
 #### `hasIVSCharacters(text: string): boolean`
@@ -105,14 +108,11 @@ IVS文字の詳細情報を取得します。
 #### `ivsToExternalCharMap: Object`
 IVS文字からPUA文字へのマッピングオブジェクト
 
-#### `puaAllocationStats: Object`
-PUA配置統計情報
-
 ## Advanced Usage
 
 ### カスタムフォント生成
 
-独自のフォントを生成する場合は、[scripts/README.md](scripts/README.md)を参照してください。
+独自のフォント生成の詳細は、プロジェクト内の `scripts/` を参照してください（開発者向け）。
 
 ## IVS と Variation Selector (VS)
 
@@ -193,7 +193,7 @@ export default {
 
 このライブラリは段階的PUA配置戦略を採用し、11,380文字のIVS→PUAマッピングを提供します。
 
-詳細な配置戦略については、[scripts/README.md](scripts/README.md)を参照してください。
+PUA配置の詳細は、生成スクリプト（`scripts/`）のコメントを参照してください。
 
 ## Font Metrics Strategy
 
@@ -234,61 +234,48 @@ PDFや複数行レイアウトでの見切れ・行間過多を避けるため�
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## E2Eテスト（Headless）: examples/metrics-check
+## FontForge Setup（開発者向け）
 
-`examples/metrics-check` をヘッドレス環境で自動検証する E2E テストを追加しています。Puppeteer でサンプルページを起動し、Canvas 計測値と DOM 実描画の幅が近似しているかをチェックします。
+開発時にフォント生成スクリプト（`scripts/generate.py`）を使う場合のみ、FontForge の導入が必要です。ライブラリ利用者は不要です。
 
-- 目的: 計測用フォントと描画用フォントが一致しており、フォールバック混在が起きていないかの簡易検証
-- 仕組み: ルート直下を静的配信 → `examples/metrics-check/index.html` を自動操作 → 幅の差分を閾値（±2px）以内で検証
+- macOS
+  - Homebrew: `brew install fontforge`
+  - 動作確認: `fontforge -version`
 
-実行手順:
+- Ubuntu/Debian
+  - APT: `sudo apt-get update && sudo apt-get install -y fontforge`
+  - 動作確認: `fontforge -version`
+
+- Fedora/RHEL
+  - DNF: `sudo dnf install -y fontforge`
+  - 動作確認: `fontforge -version`
+
+- Arch Linux
+  - Pacman: `sudo pacman -Syu fontforge`
+  - 動作確認: `fontforge -version`
+
+- Windows
+  - winget: `winget install --id FontForge.FontForge -e`
+  - もしくは公式インストーラから導入（https://fontforge.org/ 参照）
+  - 動作確認: PowerShell で `fontforge -version`
+
+導入後、フォント生成は以下で実行できます（開発者のみ）。
 
 ```bash
-# 1) Puppeteer を開発依存に追加
-npm i -D puppeteer
-
-# 2) フォントが未生成の場合は用意
-npm run generate:fonts
-
-# 3) Headless E2E を実行
-npm run test:e2e
+npm run setup  # = fontforge -script scripts/generate.py
 ```
 
-補足:
-- Puppeteer が未導入の場合、このテストは自動スキップされます。
-- 通常の `npm test` はユニットテストのみを実行し、この E2E は走りません。
-- テスト内容は `__tests__/metrics-check.e2e.test.js` を参照してください。
+<!-- 互換漢字の正規化（NFKC）や compatMapOverride の説明は、現行実装では未対応のため削除しました。必要に応じて外部でNFKC正規化を実施してください。 -->
 
-## 互換漢字の正規化（PDF対策）
-
-PDF出力などで CJK 互換漢字（U+F900–U+FAFF など）がそのままでは表示されない場合に備え、`convertIVSToExternal()` はデフォルトで互換漢字を統合漢字へ正規化（NFKCベース）します。
-
-- 例: `U+F929 (朗)` → `U+6717 (朗)` に変換された上で、IVSやフォールバック処理が適用されます。
-- オプション: `normalizeCJKCompat: false` を指定すると、互換漢字の正規化を無効化できます。
-
-使用例:
-
-```js
-import { convertIVSToExternal } from './src/utils/ivsUtils.js';
-
-// 既定: 互換漢字を統合漢字へ正規化 → IVS→PUA → 既定異体フォールバック
-const out = convertIVSToExternal('\uF929'); // => '朗'（さらに必要ならPUA化）
-
-// PDF用途で“正規化のみ”にしたい場合（基底フォールバックを無効化）
-const outPdf = convertIVSToExternal('\uF929', { enableBaseFallback: false }); // => '朗'
-```
+<!-- 互換漢字マップ（Excel取り込み）の説明は削除しました -->
 
 ## CI（GitHub Actions）
 
-本リポジトリには、ユニットテストと headless E2E を自動実行する GitHub Actions ワークフローを含めています（`.github/workflows/ci.yml`）。
+本リポジトリのCI（`.github/workflows/ci.yml`）は現在、最小限の no-op ジョブのみを実行します（テストはCIでは実行しません）。
 
 - トリガー: push / pull_request
-- ジョブ:
-  - `unit-tests`: `npm ci` → `npm test`
-  - `e2e-metrics-check`: `npm ci` → `npm i -D puppeteer` → `npm run test:e2e`
-- 備考:
-  - Puppeteer は CI 用に動的に導入します（リポジトリの依存には固定しません）。
-  - E2E 実行時は `CI=true` を付与し、Puppeteer を `--no-sandbox` で起動するようにしています。
+- ジョブ: `noop`（チェックアウトのみ）
+- 備考: 自動テストが必要になった段階でワークフローに手順を追加してください。
 
 ## License
 

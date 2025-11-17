@@ -1,0 +1,47 @@
+name: Release Tarball
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag name (e.g. v1.0.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Create package tarball (npm pack)
+        id: pack
+        run: |
+          PKG_FILE=$(npm pack --silent)
+          echo "pkg_file=$PKG_FILE" >> $GITHUB_OUTPUT
+          if [ -n "${{ github.event.inputs.tag }}" ]; then TAG="${{ github.event.inputs.tag }}"; else TAG="${{ github.ref_name }}"; fi
+          ASSET="ivs-font-processor-${TAG}.tar.gz"
+          mv "$PKG_FILE" "$ASSET"
+          echo "asset=$ASSET" >> $GITHUB_OUTPUT
+        env:
+          npm_config_cache: .npm_cache
+
+      - name: Create GitHub Release and upload asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.pack.outputs.asset }}
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: Release ${{ github.event.inputs.tag || github.ref_name }}
+          draft: false
+          prerelease: false
