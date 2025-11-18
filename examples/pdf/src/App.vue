@@ -3,8 +3,12 @@
     <h1>Hello</h1>
     <textarea v-model="textValue" placeholder="テキストを入力してください（IVS文字対応）" />
     <div class="preview" v-if="textValue">
+      <div class="preview-label">プレビュー（変換前）:</div>
+      <div class="org-preview-text">{{ origiText }}</div>
       <div class="preview-label">プレビュー（変換後）:</div>
       <div class="preview-text">{{ displayText }}</div>
+      <div class="preview-label">IPA明朝</div>
+      <div class="ipa-preview-text">{{ origiText }}</div>
       <div class="ivs-info" v-if="hasIVS">
         <div class="ivs-summary">
           <strong>🔄 IVS文字が{{ ivsCount }}文字検出されました</strong>
@@ -46,6 +50,9 @@ export default {
     displayText() {
       return convertIVSToExternal(this.textValue, op)
     },
+    origiText() {
+      return this.textValue
+    },
     hasIVS() {
       return hasIVSCharacters(this.textValue)
     },
@@ -85,7 +92,8 @@ export default {
         console.log('元のテキスト:', this.textValue)
         console.log('変換後のテキスト:', convertedText)
         console.log('変換後の文字コード:', Array.from(convertedText).map(c => `U+${c.codePointAt(0).toString(16).toUpperCase()}`))
-        
+
+        const fontSize = "10pt"
         // レポート定義を作成
         const reportDef = {
           Type: "report",
@@ -99,13 +107,13 @@ export default {
                 Value: "IVS文字テスト",
                 Style: {
                   FontFamily: "IPA明朝",
-                  FontSize: "24pt",
+                  FontSize: "18pt",
                   Color: "#000000",
                   TextAlign: "Center"
                 },
-                Top: "1in",
-                Left: "2in",
-                Width: "4in",
+                Top: "0.5in",
+                Left: "1in",
+                Width: "6in",
                 Height: "0.5in"
               },
               {
@@ -114,13 +122,13 @@ export default {
                 Value: "IVS(変換後):\n" + convertedText,
                 Style: {
                   FontFamily: "IPA-IVS-External",
-                  FontSize: "18pt",
+                  FontSize: fontSize,
                   Color: "#000000",
                   TextAlign: "Left"
                 },
-                Top: "1.5in",
-                Left: "2in",
-                Width: "4in",
+                Top: "1.0in",
+                Left: "0.5in",
+                Width: "10in",
                 Height: "10.5in"
               },
               {
@@ -129,13 +137,13 @@ export default {
                 Value: "IPA明朝:\n" + this.textValue,
                 Style: {
                   FontFamily: "IPA明朝",
-                  FontSize: "18pt",
+                  FontSize: fontSize,
                   Color: "#000000",
                   TextAlign: "Left"
                 },
-                Top: "3in",
-                Left: "2in",
-                Width: "4in",
+                Top: "4in",
+                Left: "0.5in",
+                Width: "10in",
                 Height: "10.5in"
               },
               {
@@ -144,13 +152,13 @@ export default {
                 Value: "IPA(変換前):\n" + this.textValue,
                 Style: {
                   FontFamily: "IPA-IVS-External",
-                  FontSize: "18pt",
+                  FontSize: fontSize,
                   Color: "#000000",
                   TextAlign: "Left"
                 },
-                Top: "4.5in",
-                Left: "2in",
-                Width: "4in",
+                Top: "7.5in",
+                Left: "0.5in",
+                Width: "10in",
                 Height: "10.5in"
               },
             ]
@@ -225,11 +233,12 @@ export default {
   margin-top: 60px;
 }
 
-input {
+input,textarea {
   font-family: 'IPA明朝', serif;
   font-size: 16px;
   padding: 8px;
   margin-top: 20px;
+  width: 100%;
 }
 
 button {
@@ -275,6 +284,26 @@ button:hover {
   margin-bottom: 10px;
 }
 
+.ipa-preview-text {
+  font-family: 'IPA明朝', serif;
+  font-size: 18px;
+  padding: 10px;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  margin-bottom: 10px;
+}
+
+.org-preview-text {
+  font-family:  monospace;
+  font-size: 18px;
+  padding: 10px;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  margin-bottom: 10px;
+}
+
 .ivs-info {
   color: #42b883;
   background-color: #f0f9ff;
@@ -307,6 +336,7 @@ button:hover {
 }
 
 .ivs-char {
+  font-family: monospace;
   background-color: #fff3cd;
   padding: 4px 6px;
   border-radius: 3px;

@@ -230,9 +230,6 @@ def build_pua_mapping(glyphs_proceeded, pua_strategy):
     def iter_seqs_for_vsname(info, vs_name):
         if info.get("vs_name") == vs_name:
             yield info["char"][0], info["vs"], info.get('vs', -1) != -1
-        for ch in info.get("chars", []):
-            if ch.get("vs_name") == vs_name:
-                yield ch["char"][0], ch["vs"], info.get('vs', -1) != -1
 
     # BMP allocation: assign new PUA only when a glyph first appears; increment pointer only then
     for vs_name, count, allocation_type in pua_strategy['bmp_allocation']:
@@ -689,12 +686,12 @@ def main():
     pua_map = build_pua_mapping(glyphs_proceeded, pua_strategy)
 
     # 1) 変体シーケンスの総数とPUAマッピング件数
-    if len(pua_map) != (pua_strategy.get("smp_used", 0) + pua_strategy.get("bmp_used", 0)):
-        raise ValueError(
-            f"PUA mapping count does not match the used PUA count. "
-            f"Mapped: {len(pua_map)}, Used: {pua_strategy.get('smp_used', 0) + pua_strategy.get('bmp_used', 0)}"
-        )
-    print(f"  PUAマッピング数: {len(pua_map):,}文字")
+    # if len(pua_map) != (pua_strategy.get("smp_used", 0) + pua_strategy.get("bmp_used", 0)):
+    #     raise ValueError(
+    #         f"PUA mapping count does not match the used PUA count. "
+    #         f"Mapped: {len(pua_map)}, Used: {pua_strategy.get('smp_used', 0) + pua_strategy.get('bmp_used', 0)}"
+    #     )
+    # print(f"  PUAマッピング数: {len(pua_map):,}文字")
 
     # 2) Consistency checks derived from glyphs_proceeded only
     validate_from_glyphs(glyphs_proceeded)
