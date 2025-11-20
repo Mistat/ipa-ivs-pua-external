@@ -2,6 +2,7 @@
   <div id="app">
     <h1>Hello</h1>
     <textarea v-model="textValue" placeholder="テキストを入力してください（IVS文字対応）" />
+    <input type="checkbox" v-model="enableBaseFallback" /> ベース文字フォールバックを有効にする
     <div class="preview" v-if="textValue">
       <div class="preview-label">プレビュー（変換前）:</div>
       <div class="org-preview-text">{{ origiText }}</div>
@@ -38,17 +39,18 @@
 import { Core, PdfExport, XlsxExport } from '@grapecity/activereports'
 import { convertIVSToExternal, hasIVSCharacters, countIVSCharacters, getIVSCharacterDetails } from 'ivs-font-processor'
 
-const op = {enableBaseFallback: true};
+
 export default {
   name: 'App',
   data() {
     return {
-      textValue: '学平全㐪㐪󠄁侮侮ﾊﾝｶｸ 全　櫂󠄁\t瀧￥󠄇搆󠄃㐄󠄀㐄󠄁㐄󠄂㜲󠄁䙲󠄀※①φ𡭚欄𫧤󠄀侮艹艹𫑨欄欄︀𠫜𠫓Aa1ⅴⅤ㎜あアヴ「┨",”/＞>○'
+      enableBaseFallback: true,
+      textValue: '枩󠄄枩枩󠄃㑁\u535A\uDB40\uDD0A 学平全㐪㐪󠄁侮侮ﾊﾝｶｸ 全　櫂󠄁\t瀧￥󠄇搆󠄃㐄󠄀㐄󠄁㐄󠄂㜲󠄁䙲󠄀※①φ𡭚欄𫧤󠄀侮艹艹𫑨欄欄︀𠫜𠫓Aa1ⅴⅤ㎜あアヴ「┨",”/＞>○'
     }
   },
   computed: {
     displayText() {
-      return convertIVSToExternal(this.textValue, op)
+      return convertIVSToExternal(this.textValue, { enableBaseFallback: this.enableBaseFallback})
     },
     origiText() {
       return this.textValue
@@ -65,6 +67,7 @@ export default {
   },
   methods: {
     async generatePDF() {
+      const op = {enableBaseFallback: this.enableBaseFallback};
       try {
         // 必要に応じてここで前処理を行う
         // フォントの登録（相対パス）
@@ -91,6 +94,7 @@ export default {
         const convertedText = convertIVSToExternal(this.textValue, op) || "（未入力）"
         console.log('元のテキスト:', this.textValue)
         console.log('変換後のテキスト:', convertedText)
+        console.log('変換前の文字コード:', Array.from(this.textValue).map(c => `U+${c.codePointAt(0).toString(16).toUpperCase()}`))
         console.log('変換後の文字コード:', Array.from(convertedText).map(c => `U+${c.codePointAt(0).toString(16).toUpperCase()}`))
 
         const fontSize = "10pt"
@@ -266,6 +270,7 @@ button:hover {
   border: 1px solid #ddd;
   border-radius: 4px;
   background-color: #f9f9f9;
+  text-align: left;
 }
 
 .preview-label {
